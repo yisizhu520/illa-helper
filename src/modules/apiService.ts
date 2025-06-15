@@ -5,7 +5,7 @@
 
 import { getSystemPrompt } from './promptManager';
 import { UserSettings, FullTextAnalysisResponse, Replacement, ApiConfig, DEFAULT_API_CONFIG } from './types';
-
+import { browser } from 'wxt/browser';
 
 // API 服务类
 export class ApiService {
@@ -24,19 +24,11 @@ export class ApiService {
   }
 
   /**
-   * 设置 API 密钥
-   * @param apiKey API 密钥
-   */
-  setApiKey(apiKey: string): void {
-    this.config.apiKey = apiKey;
-  }
-
-  /**
    * 设置 API 端点
-   * @param endpoint API 端点
+   * @param apiEndpoint API 端点 URL
    */
-  setApiEndpoint(endpoint: string): void {
-    this.config.apiEndpoint = endpoint;
+  setApiEndpoint(apiEndpoint: string): void {
+    this.config.apiEndpoint = apiEndpoint;
   }
 
   /**
@@ -57,15 +49,13 @@ export class ApiService {
     const originalText = text || '';
 
     // 验证输入
-    if (!originalText.trim()) {
+    if (!originalText.trim() || !settings.apiConfig.apiKey) {
       return { original: originalText, processed: originalText, replacements: [] };
     }
 
     if (!settings.apiConfig.apiKey) {
       console.error('API 密钥未设置');
-      return { original: originalText, processed: originalText, replacements: [] };
     }
-
     try {
       // 动态生成系统提示词
       const systemPrompt = getSystemPrompt(settings.translationDirection, settings.userLevel);

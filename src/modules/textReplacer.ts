@@ -34,11 +34,6 @@ export class TextReplacer {
     this.apiService = new ApiService();
     this.styleManager = new StyleManager();
     this.cache = new Map<string, FullTextAnalysisResponse>();
-
-    if (this.config.useGptApi && this.config.apiKey) {
-      this.apiService.setApiKey(this.config.apiKey);
-    }
-
     this.styleManager.setTranslationStyle(this.config.translationStyle || TranslationStyle.DEFAULT);
   }
 
@@ -48,11 +43,6 @@ export class TextReplacer {
    */
   setConfig(config: Partial<ReplacementConfig>): void {
     this.config = { ...this.config, ...config };
-
-    if (this.config.useGptApi && this.config.apiKey) {
-      this.apiService.setApiKey(this.config.apiKey);
-    }
-
     if (this.config.translationStyle) {
       this.styleManager.setTranslationStyle(this.config.translationStyle);
     }
@@ -70,7 +60,7 @@ export class TextReplacer {
     }
 
     // 如果不使用API，直接返回原文
-    if (!this.config.useGptApi || !this.config.apiKey) {
+    if (!this.config.useGptApi) {
       return {
         original: text,
         processed: text,
@@ -88,8 +78,7 @@ export class TextReplacer {
         translationStyle: this.config.translationStyle,
         translationDirection: this.config.translationDirection,
         apiConfig: {
-          ...DEFAULT_SETTINGS.apiConfig,
-          apiKey: this.config.apiKey,
+          ...this.config.apiConfig,
         },
       };
 
@@ -107,57 +96,6 @@ export class TextReplacer {
         processed: text,
         replacements: []
       };
-    }
-  }
-
-  /**
-   * 格式化替换文本
-   * @param chinese 中文词汇
-   * @param english 英文翻译
-   * @param isNew 是否是生词
-   * @returns 格式化后的替换文本
-   */
-  private formatReplacement(chinese: string, english: string, isNew: boolean): string {
-    // 获取当前样式类名
-    const styleClass = this.styleManager.getCurrentStyleClass();
-
-    // 创建容器
-    let replacement = `<span class="wxt-word-container">`;
-
-    // 添加中文部分
-    if (isNew) {
-      replacement += `<span class="wxt-chinese wxt-new-word">${chinese}</span>`;
-    } else {
-      replacement += `<span class="wxt-chinese">${chinese}</span>`;
-    }
-
-    // 添加英文部分，应用当前样式
-    replacement += `<span class="wxt-english ${styleClass}">(${english})</span>`;
-
-    replacement += `</span>`;
-
-    return replacement;
-  }
-
-  /**
-   * 将UserLevel枚举转换为字符串
-   * @param level 用户水平枚举值
-   * @returns 用户水平字符串
-   */
-  private getUserLevelString(level: UserLevel): string {
-    switch (level) {
-      case UserLevel.BEGINNER:
-        return '初级';
-      case UserLevel.ELEMENTARY:
-        return '基础';
-      case UserLevel.INTERMEDIATE:
-        return '中级';
-      case UserLevel.ADVANCED:
-        return '高级';
-      case UserLevel.PROFICIENT:
-        return '精通';
-      default:
-        return '中级';
     }
   }
 } 

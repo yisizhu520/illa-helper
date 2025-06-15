@@ -158,7 +158,7 @@ const directionOptions = [
 
               <div class="sub-setting-group">
                 <label>模型</label>
-                <input type="text" v-model="settings.apiConfig.model" placeholder="例如: gpt-3.5-turbo">
+                <input type="text" v-model="settings.apiConfig.model" placeholder="例如: doubao-1-5-lite-32k-250115">
               </div>
               <div class="sub-setting-group">
                 <label>温度: {{ settings.apiConfig.temperature }}</label>

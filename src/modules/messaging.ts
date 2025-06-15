@@ -4,6 +4,7 @@
  */
 
 import { UserSettings } from './types';
+import { browser } from 'wxt/browser';
 
 /**
  * Notifies the active tab that the settings have been updated.

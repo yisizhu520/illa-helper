@@ -35,7 +35,7 @@ export interface ReplacementConfig {
   userLevel: UserLevel;
   replacementRate: number;
   useGptApi: boolean;
-  apiKey: string;
+  apiConfig: ApiConfig;
   inlineTranslation: boolean;
   translationStyle: TranslationStyle;
   translationDirection: TranslationDirection;

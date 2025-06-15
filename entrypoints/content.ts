@@ -18,6 +18,8 @@ export default defineContentScript({
     const storageManager = new StorageManager();
     const settings = await storageManager.getUserSettings();
 
+    browser.runtime.sendMessage({ type: 'validate-configuration', source: 'page_load' });
+
     if (!settings.isEnabled) {
       return;
     }
@@ -50,7 +52,7 @@ function createReplacementConfig(settings: UserSettings): ReplacementConfig {
     userLevel: settings.userLevel,
     replacementRate: settings.replacementRate,
     useGptApi: settings.useGptApi,
-    apiKey: settings.apiConfig.apiKey,
+    apiConfig: settings.apiConfig,
     inlineTranslation: true,
     translationStyle: settings.translationStyle,
     translationDirection: settings.translationDirection,
@@ -99,11 +101,15 @@ function setupListeners(settings: UserSettings, styleManager: StyleManager, text
         window.location.reload();
       }
     } else if (message.type === 'MANUAL_TRANSLATE') {
-      console.log(DEFAULT_API_CONFIG,settings)
-
-      console.log('收到手动翻译请求', DEFAULT_API_CONFIG);
+      console.log('收到手动翻译请求');
       if (settings.triggerMode === TriggerMode.MANUAL) {
-        await processPage(textProcessor, textReplacer, settings.maxLength);
+        const isConfigValid = await browser.runtime.sendMessage({
+          type: 'validate-configuration',
+          source: 'user_action'
+        });
+        if (isConfigValid) {
+          await processPage(textProcessor, textReplacer, settings.maxLength);
+        }
       }
     }
   });
