@@ -88,7 +88,7 @@
     npm install
     ```
     
-> **提示**: 如果你只想使用这个扩展而不参与开发，请直接前往 [Releases](https://github.com/your-username/immersive-language-learning-assistant/releases) 页面下载最新版本的打包文件。
+> **提示**: 如果你只想使用这个扩展而不参与开发，请直接前往 [Releases](https://github.com/xiao-zaiyi/illa-helper/releases) 页面下载最新版本的打包文件。
 
 ### 3. 配置 (Configuration)
 
