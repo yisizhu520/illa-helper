@@ -5,7 +5,6 @@ import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
-console.log(settings.value)
 onMounted(async () => {
   const storageManager = new StorageManager();
   settings.value = await storageManager.getUserSettings();
@@ -37,7 +36,6 @@ const manualTranslate = async () => {
   }
 };
 
-// UI Toggles
 const showApiSettings = ref(false);
 const toggleApiSettings = () => {
   showApiSettings.value = !showApiSettings.value;
@@ -138,8 +136,8 @@ const directionOptions = [
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
             <span>模型 API 设置</span>
-            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16"
-              viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" />
             </svg>
@@ -186,7 +184,11 @@ const directionOptions = [
 
 <style scoped>
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+}
+
+.container {
+  /* Light theme variables */
   --bg-color: #f0f4f8;
   --card-bg-color: #ffffff;
   --primary-color: #6a88e0;
@@ -198,15 +200,34 @@ const directionOptions = [
   --shadow-color: rgba(106, 136, 224, 0.1);
   --success-color: #4CAF50;
   --green-color: #4CAF50;
-}
+  --input-bg-color: #fdfdff;
+  --input-text-color: #37474f;
+  --select-option-text-color: #000;
+  --select-option-bg-color: #fff;
 
-.container {
   width: 360px;
   padding: 20px;
   font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  .container {
+    --bg-color: #1e1e1e;
+    --card-bg-color: #252526;
+    --primary-color: #646cff;
+    --primary-hover-color: #535bf2;
+    --text-color: rgba(255, 255, 255, 0.87);
+    --label-color: rgba(255, 255, 255, 0.7);
+    --border-color: #3c3c3c;
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --input-bg-color: #3c3c3c;
+    --input-text-color: rgba(255, 255, 255, 0.87);
+    --select-option-text-color: #fff;
+    --select-option-bg-color: #3c3c3c;
+  }
 }
 
 header {
@@ -311,8 +332,8 @@ input[type="password"] {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-sizing: border-box;
-  background-color: #fdfdff;
-  color: #000;
+  background-color: var(--input-bg-color);
+  color: var(--input-text-color);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -325,10 +346,10 @@ input[type="password"]:focus {
 }
 
 select option {
-  color: #000;
+  color: var(--select-option-text-color);
+  background-color: var(--select-option-bg-color);
 }
 
-/* Custom Checkbox as a Switch */
 .setting-group.checkbox .label-text {
   margin-left: 12px;
 }
@@ -365,7 +386,6 @@ select option {
   transform: translateX(18px);
 }
 
-/* Custom Range Input */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
@@ -407,7 +427,6 @@ input[type="range"]::-moz-range-thumb {
 }
 
 
-/* API Settings */
 .api-settings {
   padding: 0;
   overflow: hidden;
@@ -474,19 +493,15 @@ input[type="range"]::-moz-range-thumb {
 }
 
 
-/* Buttons */
 .button-container {
   display: flex;
   justify-content: flex-end;
-  /* Adjusted for two buttons */
   gap: 12px;
-  /* Adds space between buttons */
   margin-top: 24px;
 }
 
 button {
   flex-grow: 1;
-  /* Allows buttons to grow and fill container */
   background: var(--primary-color);
   color: white;
   border: none;
@@ -522,9 +537,9 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--accent-color);
+  background-color: var(--primary-color);
   border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(255, 175, 204, 0.4);
+  box-shadow: 0 2px 8px rgba(106, 136, 224, 0.3);
   flex-grow: 0;
   transition: all 0.2s ease-in-out;
   font-size: 13px;
@@ -535,8 +550,8 @@ button:disabled {
 }
 
 .manual-translate-btn:hover {
-  background-color: #ff9ebf;
-  box-shadow: 0 4px 12px rgba(255, 175, 204, 0.6);
+  background-color: var(--primary-hover-color);
+  box-shadow: 0 4px 12px rgba(106, 136, 224, 0.4);
   transform: translateY(-2px);
 }
 
@@ -559,7 +574,6 @@ footer {
   color: #90a4ae;
 }
 
-/* Keep style preview styles as they are functional */
 .style-preview {
   margin-top: 8px;
   padding: 8px;
