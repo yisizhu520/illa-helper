@@ -58,10 +58,16 @@
 <div align="center">
   <img src="images/p1.png"  alt="扩展功能展示" />
   <img src="images/p2.png"  alt="扩展功能展示" />
+  <p><i>深色主题样式</i></p>
+  <img src="images/p3.png" alt="扩展功能展示" />
+  <p><i>浅色主题样式</i></p>
   <img src="images/wx.png" alt="扩展功能展示" />
   <img src="images/md.png"  alt="扩展功能展示" />
   <img src="images/md1.png"  alt="扩展功能展示" />
   <p><i>扩展的主界面及设置选项 (Main interface and settings)</i></p>
+
+
+
 </div>
 
 
@@ -71,7 +77,7 @@
 ### 1. 先决条件 (Prerequisites)
 
 - [Node.js](https://nodejs.org/) (version 18 or higher)
-- [pnpm](https://pnpm.io/installation)
+- [npm](https://nodejs.org/)
 
 ### 2. 安装 (Installation)
 
@@ -144,7 +150,7 @@ npm run zip
 ├── .env                  # (本地) 环境变量，不提交
 ├── .env.example          # 环境变量模板
 ├── package.json
-├── pnpm-lock.yaml
+├── package-lock.json
 ├── README.md             
 └── wxt.config.ts         # WXT 配置文件
 ```
