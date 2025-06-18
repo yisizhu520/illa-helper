@@ -4,8 +4,13 @@
  */
 
 import { getSystemPrompt } from './promptManager';
-import { UserSettings, FullTextAnalysisResponse, Replacement, ApiConfig, DEFAULT_API_CONFIG } from './types';
-import { browser } from 'wxt/browser';
+import {
+  UserSettings,
+  FullTextAnalysisResponse,
+  Replacement,
+  ApiConfig,
+  DEFAULT_API_CONFIG,
+} from './types';
 
 // API 服务类
 export class ApiService {
@@ -45,12 +50,19 @@ export class ApiService {
    * @param settings 完整的用户设置对象
    * @returns 分析结果，包含替换信息
    */
-  async analyzeFullText(text: string, settings: UserSettings): Promise<FullTextAnalysisResponse> {
+  async analyzeFullText(
+    text: string,
+    settings: UserSettings,
+  ): Promise<FullTextAnalysisResponse> {
     const originalText = text || '';
 
     // 验证输入
     if (!originalText.trim() || !settings.apiConfig.apiKey) {
-      return { original: originalText, processed: originalText, replacements: [] };
+      return {
+        original: originalText,
+        processed: originalText,
+        replacements: [],
+      };
     }
 
     if (!settings.apiConfig.apiKey) {
@@ -58,38 +70,48 @@ export class ApiService {
     }
     try {
       // 动态生成系统提示词
-      const systemPrompt = getSystemPrompt(settings.translationDirection, settings.userLevel);
+      const systemPrompt = getSystemPrompt(
+        settings.translationDirection,
+        settings.userLevel,
+      );
 
       const requestBody = {
         model: settings.apiConfig.model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: originalText }
+          { role: 'user', content: originalText },
         ],
         temperature: settings.apiConfig.temperature,
-        response_format: { type: 'json_object' }
+        response_format: { type: 'json_object' },
       };
 
       const response = await fetch(settings.apiConfig.apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${settings.apiConfig.apiKey}`
+          Authorization: `Bearer ${settings.apiConfig.apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         console.error(`API 请求失败: ${response.status}`);
-        return { original: originalText, processed: originalText, replacements: [] };
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
       }
 
       const data = await response.json();
       return this.extractReplacements(data, originalText);
-
     } catch (error) {
       console.error('API 请求或解析失败:', error);
-      return { original: originalText, processed: originalText, replacements: [] };
+      return {
+        original: originalText,
+        processed: originalText,
+        replacements: [],
+      };
     }
   }
 
@@ -99,10 +121,17 @@ export class ApiService {
    * @param originalText 原始文本
    * @returns 分析结果，包含替换信息
    */
-  private extractReplacements(data: any, originalText: string): FullTextAnalysisResponse {
+  private extractReplacements(
+    data: any,
+    originalText: string,
+  ): FullTextAnalysisResponse {
     try {
       if (!data?.choices?.[0]?.message?.content) {
-        return { original: originalText, processed: originalText, replacements: [] };
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
       }
 
       let content;
@@ -110,23 +139,38 @@ export class ApiService {
         content = JSON.parse(data.choices[0].message.content);
       } catch (parseError) {
         console.error('解析API响应JSON失败:', parseError);
-        return { original: originalText, processed: originalText, replacements: [] };
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
       }
 
       if (!content || !Array.isArray(content.replacements)) {
-        return { original: originalText, processed: originalText, replacements: [] };
+        return {
+          original: originalText,
+          processed: originalText,
+          replacements: [],
+        };
       }
 
-      const replacementsWithPositions = this.addPositionsToReplacements(originalText, content.replacements);
+      const replacementsWithPositions = this.addPositionsToReplacements(
+        originalText,
+        content.replacements,
+      );
 
       return {
         original: originalText,
         processed: '', // 不再需要
-        replacements: replacementsWithPositions
+        replacements: replacementsWithPositions,
       };
     } catch (error) {
       console.error('提取替换信息失败:', error);
-      return { original: originalText, processed: originalText, replacements: [] };
+      return {
+        original: originalText,
+        processed: originalText,
+        replacements: [],
+      };
     }
   }
 
@@ -136,7 +180,10 @@ export class ApiService {
    * @param replacements 从API获取的替换项
    * @returns 带位置信息的替换项数组
    */
-  private addPositionsToReplacements(originalText: string, replacements: Array<{ original: string; translation: string }>): Replacement[] {
+  private addPositionsToReplacements(
+    originalText: string,
+    replacements: Array<{ original: string; translation: string }>,
+  ): Replacement[] {
     const result: Replacement[] = [];
     let lastIndex = 0;
 
@@ -150,9 +197,9 @@ export class ApiService {
           ...rep,
           position: {
             start: index,
-            end: index + rep.original.length
+            end: index + rep.original.length,
           },
-          isNew: true // 默认为生词
+          isNew: true, // 默认为生词
         });
         lastIndex = index + rep.original.length;
       } else {
@@ -163,13 +210,13 @@ export class ApiService {
             ...rep,
             position: {
               start: fallbackIndex,
-              end: fallbackIndex + rep.original.length
+              end: fallbackIndex + rep.original.length,
             },
-            isNew: true
+            isNew: true,
           });
         }
       }
     }
     return result;
   }
-} 
+}

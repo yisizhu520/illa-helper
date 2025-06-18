@@ -38,10 +38,14 @@ export default defineBackground(() => {
           browser.notifications.create(notificationOptions);
         } else {
           // 默认为 page_load 逻辑
-          const { apiKeyNotificationShown } = await browser.storage.session.get('apiKeyNotificationShown');
+          const { apiKeyNotificationShown } = await browser.storage.session.get(
+            'apiKeyNotificationShown',
+          );
           if (!apiKeyNotificationShown) {
             browser.notifications.create(notificationOptions);
-            await browser.storage.session.set({ apiKeyNotificationShown: true });
+            await browser.storage.session.set({
+              apiKeyNotificationShown: true,
+            });
           }
         }
         sendResponse(false);

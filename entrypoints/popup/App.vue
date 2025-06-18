@@ -1,6 +1,13 @@
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue';
-import { UserLevel, TranslationStyle, TriggerMode, TranslationDirection, DEFAULT_SETTINGS, UserSettings } from '@/src/modules/types';
+import {
+  UserLevel,
+  TranslationStyle,
+  TriggerMode,
+  TranslationDirection,
+  DEFAULT_SETTINGS,
+  UserSettings,
+} from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';
 
@@ -27,7 +34,10 @@ const showSavedMessage = () => {
 
 const manualTranslate = async () => {
   try {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const tabs = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
     if (tabs[0]?.id) {
       await browser.tabs.sendMessage(tabs[0].id, { type: 'MANUAL_TRANSLATE' });
     }
@@ -46,7 +56,7 @@ const levelOptions = [
   { value: UserLevel.ELEMENTARY, label: '基础' },
   { value: UserLevel.INTERMEDIATE, label: '中级' },
   { value: UserLevel.ADVANCED, label: '高级' },
-  { value: UserLevel.PROFICIENT, label: '精通' }
+  { value: UserLevel.PROFICIENT, label: '精通' },
 ];
 
 const styleOptions = [
@@ -55,18 +65,18 @@ const styleOptions = [
   { value: TranslationStyle.BOLD, label: '粗体' },
   { value: TranslationStyle.ITALIC, label: '斜体' },
   { value: TranslationStyle.HIGHLIGHTED, label: '高亮' },
-  { value: TranslationStyle.SUBTLE, label: '微妙' }
+  { value: TranslationStyle.SUBTLE, label: '微妙' },
 ];
 
 const triggerOptions = [
   { value: TriggerMode.AUTOMATIC, label: '自动触发' },
-  { value: TriggerMode.MANUAL, label: '手动触发' }
+  { value: TriggerMode.MANUAL, label: '手动触发' },
 ];
 
 const directionOptions = [
   { value: TranslationDirection.AUTO, label: '自动检测网站语言' },
   { value: TranslationDirection.ZH_TO_EN, label: '中译英 (强制)' },
-  { value: TranslationDirection.EN_TO_ZH, label: '英译中 (强制)' }
+  { value: TranslationDirection.EN_TO_ZH, label: '英译中 (强制)' },
 ];
 </script>
 
@@ -75,14 +85,23 @@ const directionOptions = [
     <header>
       <div class="header-content">
         <div class="logo">
-          <img src="/assets/vue.svg" alt="logo" style="width: 24px; height: 24px;" />
+          <img
+            src="/assets/vue.svg"
+            alt="logo"
+            style="width: 24px; height: 24px"
+          />
         </div>
         <div class="title-container">
           <h1>浸入式学语言助手</h1>
           <p>在浏览中轻松学外语</p>
         </div>
       </div>
-      <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn" title="翻译">
+      <button
+        v-if="settings.triggerMode === 'manual'"
+        @click="manualTranslate"
+        class="manual-translate-btn"
+        title="翻译"
+      >
         翻译
       </button>
     </header>
@@ -93,7 +112,11 @@ const directionOptions = [
           <div class="setting-group">
             <label>翻译方向</label>
             <select v-model="settings.translationDirection">
-              <option v-for="option in directionOptions" :key="option.value" :value="option.value">
+              <option
+                v-for="option in directionOptions"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -102,7 +125,11 @@ const directionOptions = [
           <div class="setting-group">
             <label>英语水平</label>
             <select v-model="settings.userLevel">
-              <option v-for="option in levelOptions" :key="option.value" :value="option.value">
+              <option
+                v-for="option in levelOptions"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -111,7 +138,11 @@ const directionOptions = [
           <div class="setting-group">
             <label>翻译样式</label>
             <select v-model="settings.translationStyle">
-              <option v-for="option in styleOptions" :key="option.value" :value="option.value">
+              <option
+                v-for="option in styleOptions"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -120,7 +151,11 @@ const directionOptions = [
           <div class="setting-group">
             <label>触发模式</label>
             <select v-model="settings.triggerMode">
-              <option v-for="option in triggerOptions" :key="option.value" :value="option.value">
+              <option
+                v-for="option in triggerOptions"
+                :key="option.value"
+                :value="option.value"
+              >
                 {{ option.label }}
               </option>
             </select>
@@ -129,17 +164,37 @@ const directionOptions = [
 
         <div class="setting-group">
           <label>段落最大长度: {{ settings.maxLength }}</label>
-          <input type="range" v-model.number="settings.maxLength" min="10" max="1000" step="10">
-          <p class="setting-note">建议值: 80-800。较短的段落能更快获得AI响应。</p>
+          <input
+            type="range"
+            v-model.number="settings.maxLength"
+            min="10"
+            max="1000"
+            step="10"
+          />
+          <p class="setting-note">
+            建议值: 80-800。较短的段落能更快获得AI响应。
+          </p>
         </div>
 
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
             <span>模型 API 设置</span>
-            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
-              fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" />
+            <svg
+              class="toggle-icon"
+              :class="{ 'is-open': showApiSettings }"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9L12 15L18 9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
 
@@ -147,23 +202,43 @@ const directionOptions = [
             <div>
               <div class="sub-setting-group">
                 <label>API 端点</label>
-                <input type="text" v-model="settings.apiConfig.apiEndpoint" placeholder="例如: https://xxxxx/completions">
+                <input
+                  type="text"
+                  v-model="settings.apiConfig.apiEndpoint"
+                  placeholder="例如: https://xxxxx/completions"
+                />
               </div>
               <div class="sub-setting-group">
                 <label>API 密钥</label>
-                <input type="password" v-model="settings.apiConfig.apiKey" placeholder="输入您的 API 密钥">
+                <input
+                  type="password"
+                  v-model="settings.apiConfig.apiKey"
+                  placeholder="输入您的 API 密钥"
+                />
               </div>
 
               <div class="sub-setting-group">
                 <label>模型</label>
-                <input type="text" v-model="settings.apiConfig.model" placeholder="例如: doubao-1-5-lite-32k-250115">
+                <input
+                  type="text"
+                  v-model="settings.apiConfig.model"
+                  placeholder="例如: doubao-1-5-lite-32k-250115"
+                />
               </div>
               <div class="sub-setting-group">
                 <label>温度: {{ settings.apiConfig.temperature }}</label>
-                <input type="range" v-model="settings.apiConfig.temperature" min="0" max="1" step="0.1">
+                <input
+                  type="range"
+                  v-model="settings.apiConfig.temperature"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                />
               </div>
 
-              <p class="setting-note">注意: API 密钥仅保存在本地，不会发送到其他地方</p>
+              <p class="setting-note">
+                注意: API 密钥仅保存在本地，不会发送到其他地方
+              </p>
             </div>
           </div>
         </div>
@@ -198,8 +273,8 @@ const directionOptions = [
   --label-color: #546e7a;
   --border-color: #e0e6ed;
   --shadow-color: rgba(106, 136, 224, 0.1);
-  --success-color: #4CAF50;
-  --green-color: #4CAF50;
+  --success-color: #4caf50;
+  --green-color: #4caf50;
   --input-bg-color: #fdfdff;
   --input-text-color: #37474f;
   --select-option-text-color: #000;
@@ -325,8 +400,8 @@ header p {
 }
 
 select,
-input[type="text"],
-input[type="password"] {
+input[type='text'],
+input[type='password'] {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--border-color);
@@ -334,12 +409,14 @@ input[type="password"] {
   box-sizing: border-box;
   background-color: var(--input-bg-color);
   color: var(--input-text-color);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 select:focus,
-input[type="text"]:focus,
-input[type="password"]:focus {
+input[type='text']:focus,
+input[type='password']:focus {
   outline: none;
   border-color: var(--primary-color);
   box-shadow: 0 0 0 3px rgba(106, 136, 224, 0.2);
@@ -354,7 +431,7 @@ select option {
   margin-left: 12px;
 }
 
-.setting-group.checkbox input[type="checkbox"] {
+.setting-group.checkbox input[type='checkbox'] {
   appearance: none;
   -webkit-appearance: none;
   position: relative;
@@ -366,7 +443,7 @@ select option {
   transition: background-color 0.3s;
 }
 
-.setting-group.checkbox input[type="checkbox"]::before {
+.setting-group.checkbox input[type='checkbox']::before {
   content: '';
   position: absolute;
   top: 2px;
@@ -378,15 +455,15 @@ select option {
   transition: transform 0.3s;
 }
 
-.setting-group.checkbox input[type="checkbox"]:checked {
+.setting-group.checkbox input[type='checkbox']:checked {
   background-color: var(--primary-color);
 }
 
-.setting-group.checkbox input[type="checkbox"]:checked::before {
+.setting-group.checkbox input[type='checkbox']:checked::before {
   transform: translateX(18px);
 }
 
-input[type="range"] {
+input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
@@ -397,7 +474,7 @@ input[type="range"] {
   padding: 0;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 18px;
@@ -409,7 +486,7 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-input[type="range"]::-moz-range-thumb {
+input[type='range']::-moz-range-thumb {
   width: 18px;
   height: 18px;
   background: var(--primary-color);
@@ -425,7 +502,6 @@ input[type="range"]::-moz-range-thumb {
   margin-top: 8px;
   text-align: left;
 }
-
 
 .api-settings {
   padding: 0;
@@ -487,11 +563,10 @@ input[type="range"]::-moz-range-thumb {
   color: var(--label-color);
 }
 
-.advanced-api-content input[type="text"],
-.advanced-api-content input[type="password"] {
+.advanced-api-content input[type='text'],
+.advanced-api-content input[type='password'] {
   background-color: #ffffff;
 }
-
 
 .button-container {
   display: flex;

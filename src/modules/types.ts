@@ -50,13 +50,12 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   phraseEnabled: true,
 };
 
-// From storageManager.ts
 export enum UserLevel {
   BEGINNER = 1,
   ELEMENTARY = 2,
   INTERMEDIATE = 3,
   ADVANCED = 4,
-  PROFICIENT = 5
+  PROFICIENT = 5,
 }
 
 export enum TranslationStyle {
@@ -65,18 +64,18 @@ export enum TranslationStyle {
   BOLD = 'bold',
   ITALIC = 'italic',
   UNDERLINED = 'underlined',
-  HIGHLIGHTED = 'highlighted'
+  HIGHLIGHTED = 'highlighted',
 }
 
 export enum TriggerMode {
   AUTOMATIC = 'automatic',
-  MANUAL = 'manual'
+  MANUAL = 'manual',
 }
 
 export enum TranslationDirection {
   AUTO = 'auto',
   ZH_TO_EN = 'zh-to-en',
-  EN_TO_ZH = 'en-to-zh'
+  EN_TO_ZH = 'en-to-zh',
 }
 
 export interface UserSettings {
@@ -101,4 +100,4 @@ export const DEFAULT_SETTINGS: UserSettings = {
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
   translationDirection: TranslationDirection.AUTO,
-}; 
+};

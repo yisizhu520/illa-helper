@@ -4,15 +4,8 @@
  */
 
 // 翻译文本样式
-export enum TranslationStyle {
-  DEFAULT = 'default',
-  SUBTLE = 'subtle',
-  BOLD = 'bold',
-  ITALIC = 'italic',
-  UNDERLINED = 'underlined',
-  HIGHLIGHTED = 'highlighted',
-}
 
+import { TranslationStyle } from './types';
 // 样式管理器
 export class StyleManager {
   private currentStyle: TranslationStyle;
@@ -118,4 +111,4 @@ export class StyleManager {
 
     document.head.appendChild(styleElement);
   }
-} 
+}

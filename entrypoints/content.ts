@@ -1,11 +1,10 @@
 import { TextProcessor } from '@/src/modules/textProcessor';
-import { StyleManager, TranslationStyle } from '@/src/modules/styleManager';
+import { StyleManager } from '@/src/modules/styleManager';
 import {
   UserSettings,
   TranslationDirection,
   TriggerMode,
   ReplacementConfig,
-  DEFAULT_API_CONFIG
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
@@ -18,7 +17,10 @@ export default defineContentScript({
     const storageManager = new StorageManager();
     const settings = await storageManager.getUserSettings();
 
-    browser.runtime.sendMessage({ type: 'validate-configuration', source: 'page_load' });
+    browser.runtime.sendMessage({
+      type: 'validate-configuration',
+      source: 'page_load',
+    });
 
     if (!settings.isEnabled) {
       return;
@@ -62,7 +64,11 @@ function createReplacementConfig(settings: UserSettings): ReplacementConfig {
 /**
  * 根据最新设置更新所有相关模块的配置
  */
-function updateConfiguration(settings: UserSettings, styleManager: StyleManager, textReplacer: TextReplacer) {
+function updateConfiguration(
+  settings: UserSettings,
+  styleManager: StyleManager,
+  textReplacer: TextReplacer,
+) {
   styleManager.setTranslationStyle(settings.translationStyle);
   textReplacer.setConfig(createReplacementConfig(settings));
 }
@@ -70,14 +76,23 @@ function updateConfiguration(settings: UserSettings, styleManager: StyleManager,
 /**
  * 处理整个页面或其动态加载的部分
  */
-async function processPage(textProcessor: TextProcessor, textReplacer: TextReplacer, maxLength?: number) {
+async function processPage(
+  textProcessor: TextProcessor,
+  textReplacer: TextReplacer,
+  maxLength?: number,
+) {
   await textProcessor.processRoot(document.body, textReplacer, maxLength);
 }
 
 /**
  * 设置所有监听器，包括消息和DOM变化
  */
-function setupListeners(settings: UserSettings, styleManager: StyleManager, textProcessor: TextProcessor, textReplacer: TextReplacer) {
+function setupListeners(
+  settings: UserSettings,
+  styleManager: StyleManager,
+  textProcessor: TextProcessor,
+  textReplacer: TextReplacer,
+) {
   // 监听来自 popup 的消息
   browser.runtime.onMessage.addListener(async (message) => {
     if (message.type === 'settings_updated') {
@@ -85,7 +100,10 @@ function setupListeners(settings: UserSettings, styleManager: StyleManager, text
       const newSettings: UserSettings = message.settings;
 
       // 如果关键模式发生变化，刷新页面
-      if (settings.triggerMode !== newSettings.triggerMode || settings.isEnabled !== newSettings.isEnabled) {
+      if (
+        settings.triggerMode !== newSettings.triggerMode ||
+        settings.isEnabled !== newSettings.isEnabled
+      ) {
         window.location.reload();
         return;
       }
@@ -105,7 +123,7 @@ function setupListeners(settings: UserSettings, styleManager: StyleManager, text
       if (settings.triggerMode === TriggerMode.MANUAL) {
         const isConfigValid = await browser.runtime.sendMessage({
           type: 'validate-configuration',
-          source: 'user_action'
+          source: 'user_action',
         });
         if (isConfigValid) {
           await processPage(textProcessor, textReplacer, settings.maxLength);
@@ -123,7 +141,11 @@ function setupListeners(settings: UserSettings, styleManager: StyleManager, text
 /**
  * 设置 DOM 观察器以处理动态内容
  */
-function setupDomObserver(textProcessor: TextProcessor, textReplacer: TextReplacer, maxLength?: number) {
+function setupDomObserver(
+  textProcessor: TextProcessor,
+  textReplacer: TextReplacer,
+  maxLength?: number,
+) {
   let debounceTimer: number;
   const nodesToProcess = new Set<Node>();
   const observerConfig = {
@@ -133,10 +155,13 @@ function setupDomObserver(textProcessor: TextProcessor, textReplacer: TextReplac
   };
 
   const observer = new MutationObserver((mutations) => {
-    mutations.forEach(mutation => {
+    mutations.forEach((mutation) => {
       if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach(node => nodesToProcess.add(node));
-      } else if (mutation.type === 'characterData' && mutation.target.parentElement) {
+        mutation.addedNodes.forEach((node) => nodesToProcess.add(node));
+      } else if (
+        mutation.type === 'characterData' &&
+        mutation.target.parentElement
+      ) {
         nodesToProcess.add(mutation.target.parentElement);
       }
     });
@@ -146,8 +171,11 @@ function setupDomObserver(textProcessor: TextProcessor, textReplacer: TextReplac
       if (nodesToProcess.size === 0) return;
 
       const topLevelNodes = new Set<Node>();
-      nodesToProcess.forEach(node => {
-        if (document.body.contains(node) && !isDescendant(node, nodesToProcess)) {
+      nodesToProcess.forEach((node) => {
+        if (
+          document.body.contains(node) &&
+          !isDescendant(node, nodesToProcess)
+        ) {
           topLevelNodes.add(node);
         }
       });
@@ -195,5 +223,3 @@ async function detectPageLanguage(): Promise<TranslationDirection> {
     return TranslationDirection.ZH_TO_EN; // 出错时默认
   }
 }
-
-

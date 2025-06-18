@@ -3,7 +3,7 @@
  * 负责管理用户配置的存储
  */
 
-import { UserSettings, DEFAULT_SETTINGS, ApiConfig, TranslationDirection, TriggerMode, TranslationStyle, UserLevel } from './types';
+import { UserSettings, DEFAULT_SETTINGS } from './types';
 
 // 存储管理器
 export class StorageManager {
@@ -13,10 +13,12 @@ export class StorageManager {
    */
   async getUserSettings(): Promise<UserSettings> {
     try {
-      const result = await browser.storage.sync.get(Object.keys(DEFAULT_SETTINGS));
+      const result = await browser.storage.sync.get(
+        Object.keys(DEFAULT_SETTINGS),
+      );
 
       // 处理旧版本的 apiKey 设置
-      let apiConfig = result.apiConfig || { ...DEFAULT_SETTINGS.apiConfig };
+      const apiConfig = result.apiConfig || { ...DEFAULT_SETTINGS.apiConfig };
       if (result.apiKey) {
         apiConfig.apiKey = result.apiKey;
       }
@@ -51,4 +53,4 @@ export class StorageManager {
       console.error('清除所有数据失败:', error);
     }
   }
-} 
+}

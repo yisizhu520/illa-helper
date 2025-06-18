@@ -4,21 +4,28 @@
  */
 
 import { ApiService } from './apiService';
-import { UserSettings, FullTextAnalysisResponse, ReplacementConfig, TranslationStyle, UserLevel, DEFAULT_SETTINGS } from './types';
+import {
+  UserSettings,
+  FullTextAnalysisResponse,
+  ReplacementConfig,
+  TranslationStyle,
+  DEFAULT_SETTINGS,
+} from './types';
 import { StyleManager } from './styleManager';
 
 // 替换结果接口
 export interface ReplacementResult {
-  original: string;                 // 原始文本
-  replaced: string;                 // 替换后的文本
-  replacedWords: Array<{            // 替换的词汇信息
+  original: string; // 原始文本
+  replaced: string; // 替换后的文本
+  replacedWords: Array<{
+    // 替换的词汇信息
     chinese: string;
     english: string;
     position: {
       start: number;
       end: number;
     };
-    isNew: boolean;                 // 是否是生词
+    isNew: boolean; // 是否是生词
   }>;
 }
 
@@ -34,7 +41,9 @@ export class TextReplacer {
     this.apiService = new ApiService();
     this.styleManager = new StyleManager();
     this.cache = new Map<string, FullTextAnalysisResponse>();
-    this.styleManager.setTranslationStyle(this.config.translationStyle || TranslationStyle.DEFAULT);
+    this.styleManager.setTranslationStyle(
+      this.config.translationStyle || TranslationStyle.DEFAULT,
+    );
   }
 
   /**
@@ -64,7 +73,7 @@ export class TextReplacer {
       return {
         original: text,
         processed: text,
-        replacements: []
+        replacements: [],
       };
     }
 
@@ -83,7 +92,10 @@ export class TextReplacer {
       };
 
       // 使用 API 获取翻译和替换信息
-      const apiResult = await this.apiService.analyzeFullText(text, settingsForApi);
+      const apiResult = await this.apiService.analyzeFullText(
+        text,
+        settingsForApi,
+      );
 
       // 存入缓存
       this.cache.set(text, apiResult);
@@ -94,8 +106,8 @@ export class TextReplacer {
       return {
         original: text,
         processed: text,
-        replacements: []
+        replacements: [],
       };
     }
   }
-} 
+}
