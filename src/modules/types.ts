@@ -101,5 +101,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
   translationDirection: 'auto',
-  originalWordDisplayMode: OriginalWordDisplayMode.LEARNING,
+  originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,
 };
