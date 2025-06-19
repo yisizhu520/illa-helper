@@ -65,6 +65,7 @@ export enum TranslationStyle {
   ITALIC = 'italic',
   UNDERLINED = 'underlined',
   HIGHLIGHTED = 'highlighted',
+  LEARNING = 'learning',
 }
 
 export enum TriggerMode {
@@ -78,6 +79,12 @@ export enum TranslationDirection {
   EN_TO_ZH = 'en-to-zh',
 }
 
+export enum OriginalWordDisplayMode {
+  VISIBLE,
+  LEARNING,
+  HIDDEN,
+}
+
 export interface UserSettings {
   userLevel: UserLevel;
   replacementRate: number;
@@ -88,6 +95,7 @@ export interface UserSettings {
   triggerMode: TriggerMode;
   maxLength?: number;
   translationDirection: TranslationDirection;
+  originalWordDisplayMode: OriginalWordDisplayMode;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -100,4 +108,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
   translationDirection: TranslationDirection.AUTO,
+  originalWordDisplayMode: OriginalWordDisplayMode.LEARNING,
 };

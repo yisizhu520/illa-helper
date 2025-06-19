@@ -1,3 +1,4 @@
+import { OriginalWordDisplayMode } from './types';
 /**
  * 文本处理模块
  * 负责遍历DOM，提取文本节点，并进行处理
@@ -77,6 +78,14 @@ export class TextProcessor {
         animation: wxt-glow-animation 0.8s ease-out;
         border-radius: 3px;
       }
+      .wxt-original-word--learning {
+        filter: blur(5px);
+        cursor: pointer;
+        transition: filter 0.2s ease-in-out;
+      }
+      .wxt-original-word--learning:hover {
+        filter: blur(0);
+      }
       @keyframes wxt-processing-animation {
         0% {
           background-color: rgba(106, 136, 224, 0.1);
@@ -104,6 +113,7 @@ export class TextProcessor {
   public async processRoot(
     root: Node,
     textReplacer: any,
+    originalWordDisplayMode: OriginalWordDisplayMode,
     maxLength: number = 400,
   ): Promise<void> {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
@@ -137,7 +147,11 @@ export class TextProcessor {
       this.buildGroupsFromBlock(blockElement as Element, textGroups, maxLength);
 
       for (const group of textGroups) {
-        await this.processTextGroup(group, textReplacer);
+        await this.processTextGroup(
+          group,
+          textReplacer,
+          originalWordDisplayMode,
+        );
       }
     }
   }
@@ -205,6 +219,7 @@ export class TextProcessor {
   public async processTextGroup(
     textGroup: { nodes: Text[]; combinedText: string; container: Element },
     textReplacer: any,
+    originalWordDisplayMode: OriginalWordDisplayMode,
   ): Promise<void> {
     // 关键修复：立即标记，防止重复处理
     textGroup.container.setAttribute('data-wxt-processed', 'true');
@@ -227,6 +242,7 @@ export class TextProcessor {
           textGroup,
           result.replacements,
           textReplacer.styleManager,
+          originalWordDisplayMode,
         );
       }
     } catch (error) {
@@ -236,6 +252,7 @@ export class TextProcessor {
           textGroup,
           result.replacements,
           textReplacer.styleManager,
+          originalWordDisplayMode,
         );
       }
     } finally {
@@ -248,6 +265,7 @@ export class TextProcessor {
     textGroup: { nodes: Text[]; combinedText: string; container: Element },
     replacements: any[],
     styleManager: any,
+    originalWordDisplayMode: OriginalWordDisplayMode,
   ): void {
     const { nodes } = textGroup;
     for (let i = replacements.length - 1; i >= 0; i--) {
@@ -269,8 +287,18 @@ export class TextProcessor {
 
         range.surroundContents(originalWordWrapper);
         originalWordWrapper.after(translationSpan);
-        originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
+
+        switch (originalWordDisplayMode) {
+          case OriginalWordDisplayMode.HIDDEN:
+            originalWordWrapper.style.display = 'none';
+            break;
+          case OriginalWordDisplayMode.LEARNING:
+            originalWordWrapper.classList.add('wxt-original-word--learning');
+            break;
+        }
+
         this.glow(translationSpan);
+        originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
       }
     }
   }
@@ -283,40 +311,17 @@ export class TextProcessor {
     textGroup: { nodes: Text[]; combinedText: string; container: Element },
     replacements: any[],
     styleManager: any,
+    originalWordDisplayMode: OriginalWordDisplayMode,
   ): void {
-    let charCount = 0;
-    for (const node of textGroup.nodes) {
-      const nodeLength = node.textContent?.length || 0;
-      const nodeStart = charCount;
-      const nodeEnd = charCount + nodeLength;
-
-      const nodeReplacements = replacements
-        .filter((rep) => {
-          if (!rep.position) return false;
-          const { start, end } = rep.position;
-          return start < nodeEnd && end > nodeStart;
-        })
-        .map((rep) => {
-          const { start, end } = rep.position;
-          return {
-            ...rep,
-            position: {
-              start: Math.max(0, start - nodeStart),
-              end: Math.min(nodeLength, end - nodeStart),
-            },
-          };
-        });
-
-      if (nodeReplacements.length > 0) {
-        this.applyReplacementsToSingleNode(
-          node,
-          nodeReplacements,
-          styleManager,
-        );
-      }
-
-      charCount = nodeEnd;
-    }
+    // 尝试更稳健的单节点替换
+    textGroup.nodes.forEach((node) => {
+      this.applyReplacementsToSingleNode(
+        node,
+        replacements,
+        styleManager,
+        originalWordDisplayMode,
+      );
+    });
   }
 
   private findRangeForReplacement(
@@ -361,6 +366,7 @@ export class TextProcessor {
     node: Text,
     replacements: any[],
     styleManager: any,
+    originalWordDisplayMode: OriginalWordDisplayMode,
   ): void {
     const parent = node.parentElement;
     if (!parent) return;
@@ -386,6 +392,15 @@ export class TextProcessor {
         const translationSpan = document.createElement('span');
         translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
         translationSpan.textContent = ` (${rep.translation})`;
+
+        switch (originalWordDisplayMode) {
+          case OriginalWordDisplayMode.HIDDEN:
+            originalWordWrapper.style.display = 'none';
+            break;
+          case OriginalWordDisplayMode.LEARNING:
+            originalWordWrapper.classList.add('wxt-original-word--learning');
+            break;
+        }
 
         fragment.appendChild(originalWordWrapper);
         fragment.appendChild(translationSpan);

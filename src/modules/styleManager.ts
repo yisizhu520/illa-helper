@@ -30,6 +30,9 @@ export class StyleManager {
    * @returns 样式类名
    */
   getCurrentStyleClass(): string {
+    if (this.currentStyle === TranslationStyle.LEARNING) {
+      return 'wxt-translation-term--learning';
+    }
     return `wxt-style-${this.currentStyle}`;
   }
 
@@ -106,6 +109,16 @@ export class StyleManager {
         background-color: #ffeb3b;
         padding: 0 2px;
         border-radius: 2px;
+      }
+
+      /* 学习模式样式 */
+      .wxt-translation-term--learning {
+        filter: blur(5px);
+        cursor: pointer;
+        transition: filter 0.2s ease-in-out;
+      }
+      .wxt-translation-term--learning:hover {
+        filter: blur(0);
       }
     `;
 

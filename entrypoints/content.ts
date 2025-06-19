@@ -5,6 +5,7 @@ import {
   TranslationDirection,
   TriggerMode,
   ReplacementConfig,
+  OriginalWordDisplayMode,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
@@ -41,7 +42,7 @@ export default defineContentScript({
 
     // --- 根据触发模式执行操作 ---
     if (settings.triggerMode === TriggerMode.AUTOMATIC) {
-      await processPage(textProcessor, textReplacer, settings.maxLength);
+      await processPage(textProcessor, textReplacer, settings.originalWordDisplayMode, settings.maxLength);
     }
 
     // --- 监听消息和DOM变化 ---
@@ -79,9 +80,15 @@ function updateConfiguration(
 async function processPage(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
+  originalWordDisplayMode: OriginalWordDisplayMode,
   maxLength?: number,
 ) {
-  await textProcessor.processRoot(document.body, textReplacer, maxLength);
+  await textProcessor.processRoot(
+    document.body,
+    textReplacer,
+    originalWordDisplayMode,
+    maxLength,
+  );
 }
 
 /**
@@ -126,7 +133,12 @@ function setupListeners(
           source: 'user_action',
         });
         if (isConfigValid) {
-          await processPage(textProcessor, textReplacer, settings.maxLength);
+          await processPage(
+            textProcessor,
+            textReplacer,
+            settings.originalWordDisplayMode,
+            settings.maxLength,
+          );
         }
       }
     }
@@ -134,7 +146,12 @@ function setupListeners(
 
   // 仅在自动模式下观察DOM变化
   if (settings.triggerMode === TriggerMode.AUTOMATIC) {
-    setupDomObserver(textProcessor, textReplacer, settings.maxLength);
+    setupDomObserver(
+      textProcessor,
+      textReplacer,
+      settings.originalWordDisplayMode,
+      settings.maxLength,
+    );
   }
 }
 
@@ -144,6 +161,7 @@ function setupListeners(
 function setupDomObserver(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
+  originalWordDisplayMode: OriginalWordDisplayMode,
   maxLength?: number,
 ) {
   let debounceTimer: number;
@@ -182,7 +200,12 @@ function setupDomObserver(
 
       observer.disconnect();
       for (const node of topLevelNodes) {
-        await textProcessor.processRoot(node, textReplacer, maxLength);
+        await textProcessor.processRoot(
+          node,
+          textReplacer,
+          originalWordDisplayMode,
+          maxLength,
+        );
       }
       nodesToProcess.clear();
       observer.observe(document.body, observerConfig);
