@@ -73,6 +73,7 @@ export class ApiService {
       const systemPrompt = getSystemPrompt(
         settings.translationDirection,
         settings.userLevel,
+        settings.replacementRate,
       );
 
       const requestBody = {

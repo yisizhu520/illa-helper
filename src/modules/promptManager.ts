@@ -4,11 +4,13 @@ import { TranslationDirection, UserLevel } from './types';
  * 根据用户的设置，动态生成最优的系统提示词
  * @param direction 翻译方向 (中译英 / 英译中)
  * @param level 用户的英语水平
+ * @param replacementRate 替换比例
  * @returns 优化后的系统提示词字符串
  */
 export function getSystemPrompt(
   direction: TranslationDirection,
   level: UserLevel,
+  replacementRate: number,
 ): string {
   // 基础指令：定义了AI的核心角色和任务
   const baseInstruction =
@@ -34,5 +36,13 @@ Example for en-to-zh: {"replacements": [{"original": "Hello", "translation": "�
   // 根据用户水平调整难度
   const difficultyAdjustment = `The user's English proficiency is at the ${UserLevel[level]} level. Please adjust the difficulty and frequency of the selected words accordingly.`;
 
-  return `${baseInstruction}\n\n${taskInstruction}\n\n${difficultyAdjustment}\n\n${responseFormat}`;
+  // 根据替换比例调整
+  const rateAdjustment =
+    replacementRate > 0 && replacementRate <= 1
+      ? `This is a strict rule: you must translate a portion of the text that corresponds to ${Math.round(
+          replacementRate * 100,
+        )}% of the total character count. First, identify all words/phrases suitable for the user's level. Then, from that list, select a subset for translation ensuring the total character length of the *original* words/phrases is as close as possible to the target percentage. For example, for a 1000-character text and a 10% rate, the total length of the words you choose to translate should be very close to 100 characters.`
+      : '';
+
+  return `${baseInstruction}\n\n${taskInstruction}\n\n${difficultyAdjustment}\n\n${rateAdjustment}\n\n${responseFormat}`;
 }

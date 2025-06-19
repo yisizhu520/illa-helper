@@ -160,20 +160,31 @@ const directionOptions = [
               </option>
             </select>
           </div>
-        </div>
-
-        <div class="setting-group">
-          <label>段落最大长度: {{ settings.maxLength }}</label>
-          <input
-            type="range"
-            v-model.number="settings.maxLength"
-            min="10"
-            max="1000"
-            step="10"
-          />
-          <p class="setting-note">
-            建议值: 80-800。较短的段落能更快获得AI响应。
-          </p>
+          <div class="setting-group">
+            <label>
+              替换比例: {{ Math.round(settings.replacementRate * 100) }}%
+            </label>
+            <input
+              type="range"
+              v-model.number="settings.replacementRate"
+              min="0.01"
+              max="1"
+              step="0.01"
+            />
+          </div>
+          <div class="setting-group">
+            <label>段落最大长度: {{ settings.maxLength }}</label>
+            <input
+              type="range"
+              v-model.number="settings.maxLength"
+              min="10"
+              max="1000"
+              step="10"
+            />
+            <p class="setting-note">
+              建议值: 80-800。较短的段落能更快获得AI响应。
+            </p>
+          </div>
         </div>
 
         <div class="setting-group api-settings">
