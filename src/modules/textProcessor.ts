@@ -77,6 +77,22 @@ export class TextProcessor {
         animation: wxt-glow-animation 0.8s ease-out;
         border-radius: 3px;
       }
+      @keyframes wxt-processing-animation {
+        0% {
+          background-color: rgba(106, 136, 224, 0.1);
+        }
+        50% {
+          background-color: rgba(106, 136, 224, 0.3);
+        }
+        100% {
+          background-color: rgba(106, 136, 224, 0.1);
+        }
+      }
+      .wxt-processing {
+        animation: wxt-processing-animation 2s infinite ease-in-out;
+        border-radius: 3px;
+        transition: background-color 0.3s ease-out;
+      }
     `;
     document.head.appendChild(style);
     (window as any).wxtGlowStyleInjected = true;
@@ -194,7 +210,17 @@ export class TextProcessor {
     textGroup.container.setAttribute('data-wxt-processed', 'true');
     let result: any = null;
 
+    // 获取当前文本组所有不重复的直接父元素，以实现更小粒度的视觉反馈
+    const parentElements = [
+      ...new Set(
+        textGroup.nodes.map((node) => node.parentElement).filter(Boolean),
+      ),
+    ] as HTMLElement[];
+
     try {
+      // 对所有父元素应用处理中样式
+      parentElements.forEach((el) => el.classList.add('wxt-processing'));
+
       result = await textReplacer.replaceText(textGroup.combinedText);
       if (result && result.replacements && result.replacements.length > 0) {
         this.applyReplacements(
@@ -212,6 +238,9 @@ export class TextProcessor {
           textReplacer.styleManager,
         );
       }
+    } finally {
+      // 确保从所有父元素上移除处理中样式
+      parentElements.forEach((el) => el.classList.remove('wxt-processing'));
     }
   }
 
@@ -333,55 +362,54 @@ export class TextProcessor {
     replacements: any[],
     styleManager: any,
   ): void {
-    let currentNode = node;
-    // 从后往前处理，这样索引不会因文本节点分裂而失效
-    for (let i = replacements.length - 1; i >= 0; i--) {
-      const rep = replacements[i];
-      if (!rep.position) continue;
-      const { start, end } = rep.position;
-      if (currentNode.length < end) continue;
+    const parent = node.parentElement;
+    if (!parent) return;
 
-      // 分裂文本节点以隔离出要替换的部分
-      currentNode.splitText(end);
-      const targetNode = currentNode.splitText(start);
+    let lastIndex = 0;
+    const fragment = document.createDocumentFragment();
 
-      const originalWordWrapper = document.createElement('span');
-      originalWordWrapper.className = 'wxt-original-word';
-      originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
-      originalWordWrapper.textContent = targetNode.textContent;
+    replacements.forEach((rep) => {
+      const index = node.textContent!.indexOf(rep.original, lastIndex);
+      if (index > -1) {
+        if (index > lastIndex) {
+          fragment.appendChild(
+            document.createTextNode(
+              node.textContent!.substring(lastIndex, index),
+            ),
+          );
+        }
 
-      const translationSpan = document.createElement('span');
-      translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
-      translationSpan.textContent = ` (${rep.translation})`;
+        const originalWordWrapper = document.createElement('span');
+        originalWordWrapper.className = 'wxt-original-word';
+        originalWordWrapper.textContent = rep.original;
 
-      const parent = targetNode.parentNode;
-      if (parent) {
-        // 用包裹元素替换原始文本节点
-        parent.replaceChild(originalWordWrapper, targetNode);
-        // 在包裹元素后面插入翻译
-        originalWordWrapper.after(translationSpan);
+        const translationSpan = document.createElement('span');
+        translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
+        translationSpan.textContent = ` (${rep.translation})`;
+
+        fragment.appendChild(originalWordWrapper);
+        fragment.appendChild(translationSpan);
+
+        lastIndex = index + rep.original.length;
         this.glow(translationSpan);
       }
+    });
 
-      // 更新 currentNode 以便下一次迭代
-      const previousSibling = originalWordWrapper.previousSibling;
-      if (previousSibling && previousSibling.nodeType === Node.TEXT_NODE) {
-        currentNode = previousSibling as Text;
-      } else {
-        break; // 如果前面没有文本节点了，就跳出循环
-      }
+    if (lastIndex < node.textContent!.length) {
+      fragment.appendChild(
+        document.createTextNode(node.textContent!.substring(lastIndex)),
+      );
     }
+
+    parent.replaceChild(fragment, node);
   }
 
   private glow(element: Element | null | undefined): void {
-    if (!element) return;
-    element.classList.add('wxt-glow');
-    element.addEventListener(
-      'animationend',
-      () => {
+    if (element) {
+      element.classList.add('wxt-glow');
+      setTimeout(() => {
         element.classList.remove('wxt-glow');
-      },
-      { once: true },
-    );
+      }, 800); // 匹配动画时间
+    }
   }
 }
