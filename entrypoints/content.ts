@@ -41,7 +41,12 @@ export default defineContentScript({
 
     // --- 根据触发模式执行操作 ---
     if (settings.triggerMode === TriggerMode.AUTOMATIC) {
-      await processPage(textProcessor, textReplacer, settings.originalWordDisplayMode, settings.maxLength);
+      await processPage(
+        textProcessor,
+        textReplacer,
+        settings.originalWordDisplayMode,
+        settings.maxLength,
+      );
     }
 
     // --- 监听消息和DOM变化 ---

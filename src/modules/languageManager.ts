@@ -13,7 +13,7 @@ export const LANGUAGES: { [key: string]: Language } = {
   de: { code: 'de', name: 'German', nativeName: '德语' },
   es: { code: 'es', name: 'Spanish', nativeName: '西班牙语' },
   ru: { code: 'ru', name: 'Russian', nativeName: '俄语' },
-  hi: { code: 'hi', name: 'Hindi', nativeName: '印地语' }
+  hi: { code: 'hi', name: 'Hindi', nativeName: '印地语' },
 };
 
 export function getTranslationDirectionOptions() {
