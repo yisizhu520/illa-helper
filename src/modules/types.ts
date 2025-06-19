@@ -30,7 +30,6 @@ export interface ApiConfig {
   phraseEnabled?: boolean;
 }
 
-// This interface is now closely aligned with UserSettings, consider merging or simplifying in future.
 export interface ReplacementConfig {
   userLevel: UserLevel;
   replacementRate: number;
@@ -38,7 +37,7 @@ export interface ReplacementConfig {
   apiConfig: ApiConfig;
   inlineTranslation: boolean;
   translationStyle: TranslationStyle;
-  translationDirection: TranslationDirection;
+  translationDirection: string;
 }
 
 export const DEFAULT_API_CONFIG: ApiConfig = {
@@ -73,12 +72,6 @@ export enum TriggerMode {
   MANUAL = 'manual',
 }
 
-export enum TranslationDirection {
-  AUTO = 'auto',
-  ZH_TO_EN = 'zh-to-en',
-  EN_TO_ZH = 'en-to-zh',
-}
-
 export enum OriginalWordDisplayMode {
   VISIBLE,
   LEARNING,
@@ -94,7 +87,7 @@ export interface UserSettings {
   translationStyle: TranslationStyle;
   triggerMode: TriggerMode;
   maxLength?: number;
-  translationDirection: TranslationDirection;
+  translationDirection: string;
   originalWordDisplayMode: OriginalWordDisplayMode;
 }
 
@@ -107,6 +100,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   translationStyle: TranslationStyle.DEFAULT,
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
-  translationDirection: TranslationDirection.AUTO,
+  translationDirection: 'auto',
   originalWordDisplayMode: OriginalWordDisplayMode.LEARNING,
 };

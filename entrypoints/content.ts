@@ -2,7 +2,6 @@ import { TextProcessor } from '@/src/modules/textProcessor';
 import { StyleManager } from '@/src/modules/styleManager';
 import {
   UserSettings,
-  TranslationDirection,
   TriggerMode,
   ReplacementConfig,
   OriginalWordDisplayMode,
@@ -28,7 +27,7 @@ export default defineContentScript({
     }
 
     // --- 语言检测 ---
-    if (settings.translationDirection === TranslationDirection.AUTO) {
+    if (settings.translationDirection === 'auto') {
       settings.translationDirection = await detectPageLanguage();
     }
 
@@ -230,19 +229,19 @@ function isDescendant(node: Node, nodeSet: Set<Node>): boolean {
 /**
  * 使用 browser.i18n.detectLanguage API 自动检测页面主要语言
  */
-async function detectPageLanguage(): Promise<TranslationDirection> {
+async function detectPageLanguage(): Promise<string> {
   try {
     const textSample = document.body.innerText.substring(0, 1000);
-    if (!textSample.trim()) return TranslationDirection.ZH_TO_EN;
+    if (!textSample.trim()) return 'zh-to-en';
 
     const result = await browser.i18n.detectLanguage(textSample);
 
     if (result?.languages?.[0]?.language === 'en') {
-      return TranslationDirection.EN_TO_ZH;
+      return 'en-to-zh';
     }
-    return TranslationDirection.ZH_TO_EN;
+    return 'zh-to-en';
   } catch (error) {
     console.error('语言检测失败:', error);
-    return TranslationDirection.ZH_TO_EN; // 出错时默认
+    return 'zh-to-en'; // 出错时默认
   }
 }

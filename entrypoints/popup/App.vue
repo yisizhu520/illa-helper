@@ -1,16 +1,16 @@
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import {
   UserLevel,
   TranslationStyle,
   TriggerMode,
-  TranslationDirection,
   DEFAULT_SETTINGS,
   UserSettings,
   OriginalWordDisplayMode,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';
+import { getTranslationDirectionOptions } from '@/src/modules/languageManager';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 onMounted(async () => {
@@ -87,11 +87,7 @@ const triggerOptions = [
   { value: TriggerMode.MANUAL, label: '手动触发' },
 ];
 
-const directionOptions = [
-  { value: TranslationDirection.AUTO, label: '自动检测网站语言' },
-  { value: TranslationDirection.ZH_TO_EN, label: '中译英 (强制)' },
-  { value: TranslationDirection.EN_TO_ZH, label: '英译中 (强制)' },
-];
+const directionOptions = computed(() => getTranslationDirectionOptions());
 
 const originalWordDisplayOptions = [
   { value: OriginalWordDisplayMode.VISIBLE, label: '显示' },
