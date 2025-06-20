@@ -13,16 +13,10 @@ export * from './config';
 // 类型定义
 export * from './types';
 
-// 提供者 (避免类型重复导出)
-export {
-  IPhoneticProvider,
-  DictionaryApiProvider,
-  PhoneticProviderFactory,
-  ITTSProvider,
-  WebSpeechTTSProvider,
-  YoudaoTTSProvider,
-  TTSProviderFactory,
-} from './providers';
+// 提供者 (按功能模块导出)
+export * from './phonetic';
+export * from './tts';
+export * from './translation';
 
 // 工具类
 export * from './utils';

@@ -19,9 +19,9 @@
  * @version 2.0.0
  */
 
-import { IPhoneticProvider } from '../interfaces/IPhoneticProvider';
+import { IPhoneticProvider } from './IPhoneticProvider';
 import { DictionaryApiProvider } from './DictionaryApiProvider';
-import { AITranslationProvider } from './AITranslationProvider';
+import { AITranslationProvider } from '../translation/AITranslationProvider';
 import { ApiConfig } from '../../types';
 
 export class PhoneticProviderFactory {

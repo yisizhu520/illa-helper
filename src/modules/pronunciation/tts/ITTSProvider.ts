@@ -3,6 +3,8 @@
  * 定义统一的文本转语音服务规范
  */
 
+import { TTSResult } from '../types';
+
 export interface TTSProviderConfig {
   // Web Speech API配置
   lang?: string;
@@ -15,10 +17,7 @@ export interface TTSProviderConfig {
   accent?: 'us' | 'uk'; // 美式或英式发音
 }
 
-export interface TTSResult {
-  success: boolean;
-  error?: string;
-}
+
 
 export interface ITTSProvider {
   readonly name: string;

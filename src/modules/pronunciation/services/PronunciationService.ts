@@ -3,11 +3,9 @@
  * 协调音标获取和朗读功能，作为对外的统一接口
  */
 
-import { IPhoneticProvider } from '../interfaces/IPhoneticProvider';
-import { PhoneticProviderFactory } from '../providers/PhoneticProviderFactory';
-import { ITTSProvider } from '../interfaces/ITTSProvider';
-import { TTSProviderFactory } from '../providers/TTSProviderFactory';
-import { AITranslationProvider } from '../providers/AITranslationProvider';
+import { IPhoneticProvider, PhoneticProviderFactory } from '../phonetic';
+import { ITTSProvider, TTSProviderFactory } from '../tts';
+import { AITranslationProvider } from '../translation';
 import { TooltipRenderer } from '../ui/TooltipRenderer';
 import {
   PhoneticResult,

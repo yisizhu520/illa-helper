@@ -16,7 +16,7 @@
  * @version 1.0.0
  */
 
-import { IPhoneticProvider } from '../interfaces/IPhoneticProvider';
+import { IPhoneticProvider } from '../phonetic/IPhoneticProvider';
 import {
     PhoneticResult,
     PhoneticInfo,
