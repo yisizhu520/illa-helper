@@ -3,7 +3,7 @@
  * 实现策略模式，支持多种音标API
  */
 
-import { PhoneticResult } from '../types/pronunciationTypes';
+import { PhoneticResult } from '../types';
 
 export interface IPhoneticProvider {
   /**

@@ -11,7 +11,7 @@ import {
   MeaningEntry,
   DefinitionEntry,
   CacheEntry,
-} from '../types/pronunciationTypes';
+} from '../types';
 
 export class DictionaryApiProvider implements IPhoneticProvider {
   readonly name = 'dictionary-api';

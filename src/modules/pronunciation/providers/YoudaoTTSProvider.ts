@@ -34,8 +34,10 @@ export class YoudaoTTSProvider implements ITTSProvider {
       const accent = finalConfig.accent || 'us';
 
       // 构建有道词典语音URL
-      const type = accent === 'us' ? 1 : 2; // 1=美式, 2=英式
+      const type = accent === 'us' ? 2 : 1; // 1=英式, 2=美式
       const audioUrl = `https://dict.youdao.com/dictvoice?type=${type}&audio=${encodeURIComponent(text)}`;
+
+      console.log(`[DEBUG] 有道TTS URL: ${audioUrl}, accent: ${accent}, type: ${type}`);
 
       // 创建音频元素
       const audio = new Audio(audioUrl);
@@ -169,7 +171,7 @@ export class YoudaoTTSProvider implements ITTSProvider {
    */
   async preloadAudio(text: string, accent: 'us' | 'uk' = 'us'): Promise<boolean> {
     try {
-      const type = accent === 'us' ? 1 : 2;
+      const type = accent === 'us' ? 2 : 1;
       const audioUrl = `https://dict.youdao.com/dictvoice?type=${type}&audio=${encodeURIComponent(text)}`;
 
       const audio = new Audio(audioUrl);

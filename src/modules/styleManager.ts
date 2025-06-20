@@ -201,17 +201,21 @@ export class StyleManager {
       }
 
       .wxt-tooltip-card {
-        background: #2a2a2c;
+        background: linear-gradient(145deg, #2c2c2e 0%, #1c1c1e 100%);
         border: 1px solid #48484a;
-        border-radius: 12px;
-        box-shadow: 0 15px 35px -8px rgba(0, 0, 0, 0.3);
+        border-radius: 16px;
+        box-shadow:
+          0 20px 40px -12px rgba(0, 0, 0, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.05),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
         padding: 0;
-        min-width: 240px;
-        max-width: 320px;
+        min-width: 260px;
+        max-width: 340px;
         color: white;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(20px);
       }
 
       .wxt-tooltip-card::before {
@@ -225,13 +229,12 @@ export class StyleManager {
       }
 
       .wxt-tooltip-header {
-        background: linear-gradient(135deg, #3a3a3c 0%, #2a2a2c 100%);
-        padding: 16px 16px 12px 16px;
-        border-bottom: 1px solid #48484a;
+        background: linear-gradient(135deg, rgba(58, 58, 60, 0.8) 0%, rgba(42, 42, 44, 0.9) 100%);
+        padding: 20px 20px 16px 20px;
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 12px;
+        gap: 16px;
         position: relative;
       }
 
@@ -251,70 +254,56 @@ export class StyleManager {
       }
 
       .wxt-word-main {
-        font-size:  18px;
-        font-weight: 600;
+        font-size: 22px;
+        font-weight: 700;
         color: #ffffff;
-        margin-bottom: 4px;
+        margin-bottom: 0;
         word-break: break-word;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
         line-height: 1.2;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .wxt-phonetic-row {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .wxt-phonetic-text {
         font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
-        font-size: 14px;
-        color: #34d399;
+        font-size: 15px;
+        color: #64ffda;
         font-style: normal;
-        font-weight: 500;
-        background: rgba(52, 211, 153, 0.12);
-        padding: 4px 8px;
-        border-radius: 6px;
-        display: inline-block;
-        border: 1px solid rgba(52, 211, 153, 0.24);
-        letter-spacing: 0.02em;
-      }
-
-      .wxt-tooltip-body {
-        padding: 12px 16px 10px 16px;
-        background: #2a2a2c;
-      }
-
-      .wxt-part-of-speech {
-        display: inline-block;
-        background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
-        color: #ffffff;
-        padding: 4px 10px;
-        border-radius: 16px;
-        font-size: 11px;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 8px;
-        box-shadow: 0 2px 6px rgba(0, 122, 255, 0.25);
+        background: linear-gradient(135deg, rgba(100, 255, 218, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%);
+        padding: 6px 12px;
+        border-radius: 8px;
+        display: inline-block;
+        border: 1px solid rgba(100, 255, 218, 0.3);
+        letter-spacing: 0.03em;
+        box-shadow: 0 2px 8px rgba(100, 255, 218, 0.15);
       }
 
-      .wxt-definition {
-        font-size: 13px;
-        line-height: 1.5;
-        color: #e5e5e7;
-        margin: 0;
-        font-weight: 400;
-      }
+
 
       .wxt-audio-btn {
-        background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+        background: linear-gradient(135deg, #64ffda 0%, #1de9b6 100%);
         border: none;
-        border-radius: 10px;
-        width: 36px;
-        height: 36px;
+        border-radius: 12px;
+        width: 42px;
+        height: 42px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        color: #ffffff;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        color: #000000;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         flex-shrink: 0;
-        box-shadow: 0 3px 10px rgba(52, 211, 153, 0.3);
+        box-shadow:
+          0 4px 12px rgba(100, 255, 218, 0.4),
+          0 0 0 1px rgba(255, 255, 255, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
         position: relative;
         overflow: hidden;
       }
@@ -332,8 +321,11 @@ export class StyleManager {
       }
 
       .wxt-audio-btn:hover {
-        transform: translateY(-1px) scale(1.05);
-        box-shadow: 0 6px 18px rgba(52, 211, 153, 0.4);
+        transform: translateY(-2px) scale(1.08);
+        box-shadow:
+          0 8px 20px rgba(100, 255, 218, 0.5),
+          0 0 0 1px rgba(255, 255, 255, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.3);
       }
 
       .wxt-audio-btn:hover::before {
@@ -341,8 +333,11 @@ export class StyleManager {
       }
 
       .wxt-audio-btn:active {
-        transform: translateY(0) scale(0.98);
-        box-shadow: 0 2px 6px rgba(52, 211, 153, 0.25);
+        transform: translateY(-1px) scale(1.02);
+        box-shadow:
+          0 4px 12px rgba(100, 255, 218, 0.3),
+          0 0 0 1px rgba(255, 255, 255, 0.1),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
       }
 
       .wxt-audio-btn svg {
@@ -439,17 +434,21 @@ export class StyleManager {
       }
 
       .wxt-word-tooltip-card {
-        background: #2a2a2c;
+        background: linear-gradient(145deg, #2c2c2e 0%, #1c1c1e 100%);
         border: 1px solid #48484a;
-        border-radius: 10px;
-        padding: 10px 12px;
+        border-radius: 12px;
+        padding: 14px 16px;
         color: white;
-        font-size: 12px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-        max-width: 200px;
+        font-size: 13px;
+        box-shadow:
+          0 12px 30px rgba(0, 0, 0, 0.3),
+          0 0 0 1px rgba(255, 255, 255, 0.05),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        max-width: 220px;
         font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(15px);
       }
 
       .wxt-word-tooltip-card::before {
@@ -464,32 +463,80 @@ export class StyleManager {
 
       .wxt-word-tooltip-header {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .wxt-word-tooltip-header .wxt-word-info {
+        flex: 1;
+        min-width: 0;
       }
 
       .wxt-word-tooltip-header .wxt-word-main {
-        font-weight: 600;
-        font-size: 14px;
+        font-weight: 700;
+        font-size: 16px;
         color: #ffffff;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
+        margin-bottom: 0;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+
+      .wxt-word-tooltip-header .wxt-phonetic-row {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+            .wxt-phonetic-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
       }
 
       .wxt-word-tooltip-header .wxt-phonetic-text {
-        font-size: 12px;
-        color: #34d399;
+        font-size: 14px;
+        color: #64ffda;
         font-style: normal;
-        font-weight: 500;
-        background: rgba(52, 211, 153, 0.12);
-        padding: 3px 6px;
+        font-weight: 600;
+        background: linear-gradient(135deg, rgba(100, 255, 218, 0.12) 0%, rgba(52, 211, 153, 0.12) 100%);
+        padding: 6px 10px;
         border-radius: 6px;
-        border: 1px solid rgba(52, 211, 153, 0.2);
+        border: 1px solid rgba(100, 255, 218, 0.25);
         font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        letter-spacing: 0.02em;
+        box-shadow: 0 1px 3px rgba(100, 255, 218, 0.1);
+        text-align: center;
+        margin-bottom: 4px;
       }
 
-      .wxt-word-audio-btn {
-        background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+      .wxt-accent-buttons {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+      }
+
+      .wxt-accent-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .wxt-accent-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #a0a0a0;
+        min-width: 16px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.08);
+        padding: 2px 6px;
+        border-radius: 4px;
+        letter-spacing: 0.5px;
+      }
+
+      .wxt-accent-audio-btn {
+        background: linear-gradient(135deg, #64ffda 0%, #1de9b6 100%);
         border: none;
         border-radius: 6px;
         width: 24px;
@@ -498,62 +545,57 @@ export class StyleManager {
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        font-size: 10px;
+        color: #000000;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        margin-left: auto;
         flex-shrink: 0;
-        box-shadow: 0 2px 6px rgba(52, 211, 153, 0.25);
+        box-shadow:
+          0 2px 6px rgba(100, 255, 218, 0.25),
+          0 0 0 1px rgba(255, 255, 255, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
       }
 
-      .wxt-word-audio-btn:hover {
-        transform: translateY(-1px) scale(1.05);
-        box-shadow: 0 3px 10px rgba(52, 211, 153, 0.35);
+      .wxt-accent-audio-btn:hover {
+        transform: translateY(-1px) scale(1.1);
+        box-shadow:
+          0 3px 8px rgba(100, 255, 218, 0.35),
+          0 0 0 1px rgba(255, 255, 255, 0.12),
+          inset 0 1px 0 rgba(255, 255, 255, 0.2);
       }
 
-      .wxt-word-tooltip-body {
-        border-top: 1px solid #48484a;
-        padding-top: 6px;
-        margin-top: 6px;
+      .wxt-accent-audio-btn:active {
+        transform: translateY(0) scale(1.05);
+        box-shadow:
+          0 1px 4px rgba(100, 255, 218, 0.2),
+          0 0 0 1px rgba(255, 255, 255, 0.08),
+          inset 0 1px 0 rgba(255, 255, 255, 0.15);
       }
 
-      .wxt-word-tooltip-body .wxt-part-of-speech {
-        font-size: 11px;
-        margin-bottom: 6px;
-        background: linear-gradient(135deg, #007aff 0%, #5856d6 100%);
-        color: #ffffff;
-        padding: 4px 10px;
-        border-radius: 12px;
-        display: inline-block;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
 
-      .wxt-word-tooltip-body .wxt-definition {
-        font-size: 12px;
-        line-height: 1.5;
-        color: #e5e5e7;
-        margin: 0;
-        font-weight: 400;
-      }
+
+
 
       /* 响应式适配 */
       @media (max-width: 480px) {
         .wxt-tooltip-card {
-          min-width: 200px;
-          max-width: 280px;
+          min-width: 220px;
+          max-width: 300px;
         }
 
         .wxt-tooltip-header {
-          padding: 14px 14px 10px 14px;
-        }
-
-        .wxt-tooltip-body {
-          padding: 0 14px 14px 14px;
+          padding: 16px 16px 12px 16px;
         }
 
         .wxt-word-main {
-          font-size: 16px;
+          font-size: 20px;
+        }
+
+        .wxt-phonetic-text {
+          font-size: 14px;
+        }
+
+        .wxt-audio-btn {
+          width: 38px;
+          height: 38px;
         }
       }
     `;

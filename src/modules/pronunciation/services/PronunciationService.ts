@@ -8,13 +8,15 @@ import { PhoneticProviderFactory } from '../providers/PhoneticProviderFactory';
 import { ITTSProvider } from '../interfaces/ITTSProvider';
 import { TTSProviderFactory } from '../providers/TTSProviderFactory';
 import {
-  PronunciationConfig,
   PhoneticResult,
   TTSResult,
   PhoneticInfo,
   PronunciationElementData,
+} from '../types';
+import {
+  PronunciationConfig,
   DEFAULT_PRONUNCIATION_CONFIG,
-} from '../types/pronunciationTypes';
+} from '../config';
 
 /**
  * 定时器管理器 - 统一管理所有定时器
@@ -231,6 +233,9 @@ export class PronunciationService {
    */
   async speakText(text: string): Promise<TTSResult> {
     try {
+      // 停止当前播放
+      this.stopSpeaking();
+
       // 首先尝试主TTS提供者
       const primaryResult = await this.ttsProvider.speak(text);
 
@@ -304,6 +309,67 @@ export class PronunciationService {
       this.fallbackTTSProvider.stop();
     } catch (error) {
       console.error('停止备用TTS提供者时出错:', error);
+    }
+  }
+
+  /**
+ * 使用指定口音朗读文本
+ */
+  async speakTextWithAccent(text: string, lang: string): Promise<TTSResult> {
+    try {
+      console.log(`[DEBUG] 使用口音朗读: text="${text}", lang="${lang}"`);
+
+      // 强制停止所有正在播放的音频
+      this.stopSpeaking();
+
+      // 将语言代码转换为有道TTS支持的口音参数
+      const accentMap: { [key: string]: 'us' | 'uk' } = {
+        'en-US': 'us',
+        'en-GB': 'uk'
+      };
+
+      const accent = accentMap[lang];
+      // 首先尝试主TTS提供者（有道TTS支持口音）
+      if (accent && this.ttsProvider.name === 'youdao') {
+        console.log(`[DEBUG] 使用有道TTS，口音: ${accent}`);
+
+        const youdaoConfig = {
+          accent: accent,
+          rate: this.config.ttsConfig.rate,
+          pitch: this.config.ttsConfig.pitch,
+          volume: this.config.ttsConfig.volume,
+        };
+
+        const primaryResult = await this.ttsProvider.speak(text, youdaoConfig);
+
+        if (primaryResult.success) {
+          return primaryResult;
+        }
+
+        console.warn(`有道TTS口音朗读失败: ${primaryResult.error}，尝试Web Speech`);
+      }
+
+      // 回退到Web Speech API
+      const webSpeechConfig = {
+        lang: lang,
+        rate: this.config.ttsConfig.rate,
+        pitch: this.config.ttsConfig.pitch,
+        volume: this.config.ttsConfig.volume,
+      };
+
+      const fallbackResult = await this.fallbackTTSProvider.speak(text, webSpeechConfig);
+
+      if (fallbackResult.success) {
+        return fallbackResult;
+      }
+
+      // 如果所有方法都失败，使用默认发音
+      console.warn(`所有口音朗读方法都失败，使用默认发音`);
+      return await this.speakText(text);
+    } catch (error) {
+      console.error('口音朗读失败:', error);
+      // 失败时回退到默认发音
+      return await this.speakText(text);
     }
   }
 
@@ -713,15 +779,13 @@ export class PronunciationService {
   private createWordTooltipHTML(elementData: PronunciationElementData): string {
     const phonetic = elementData.phonetic;
     const phoneticText = phonetic?.phonetics[0]?.text || '';
-    const meanings = phonetic?.meanings || [];
-    const partOfSpeech = meanings[0]?.partOfSpeech || '';
 
     return `
       <div class="wxt-tooltip-card">
         <div class="wxt-tooltip-header">
           <div class="wxt-word-info">
             <div class="wxt-word-main">${elementData.word}</div>
-            ${phoneticText ? `<div class="wxt-phonetic-text">${phoneticText}</div>` : ''}
+            ${phoneticText ? `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>` : ''}
           </div>
           ${this.config.uiConfig.showPlayButton ? `
             <button class="wxt-audio-btn" title="朗读单词">
@@ -731,11 +795,6 @@ export class PronunciationService {
             </button>
           ` : ''}
         </div>
-        ${partOfSpeech ? `
-          <div class="wxt-tooltip-body">
-            <div class="wxt-part-of-speech">${partOfSpeech}</div>
-          </div>
-        ` : ''}
         <div class="wxt-tooltip-arrow"></div>
       </div>
     `;
@@ -849,33 +908,65 @@ export class PronunciationService {
       wordTooltip.className = 'wxt-word-tooltip';
 
       const phonetic = result.data;
-      const phoneticText = phonetic.phonetics[0]?.text || '';
-      const meanings = phonetic.meanings || [];
-      const partOfSpeech = meanings[0]?.partOfSpeech || '';
+
+      // 获取第一个可用的音标作为显示用音标
+      const phoneticText = phonetic.phonetics?.[0]?.text || '';
 
       wordTooltip.innerHTML = `
         <div class="wxt-word-tooltip-card">
           <div class="wxt-word-tooltip-header">
-            <div class="wxt-word-main">${word}</div>
-            ${phoneticText ? `<div class="wxt-phonetic-text">${phoneticText}</div>` : ''}
-            <button class="wxt-word-audio-btn" title="朗读">🔊</button>
-          </div>
-          ${partOfSpeech ? `
-            <div class="wxt-word-tooltip-body">
-              <div class="wxt-part-of-speech">${partOfSpeech}</div>
+            <div class="wxt-word-info">
+              <div class="wxt-word-main">${word}</div>
+              <div class="wxt-phonetic-row">
+                <div class="wxt-phonetic-container">
+                  ${phoneticText ? `<div class="wxt-phonetic-text">${phoneticText}</div>` : ''}
+                  <div class="wxt-accent-buttons">
+                    <div class="wxt-accent-group">
+                      <span class="wxt-accent-label">英</span>
+                      <button class="wxt-accent-audio-btn" data-accent="uk" title="英式发音">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="wxt-accent-group">
+                      <span class="wxt-accent-label">美</span>
+                      <button class="wxt-accent-audio-btn" data-accent="us" title="美式发音">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-          ` : ''}
+          </div>
         </div>
       `;
 
       // 添加朗读功能
-      const audioBtn = wordTooltip.querySelector('.wxt-word-audio-btn');
-      if (audioBtn) {
+      const audioBtns = wordTooltip.querySelectorAll('.wxt-accent-audio-btn');
+
+      audioBtns.forEach((audioBtn, index) => {
         audioBtn.addEventListener('click', (e) => {
+          e.preventDefault();
           e.stopPropagation();
-          this.speakText(word);
+          const accent = audioBtn.getAttribute('data-accent');
+
+          // 根据口音设置不同的语言代码
+          if (accent === 'uk') {
+            // 英式发音
+            this.speakTextWithAccent(word, 'en-GB');
+          } else if (accent === 'us') {
+            // 美式发音
+            this.speakTextWithAccent(word, 'en-US');
+          } else {
+            // 默认发音
+            this.speakText(word);
+          }
         });
-      }
+      });
 
       // 鼠标事件处理
       wordTooltip.addEventListener('mouseenter', (e) => {

@@ -6,8 +6,7 @@
 import { ITTSProvider, TTSProviderConfig } from '../interfaces/ITTSProvider';
 import { WebSpeechTTSProvider } from './WebSpeechTTSProvider';
 import { YoudaoTTSProvider } from './YoudaoTTSProvider';
-
-export type TTSProviderType = 'web-speech' | 'youdao';
+import { TTSProviderType } from '../types';
 
 export class TTSProviderFactory {
   /**

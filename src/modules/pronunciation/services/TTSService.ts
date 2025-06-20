@@ -3,7 +3,8 @@
  * 封装Web Speech API，提供统一的朗读接口
  */
 
-import { TTSConfig, TTSResult } from '../types/pronunciationTypes';
+import { TTSConfig } from '../config';
+import { TTSResult } from '../types';
 
 export class TTSService {
   private config: TTSConfig;
@@ -81,13 +82,13 @@ export class TTSService {
       const utterance = new SpeechSynthesisUtterance(text);
 
       // 设置语音参数
-      utterance.lang = finalConfig.lang;
-      utterance.rate = finalConfig.rate;
-      utterance.pitch = finalConfig.pitch;
-      utterance.volume = finalConfig.volume;
+      utterance.lang = finalConfig.lang || 'en-US';
+      utterance.rate = finalConfig.rate || 1.0;
+      utterance.pitch = finalConfig.pitch || 1.0;
+      utterance.volume = finalConfig.volume || 1.0;
 
       // 选择合适的语音
-      const voice = this.selectVoice(finalConfig.lang, finalConfig.voice);
+      const voice = this.selectVoice(finalConfig.lang || 'en-US', finalConfig.voice);
       if (voice) {
         utterance.voice = voice;
       }
