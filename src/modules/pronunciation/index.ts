@@ -21,7 +21,7 @@ export {
   ITTSProvider,
   WebSpeechTTSProvider,
   YoudaoTTSProvider,
-  TTSProviderFactory
+  TTSProviderFactory,
 } from './providers';
 
 // 工具类

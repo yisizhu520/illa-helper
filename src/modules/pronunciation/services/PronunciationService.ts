@@ -7,16 +7,21 @@ import { IPhoneticProvider } from '../interfaces/IPhoneticProvider';
 import { PhoneticProviderFactory } from '../providers/PhoneticProviderFactory';
 import { ITTSProvider } from '../interfaces/ITTSProvider';
 import { TTSProviderFactory } from '../providers/TTSProviderFactory';
+import { AITranslationProvider } from '../providers/AITranslationProvider';
+import { TooltipRenderer } from '../ui/TooltipRenderer';
 import {
   PhoneticResult,
   TTSResult,
-  PhoneticInfo,
   PronunciationElementData,
 } from '../types';
 import {
   PronunciationConfig,
   DEFAULT_PRONUNCIATION_CONFIG,
+  TIMER_CONSTANTS,
+  CSS_CLASSES,
+  UI_CONSTANTS,
 } from '../config';
+import { ApiConfig, DEFAULT_API_CONFIG } from '../../types';
 
 /**
  * 定时器管理器 - 统一管理所有定时器
@@ -53,7 +58,7 @@ class TimerManager {
  * 通用定位工具类
  */
 class PositionUtils {
-  static positionTooltip(element: HTMLElement, tooltip: HTMLElement, zIndex = 10000, position: 'top' | 'bottom' | 'auto' = 'auto'): void {
+  static positionTooltip(element: HTMLElement, tooltip: HTMLElement, zIndex: number = UI_CONSTANTS.TOOLTIP_Z_INDEX, position: 'top' | 'bottom' | 'auto' = 'auto'): void {
     // 先设置基本样式，让tooltip可以被测量
     tooltip.style.cssText = `
       position: fixed;
@@ -121,21 +126,64 @@ class PositionUtils {
   }
 }
 
+/**
+ * 发音服务核心类
+ *
+ * 该类是整个发音系统的核心协调器，负责管理音标获取、词义翻译、
+ * 语音合成和用户界面的完整生命周期。集成了多个提供者（音标、TTS、翻译）
+ * 和UI组件，为用户提供完整的单词学习体验。
+ *
+ * 主要职责：
+ * - 管理元素的发音功能注册和注销
+ * - 协调音标获取和AI翻译的异步加载
+ * - 控制悬浮框的显示逻辑和定时管理
+ * - 提供语音合成服务（主要和备用TTS）
+ * - 管理缓存和性能优化
+ *
+ * @author AI Assistant
+ * @version 2.0.0
+ */
 export class PronunciationService {
+  /** 发音服务配置 */
   private config: PronunciationConfig;
+
+  /** 音标提供者实例 */
   private phoneticProvider: IPhoneticProvider;
+
+  /** 主要TTS提供者 */
   private ttsProvider: ITTSProvider;
+
+  /** 备用TTS提供者 */
   private fallbackTTSProvider: ITTSProvider;
+
+  /** AI翻译提供者实例 */
+  private aiTranslationProvider: AITranslationProvider;
+
+  /** 悬浮框渲染器 */
+  private tooltipRenderer: TooltipRenderer;
+
+  /** 元素数据映射表，存储每个注册元素的相关数据 */
   private elementDataMap = new Map<HTMLElement, PronunciationElementData>();
+
+  /** 定时器管理器，统一管理所有延迟操作 */
   private timerManager = new TimerManager();
+
+  /** 当前显示的单词悬浮框引用 */
   private currentWordTooltip: HTMLElement | null = null;
+
+  /** 当前显示的主悬浮框引用 */
   private currentMainTooltip: HTMLElement | null = null;
+
+  /** 当前主悬浮框对应的元素 */
   private currentMainElement: HTMLElement | null = null;
 
   constructor(config?: Partial<PronunciationConfig>) {
     this.config = { ...DEFAULT_PRONUNCIATION_CONFIG, ...config };
     this.phoneticProvider = PhoneticProviderFactory.createProvider(this.config.provider);
     this.ttsProvider = TTSProviderFactory.createProvider(this.config.ttsConfig.provider, this.config.ttsConfig);
+    // 创建AI翻译提供者，使用默认API配置
+    this.aiTranslationProvider = new AITranslationProvider(DEFAULT_API_CONFIG);
+    this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig);
 
     // 始终创建Web Speech作为备用TTS提供者
     this.fallbackTTSProvider = TTSProviderFactory.createProvider('web-speech', {
@@ -170,7 +218,7 @@ export class PronunciationService {
       this.elementDataMap.set(element, elementData);
 
       // 添加CSS类名
-      element.classList.add('wxt-pronunciation-enabled');
+      element.classList.add(CSS_CLASSES.PRONUNCIATION_ENABLED);
 
       // 如果启用了内联显示，预加载音标
       if (this.config.uiConfig.inlineDisplay) {
@@ -214,7 +262,7 @@ export class PronunciationService {
     }
 
     // 移除CSS类名
-    element.classList.remove('wxt-pronunciation-enabled', 'wxt-pronunciation-loading');
+    element.classList.remove(CSS_CLASSES.PRONUNCIATION_ENABLED, CSS_CLASSES.PRONUNCIATION_LOADING);
 
     // 清理数据
     this.elementDataMap.delete(element);
@@ -516,7 +564,20 @@ export class PronunciationService {
   }
 
   /**
-   * 处理鼠标进入事件
+   * 处理鼠标进入事件的核心逻辑
+   *
+   * 该方法是发音系统响应用户交互的核心入口，实现了复杂的异步加载策略：
+   * 1. 对于短语：直接显示交互式单词列表
+   * 2. 对于单词：优先显示音标，同时异步获取AI翻译
+   * 3. 实现了音标和翻译的并行加载，提升用户体验
+   * 4. 支持优雅降级：即使音标获取失败，仍可显示翻译内容
+   *
+   * 异步加载策略说明：
+   * - 音标数据优先级较高，缺失时会先尝试获取
+   * - AI翻译异步加载，不阻塞界面显示
+   * - 翻译结果获取后动态更新已显示的悬浮框
+   *
+   * @param elementData - 元素数据对象，包含单词、DOM元素等信息
    */
   private async handleMouseEnter(elementData: PronunciationElementData): Promise<void> {
     if (!this.config.uiConfig.tooltipEnabled) return;
@@ -539,24 +600,62 @@ export class PronunciationService {
         return;
       }
 
-      // 单词情况：如果没有音标数据，尝试获取
-      if (!elementData.phonetic) {
+      // 单词情况：实现智能的数据加载策略
+      // 检查是否需要获取音标数据（音标优先级较高）
+      let needPhonetic = !elementData.phonetic;
+      // 检查是否需要获取AI翻译（可以与音标并行加载）
+      let needMeaning = !elementData.phonetic?.aiTranslation;
+
+      // 如果需要获取音标，先获取音标
+      if (needPhonetic) {
+        elementData.element.classList.add(CSS_CLASSES.PRONUNCIATION_LOADING);
+
         try {
-          elementData.element.classList.add('wxt-pronunciation-loading');
-          const result = await this.phoneticProvider.getPhonetic(elementData.word);
-          if (result.success && result.data) {
-            elementData.phonetic = result.data;
+          const phoneticResult = await this.phoneticProvider.getPhonetic(elementData.word);
+          if (phoneticResult.success && phoneticResult.data) {
+            elementData.phonetic = phoneticResult.data;
           }
         } catch (error) {
           console.error('获取音标失败:', error);
         } finally {
-          elementData.element.classList.remove('wxt-pronunciation-loading');
+          elementData.element.classList.remove(CSS_CLASSES.PRONUNCIATION_LOADING);
         }
       }
 
-      // 显示工具提示
+      // 显示工具提示（包含音标和词义加载状态）
       this.showTooltip(elementData);
-    }, 400); // 400ms延迟显示
+
+      // 异步获取AI翻译（如果需要）
+      // 这个过程与界面显示并行进行，不会阻塞用户交互
+      if (needMeaning) {
+        try {
+          const meaningResult = await this.aiTranslationProvider.getMeaning(elementData.word);
+          if (meaningResult.success && meaningResult.data) {
+            // 将AI翻译数据集成到音标信息结构中
+            if (!elementData.phonetic) {
+              // 如果没有音标数据，创建基础结构
+              elementData.phonetic = {
+                word: elementData.word,
+                phonetics: [],
+                aiTranslation: meaningResult.data,
+              };
+            } else {
+              // 如果已有音标数据，添加翻译信息
+              elementData.phonetic.aiTranslation = meaningResult.data;
+            }
+
+            // 动态更新已显示的悬浮框中的词义内容
+            // 实现无缝的用户体验，翻译结果实时显示
+            if (elementData.tooltip) {
+              this.tooltipRenderer.updateTooltipWithMeaning(elementData.tooltip, meaningResult.data.explain);
+            }
+          }
+        } catch (error) {
+          console.error('获取AI翻译失败:', error);
+          // 翻译失败不影响音标功能，实现优雅降级
+        }
+      }
+    }, TIMER_CONSTANTS.SHOW_DELAY); // 显示延迟
   }
 
   /**
@@ -574,7 +673,7 @@ export class PronunciationService {
       if (!this.currentWordTooltip) {
         this.hideTooltip(elementData);
       }
-    }, 600); // 600ms延迟
+    }, TIMER_CONSTANTS.HIDE_DELAY); // 隐藏延迟
   }
 
   /**
@@ -591,8 +690,14 @@ export class PronunciationService {
     const words = this.extractWords(elementData.word);
     const isPhrase = words.length > 1;
 
-    // 对于单词需要音标数据，对于短语不需要
-    if (!isPhrase && !elementData.phonetic) return;
+    // 对于短语直接显示，对于单词检查是否有音标或词义数据
+    if (!isPhrase && !elementData.phonetic) {
+      // 如果没有音标数据，创建一个基础的音标结构以支持词义显示
+      elementData.phonetic = {
+        word: elementData.word,
+        phonetics: [],
+      };
+    }
 
     // 如果已存在工具提示，先移除
     if (elementData.tooltip) {
@@ -723,20 +828,15 @@ export class PronunciationService {
     const tooltip = document.createElement('div');
     tooltip.className = 'wxt-pronunciation-tooltip';
 
-    // 检查是否为短语（包含多个单词）
-    const words = this.extractWords(elementData.word);
-    const isPhrase = words.length > 1;
-
-    if (isPhrase) {
-      // 短语悬浮框：显示整个句子，内部支持单词交互
-      tooltip.innerHTML = this.createPhraseTooltipHTML(elementData.word, words);
-    } else {
-      // 单词悬浮框：显示单个单词信息
-      tooltip.innerHTML = this.createWordTooltipHTML(elementData);
-    }
+    // 使用TooltipRenderer生成HTML内容
+    tooltip.innerHTML = this.tooltipRenderer.createMainTooltipHTML(elementData);
 
     // 添加主悬浮框事件处理
     this.attachTooltipEventListeners(tooltip, elementData);
+
+    // 检查是否为短语（包含多个单词）
+    const words = this.extractWords(elementData.word);
+    const isPhrase = words.length > 1;
 
     // 如果是短语，添加单词交互功能
     if (isPhrase) {
@@ -746,59 +846,9 @@ export class PronunciationService {
     return tooltip;
   }
 
-  /**
-   * 创建短语悬浮框HTML
-   */
-  private createPhraseTooltipHTML(phrase: string, words: string[]): string {
-    return `
-      <div class="wxt-tooltip-card">
-        <div class="wxt-tooltip-header">
-          <div class="wxt-word-info">
-            <div class="wxt-word-main">短语</div>
-            <div class="wxt-phrase-text">${phrase}</div>
-          </div>
-          ${this.config.uiConfig.showPlayButton ? `
-            <button class="wxt-audio-btn" title="朗读">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-              </svg>
-            </button>
-          ` : ''}
-        </div>
-        <div class="wxt-tooltip-body">
-          <div class="wxt-word-list">${this.createInteractiveWordList(words)}</div>
-        </div>
-        <div class="wxt-tooltip-arrow"></div>
-      </div>
-    `;
-  }
 
-  /**
-   * 创建单词悬浮框HTML
-   */
-  private createWordTooltipHTML(elementData: PronunciationElementData): string {
-    const phonetic = elementData.phonetic;
-    const phoneticText = phonetic?.phonetics[0]?.text || '';
 
-    return `
-      <div class="wxt-tooltip-card">
-        <div class="wxt-tooltip-header">
-          <div class="wxt-word-info">
-            <div class="wxt-word-main">${elementData.word}</div>
-            ${phoneticText ? `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>` : ''}
-          </div>
-          ${this.config.uiConfig.showPlayButton ? `
-            <button class="wxt-audio-btn" title="朗读单词">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-              </svg>
-            </button>
-          ` : ''}
-        </div>
-        <div class="wxt-tooltip-arrow"></div>
-      </div>
-    `;
-  }
+
 
   /**
    * 为tooltip添加事件监听器
@@ -818,7 +868,7 @@ export class PronunciationService {
         if (!this.currentWordTooltip) {
           this.hideTooltip(elementData);
         }
-      }, 600);
+      }, TIMER_CONSTANTS.HIDE_DELAY);
     });
 
     // 添加朗读功能
@@ -830,6 +880,8 @@ export class PronunciationService {
       });
     }
   }
+
+
 
   /**
    * 提取单词
@@ -843,14 +895,7 @@ export class PronunciationService {
       .filter(word => word.length > 0);
   }
 
-  /**
-   * 创建可交互的单词列表
-   */
-  private createInteractiveWordList(words: string[]): string {
-    return words.map(word =>
-      `<span class="wxt-interactive-word" data-word="${word}">${word}</span>`
-    ).join(' ');
-  }
+
 
   /**
    * 为短语悬浮框中的单词设置交互
@@ -873,7 +918,7 @@ export class PronunciationService {
         // 设置延迟显示定时器
         this.timerManager.set('word-show', async () => {
           await this.showWordTooltip(wordElement as HTMLElement, word);
-        }, 300); // 300ms延迟显示
+        }, TIMER_CONSTANTS.WORD_SHOW_DELAY); // 单词悬浮框显示延迟
       });
 
       wordElement.addEventListener('mouseleave', () => {
@@ -883,7 +928,7 @@ export class PronunciationService {
         // 设置延迟隐藏定时器
         this.timerManager.set('word-hide', () => {
           this.hideWordTooltip();
-        }, 600);
+        }, TIMER_CONSTANTS.HIDE_DELAY);
       });
     });
   }
@@ -912,38 +957,8 @@ export class PronunciationService {
       // 获取第一个可用的音标作为显示用音标
       const phoneticText = phonetic.phonetics?.[0]?.text || '';
 
-      wordTooltip.innerHTML = `
-        <div class="wxt-word-tooltip-card">
-          <div class="wxt-word-tooltip-header">
-            <div class="wxt-word-info">
-              <div class="wxt-word-main">${word}</div>
-              <div class="wxt-phonetic-row">
-                <div class="wxt-phonetic-container">
-                  ${phoneticText ? `<div class="wxt-phonetic-text">${phoneticText}</div>` : ''}
-                  <div class="wxt-accent-buttons">
-                    <div class="wxt-accent-group">
-                      <span class="wxt-accent-label">英</span>
-                      <button class="wxt-accent-audio-btn" data-accent="uk" title="英式发音">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                        </svg>
-                      </button>
-                    </div>
-                    <div class="wxt-accent-group">
-                      <span class="wxt-accent-label">美</span>
-                      <button class="wxt-accent-audio-btn" data-accent="us" title="美式发音">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
+      // 使用TooltipRenderer生成嵌套单词悬浮框HTML
+      wordTooltip.innerHTML = this.tooltipRenderer.createNestedWordTooltipHTML(word, phoneticText);
 
       // 添加朗读功能
       const audioBtns = wordTooltip.querySelectorAll('.wxt-accent-audio-btn');
@@ -982,12 +997,12 @@ export class PronunciationService {
         // 鼠标离开单词悬浮框时，延迟隐藏
         this.timerManager.set('word-hide', () => {
           this.hideWordTooltip();
-        }, 600);
+        }, TIMER_CONSTANTS.HIDE_DELAY);
       });
 
       // 定位和显示
       document.body.appendChild(wordTooltip);
-      PositionUtils.positionTooltip(wordElement, wordTooltip, 10001, 'bottom');
+      PositionUtils.positionTooltip(wordElement, wordTooltip, UI_CONSTANTS.WORD_TOOLTIP_Z_INDEX, 'bottom');
 
       // 设置为当前悬浮框，确保唯一性
       this.currentWordTooltip = wordTooltip;
@@ -997,6 +1012,19 @@ export class PronunciationService {
         wordTooltip.style.visibility = 'visible';
         wordTooltip.style.opacity = '1';
       });
+
+      // 异步获取词义
+      try {
+        const meaningResult = await this.aiTranslationProvider.getMeaning(word);
+        if (meaningResult.success && meaningResult.data) {
+          // 检查悬浮框是否仍然是当前显示的悬浮框
+          if (this.currentWordTooltip === wordTooltip) {
+            this.tooltipRenderer.updateTooltipWithMeaning(wordTooltip, meaningResult.data.explain);
+          }
+        }
+      } catch (error) {
+        console.error('获取单词悬浮框词义失败:', error);
+      }
 
     } catch (error) {
       console.error('显示单词悬浮框失败:', error);
@@ -1025,7 +1053,7 @@ export class PronunciationService {
           if (!this.currentWordTooltip) {
             this.hideTooltip(elementData);
           }
-        }, 600);
+        }, TIMER_CONSTANTS.HIDE_DELAY);
       }
     }
   }

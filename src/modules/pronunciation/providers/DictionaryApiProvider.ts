@@ -12,12 +12,13 @@ import {
   DefinitionEntry,
   CacheEntry,
 } from '../types';
+import { API_CONSTANTS } from '../config';
 
 export class DictionaryApiProvider implements IPhoneticProvider {
   readonly name = 'dictionary-api';
-  private readonly baseUrl = 'https://api.dictionaryapi.dev/api/v2/entries/en/';
+  private readonly baseUrl = API_CONSTANTS.DICTIONARY_API_BASE_URL;
   private cache = new Map<string, CacheEntry<PhoneticInfo>>();
-  private readonly cacheTTL = 86400000; // 24小时（毫秒）
+  private readonly cacheTTL = API_CONSTANTS.AI_TRANSLATION_CACHE_TTL;
 
   /**
    * 获取单词的音标信息

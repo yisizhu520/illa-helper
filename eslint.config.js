@@ -38,7 +38,16 @@ export default defineConfig([
       'object-curly-spacing': ['error', 'always'], // 对象花括号内空格
       'array-bracket-spacing': ['error', 'never'], // 数组括号内无空格
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['error', { args: 'none' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          args: 'none',
+          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'off',
       'no-undef': 'off',
     },

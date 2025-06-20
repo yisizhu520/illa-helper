@@ -4,6 +4,7 @@
  */
 
 import { ITTSProvider, TTSProviderConfig, TTSResult } from '../interfaces/ITTSProvider';
+import { TIMER_CONSTANTS, API_CONSTANTS } from '../config';
 
 export class YoudaoTTSProvider implements ITTSProvider {
   readonly name = 'youdao';
@@ -35,7 +36,7 @@ export class YoudaoTTSProvider implements ITTSProvider {
 
       // 构建有道词典语音URL
       const type = accent === 'us' ? 2 : 1; // 1=英式, 2=美式
-      const audioUrl = `https://dict.youdao.com/dictvoice?type=${type}&audio=${encodeURIComponent(text)}`;
+      const audioUrl = `${API_CONSTANTS.YOUDAO_TTS_BASE_URL}?type=${type}&audio=${encodeURIComponent(text)}`;
 
       console.log(`[DEBUG] 有道TTS URL: ${audioUrl}, accent: ${accent}, type: ${type}`);
 
@@ -56,7 +57,7 @@ export class YoudaoTTSProvider implements ITTSProvider {
               error: '有道语音加载超时',
             });
           }
-        }, 10000); // 10秒超时
+        }, TIMER_CONSTANTS.YOUDAO_TIMEOUT); // 有道TTS超时
 
         const cleanup = () => {
           clearTimeout(timeout);
@@ -172,7 +173,7 @@ export class YoudaoTTSProvider implements ITTSProvider {
   async preloadAudio(text: string, accent: 'us' | 'uk' = 'us'): Promise<boolean> {
     try {
       const type = accent === 'us' ? 2 : 1;
-      const audioUrl = `https://dict.youdao.com/dictvoice?type=${type}&audio=${encodeURIComponent(text)}`;
+      const audioUrl = `${API_CONSTANTS.YOUDAO_TTS_BASE_URL}?type=${type}&audio=${encodeURIComponent(text)}`;
 
       const audio = new Audio(audioUrl);
 

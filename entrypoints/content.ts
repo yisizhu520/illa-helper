@@ -33,7 +33,9 @@ export default defineContentScript({
 
     // --- 初始化模块 ---
     const styleManager = new StyleManager();
-    const textProcessor = new TextProcessor();
+    const textProcessor = new TextProcessor(
+      settings.enablePronunciationTooltip,
+    );
     const textReplacer = new TextReplacer(createReplacementConfig(settings));
 
     // --- 应用初始配置 ---
@@ -113,7 +115,9 @@ function setupListeners(
       // 如果关键模式发生变化，刷新页面
       if (
         settings.triggerMode !== newSettings.triggerMode ||
-        settings.isEnabled !== newSettings.isEnabled
+        settings.isEnabled !== newSettings.isEnabled ||
+        settings.enablePronunciationTooltip !==
+          newSettings.enablePronunciationTooltip
       ) {
         window.location.reload();
         return;

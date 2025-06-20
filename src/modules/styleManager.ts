@@ -123,7 +123,6 @@ export class StyleManager {
 
                   /* 发音功能样式 */
       .wxt-pronunciation-enabled {
-        cursor: pointer;
         position: relative;
         transition: all 0.2s ease;
       }
@@ -248,13 +247,25 @@ export class StyleManager {
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
       }
 
+    .wxt-tooltip-body{
+      font-size: 14px;
+    }
+
+
+      .wxt-phrase-words{
+        padding: 4px 2px;
+        font-size: 14px;
+      }
+
+
+
       .wxt-word-info {
         flex: 1;
         min-width: 0;
       }
 
       .wxt-word-main {
-        font-size: 22px;
+        font-size: 16px;
         font-weight: 700;
         color: #ffffff;
         margin-bottom: 0;
@@ -570,9 +581,76 @@ export class StyleManager {
           inset 0 1px 0 rgba(255, 255, 255, 0.15);
       }
 
+      /* 词义容器样式 */
+      .wxt-meaning-container {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        min-height: 24px;
+        display: flex;
+        align-items: center;
+      }
 
+      .wxt-meaning-text {
+        font-size: 12px;
+        color: #e5e5e7;
+        line-height: 1.4;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+        padding: 8px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        margin: 0;
+        font-style: italic;
+        opacity: 0.95;
+        flex: 1;
+      }
 
+      .wxt-meaning-loading {
+        font-size: 13px;
+        color: #a0a0a0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        font-style: italic;
+        flex: 1;
+      }
 
+      .wxt-meaning-loading::after {
+        content: '';
+        width: 12px;
+        height: 12px;
+        border: 2px solid transparent;
+        border-top-color: #64ffda;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        flex-shrink: 0;
+      }
+
+      /* 词义容器在单词悬浮框中的样式 */
+      .wxt-word-tooltip .wxt-meaning-container {
+        margin-top: 6px;
+        padding-top: 6px;
+        min-height: 20px;
+      }
+
+      .wxt-word-tooltip .wxt-meaning-text {
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      .wxt-word-tooltip .wxt-meaning-loading {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+
+      .wxt-word-tooltip .wxt-meaning-loading::after {
+        width: 10px;
+        height: 10px;
+      }
 
       /* 响应式适配 */
       @media (max-width: 480px) {

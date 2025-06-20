@@ -92,6 +92,7 @@ export interface UserSettings {
   maxLength?: number;
   translationDirection: string;
   originalWordDisplayMode: OriginalWordDisplayMode;
+  enablePronunciationTooltip: boolean;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -105,4 +106,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   maxLength: 400,
   translationDirection: 'auto',
   originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,
+  enablePronunciationTooltip: true,
 };

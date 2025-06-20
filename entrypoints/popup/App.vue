@@ -27,7 +27,7 @@ watch(
       saveSettings();
     }, 500);
   },
-  { deep: true },
+  { deep: true, immediate: false },
 );
 
 const saveSettings = async () => {
@@ -104,23 +104,14 @@ const originalWordDisplayOptions = [
     <header>
       <div class="header-content">
         <div class="logo">
-          <img
-            src="/assets/vue.svg"
-            alt="logo"
-            style="width: 24px; height: 24px"
-          />
+          <img src="/assets/vue.svg" alt="logo" style="width: 24px; height: 24px" />
         </div>
         <div class="title-container">
           <h1>浸入式学语言助手</h1>
           <p>在浏览中轻松学外语</p>
         </div>
       </div>
-      <button
-        v-if="settings.triggerMode === 'manual'"
-        @click="manualTranslate"
-        class="manual-translate-btn"
-        title="翻译"
-      >
+      <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn" title="翻译">
         翻译
       </button>
     </header>
@@ -131,11 +122,7 @@ const originalWordDisplayOptions = [
           <div class="setting-group">
             <label>翻译方向</label>
             <select v-model="settings.translationDirection">
-              <option
-                v-for="option in directionOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in directionOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -144,11 +131,7 @@ const originalWordDisplayOptions = [
           <div class="setting-group">
             <label>英语水平</label>
             <select v-model="settings.userLevel">
-              <option
-                v-for="option in levelOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in levelOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -157,11 +140,7 @@ const originalWordDisplayOptions = [
           <div class="setting-group">
             <label>翻译样式</label>
             <select v-model="settings.translationStyle">
-              <option
-                v-for="option in styleOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in styleOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
@@ -170,74 +149,50 @@ const originalWordDisplayOptions = [
           <div class="setting-group">
             <label>原文显示模式</label>
             <select v-model="settings.originalWordDisplayMode">
-              <option
-                v-for="option in originalWordDisplayOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in originalWordDisplayOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
           </div>
 
+
           <div class="setting-group">
             <label>触发模式</label>
             <select v-model="settings.triggerMode">
-              <option
-                v-for="option in triggerOptions"
-                :key="option.value"
-                :value="option.value"
-              >
+              <option v-for="option in triggerOptions" :key="option.value" :value="option.value">
                 {{ option.label }}
               </option>
             </select>
+          </div>
+          <div class="setting-group checkbox">
+            <label>发音悬浮框</label>
+            <div class="checkbox-container">
+              <input type="checkbox" v-model="settings.enablePronunciationTooltip" />
+            </div>
           </div>
           <div class="setting-group">
             <label>
               替换比例: {{ Math.round(settings.replacementRate * 100) }}%
             </label>
-            <input
-              type="range"
-              v-model.number="settings.replacementRate"
-              min="0.01"
-              max="1"
-              step="0.01"
-            />
+            <input type="range" v-model.number="settings.replacementRate" min="0.01" max="1" step="0.01" />
           </div>
           <div class="setting-group">
             <label>段落最大长度: {{ settings.maxLength }}</label>
-            <input
-              type="range"
-              v-model.number="settings.maxLength"
-              min="10"
-              max="1000"
-              step="10"
-            />
-            <p class="setting-note">
+            <input type="range" v-model.number="settings.maxLength" min="10" max="1000" step="10" />
+            <p class="setting-note" style="margin-top: 0">
               建议值: 80-800。较短的段落能更快获得AI响应。
             </p>
           </div>
+
         </div>
 
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
             <span>模型 API 设置</span>
-            <svg
-              class="toggle-icon"
-              :class="{ 'is-open': showApiSettings }"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
             </svg>
           </div>
 
@@ -245,38 +200,22 @@ const originalWordDisplayOptions = [
             <div>
               <div class="sub-setting-group">
                 <label>API 端点</label>
-                <input
-                  type="text"
-                  v-model="settings.apiConfig.apiEndpoint"
-                  placeholder="例如: https://xxxxx/completions"
-                />
+                <input type="text" v-model="settings.apiConfig.apiEndpoint"
+                  placeholder="例如: https://xxxxx/completions" />
               </div>
               <div class="sub-setting-group">
                 <label>API 密钥</label>
-                <input
-                  type="password"
-                  v-model="settings.apiConfig.apiKey"
-                  placeholder="输入您的 API 密钥"
-                />
+                <input type="password" v-model="settings.apiConfig.apiKey" placeholder="输入您的 API 密钥" />
               </div>
 
               <div class="sub-setting-group">
                 <label>模型</label>
-                <input
-                  type="text"
-                  v-model="settings.apiConfig.model"
-                  placeholder="例如: doubao-1-5-lite-32k-250115"
-                />
+                <input type="text" v-model.number="settings.apiConfig.model"
+                  placeholder="例如: doubao-1-5-lite-32k-250115" />
               </div>
               <div class="sub-setting-group">
                 <label>温度: {{ settings.apiConfig.temperature }}</label>
-                <input
-                  type="range"
-                  v-model="settings.apiConfig.temperature"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                />
+                <input type="range" v-model.number="settings.apiConfig.temperature" min="0" max="1" step="0.1" />
               </div>
 
               <p class="setting-note">
@@ -406,7 +345,7 @@ header p {
 .setting-group {
   background-color: var(--card-bg-color);
   border-radius: 12px;
-  padding: 16px;
+  padding: 8px;
   margin-bottom: 16px;
   border: 1px solid var(--border-color);
   box-shadow: 0 4px 12px var(--shadow-color);
@@ -725,5 +664,12 @@ footer {
   background-color: #ffeb3b;
   padding: 0 2px;
   border-radius: 2px;
+}
+
+.checkbox-container {
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 </style>

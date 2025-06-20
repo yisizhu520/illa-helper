@@ -1,5 +1,6 @@
 import { OriginalWordDisplayMode } from './types';
 import { PronunciationService } from './pronunciation/services/PronunciationService';
+import { DEFAULT_PRONUNCIATION_CONFIG } from './pronunciation/config';
 /**
  * 文本处理模块
  * 负责遍历DOM，提取文本节点，并进行处理
@@ -31,22 +32,29 @@ const IGNORE_TAGS = new Set([
 
 // 定义块级元素，用于识别段落边界
 const BLOCK_TAGS = new Set([
-  'P',
   'DIV',
-  'ARTICLE',
+  'P',
   'SECTION',
-  'LI',
-  'TD',
-  'TH',
-  'DD',
-  'BLOCKQUOTE',
-  'FIGCAPTION',
+  'ARTICLE',
+  'MAIN',
+  'ASIDE',
+  'HEADER',
+  'FOOTER',
+  'NAV',
   'H1',
   'H2',
   'H3',
   'H4',
   'H5',
   'H6',
+  'BLOCKQUOTE',
+  'PRE',
+  'LI',
+  'TD',
+  'TH',
+  'FIGCAPTION',
+  'DETAILS',
+  'SUMMARY',
 ]);
 
 // 文本节点处理器
@@ -54,13 +62,31 @@ export class TextProcessor {
   private ignoreSelector: string;
   private pronunciationService: PronunciationService;
 
-  constructor() {
-    // 将 'role="dialog"' 添加到忽略选择器中
-    const ignoreTagsAndAttributes =
-      Array.from(IGNORE_TAGS).join(',') + ',[role="dialog"]';
-    this.ignoreSelector = ignoreTagsAndAttributes;
+  constructor(enablePronunciationTooltip: boolean = true) {
+    // 将IGNORE_TAGS转换为CSS选择器
+    const ignoreTagsSelector = Array.from(IGNORE_TAGS).join(',').toLowerCase();
+
+    this.ignoreSelector = `
+      .wxt-translation-term, .wxt-original-word,
+      [data-wxt-processed="true"], [data-wxt-word-processed="true"],
+      ${ignoreTagsSelector},
+      svg, canvas, audio, video, iframe, embed, object,
+      .code, .highlight, .hljs,
+      [contenteditable="false"], [aria-hidden="true"], [role="dialog"],
+      .wxt-pronunciation-tooltip, .wxt-word-tooltip
+    `;
+
+    // 创建发音服务配置
+    const pronunciationConfig = {
+      ...DEFAULT_PRONUNCIATION_CONFIG,
+      uiConfig: {
+        ...DEFAULT_PRONUNCIATION_CONFIG.uiConfig,
+        tooltipEnabled: enablePronunciationTooltip,
+      },
+    };
+
+    this.pronunciationService = new PronunciationService(pronunciationConfig);
     this.injectGlowStyle();
-    this.pronunciationService = new PronunciationService();
   }
 
   private injectGlowStyle(): void {
@@ -445,7 +471,10 @@ export class TextProcessor {
    * @param element 翻译元素
    * @param translation 翻译文本
    */
-  private addPronunciationToTranslation(element: HTMLElement, translation: string): void {
+  private addPronunciationToTranslation(
+    element: HTMLElement,
+    translation: string,
+  ): void {
     if (!this.pronunciationService) return;
 
     try {
@@ -461,11 +490,8 @@ export class TextProcessor {
       setTimeout(() => {
         this.pronunciationService.addPronunciationToElement(element, cleanText);
       }, 0);
-
     } catch (error) {
       console.error('添加发音功能失败:', error);
     }
   }
-
-
 }
