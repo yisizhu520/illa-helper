@@ -1,4 +1,5 @@
 import { OriginalWordDisplayMode } from './types';
+import { PronunciationService } from './pronunciation/services/PronunciationService';
 /**
  * 文本处理模块
  * 负责遍历DOM，提取文本节点，并进行处理
@@ -51,6 +52,7 @@ const BLOCK_TAGS = new Set([
 // 文本节点处理器
 export class TextProcessor {
   private ignoreSelector: string;
+  private pronunciationService: PronunciationService;
 
   constructor() {
     // 将 'role="dialog"' 添加到忽略选择器中
@@ -58,6 +60,7 @@ export class TextProcessor {
       Array.from(IGNORE_TAGS).join(',') + ',[role="dialog"]';
     this.ignoreSelector = ignoreTagsAndAttributes;
     this.injectGlowStyle();
+    this.pronunciationService = new PronunciationService();
   }
 
   private injectGlowStyle(): void {
@@ -297,6 +300,9 @@ export class TextProcessor {
             break;
         }
 
+        // 为英文翻译添加发音功能
+        this.addPronunciationToTranslation(translationSpan, rep.translation);
+
         this.glow(translationSpan);
         originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
       }
@@ -402,8 +408,14 @@ export class TextProcessor {
             break;
         }
 
+        // 为英文翻译添加发音功能
+        this.addPronunciationToTranslation(translationSpan, rep.translation);
+
         fragment.appendChild(originalWordWrapper);
         fragment.appendChild(translationSpan);
+
+        // 为英文翻译添加发音功能
+        this.addPronunciationToTranslation(translationSpan, rep.translation);
 
         lastIndex = index + rep.original.length;
         this.glow(translationSpan);
@@ -427,4 +439,33 @@ export class TextProcessor {
       }, 800); // 匹配动画时间
     }
   }
+
+  /**
+   * 为翻译元素添加发音功能
+   * @param element 翻译元素
+   * @param translation 翻译文本
+   */
+  private addPronunciationToTranslation(element: HTMLElement, translation: string): void {
+    if (!this.pronunciationService) return;
+
+    try {
+      // 提取纯英文单词（去除括号和其他标点）
+      const cleanText = translation.replace(/[()]/g, '').trim();
+
+      // 检查是否为英文文本（简单检查：只包含英文字母和常见符号）
+      if (!/^[a-zA-Z\s\-']+$/.test(cleanText) || cleanText.length === 0) {
+        return;
+      }
+
+      // 统一处理，让PronunciationService内部判断是单词还是短语
+      setTimeout(() => {
+        this.pronunciationService.addPronunciationToElement(element, cleanText);
+      }, 0);
+
+    } catch (error) {
+      console.error('添加发音功能失败:', error);
+    }
+  }
+
+
 }

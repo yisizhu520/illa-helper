@@ -13,6 +13,9 @@ export interface Replacement {
   };
   isNew: boolean;
   explanation?: string;
+  // 发音相关字段
+  hasPhonetic?: boolean;
+  phoneticData?: any; // 将在pronunciation模块中定义具体类型
 }
 
 export interface FullTextAnalysisResponse {
