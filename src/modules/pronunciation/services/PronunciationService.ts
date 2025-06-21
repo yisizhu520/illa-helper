@@ -7,11 +7,7 @@ import { IPhoneticProvider, PhoneticProviderFactory } from '../phonetic';
 import { ITTSProvider, TTSProviderFactory } from '../tts';
 import { AITranslationProvider } from '../translation';
 import { TooltipRenderer } from '../ui/TooltipRenderer';
-import {
-  PhoneticResult,
-  TTSResult,
-  PronunciationElementData,
-} from '../types';
+import { PhoneticResult, TTSResult, PronunciationElementData } from '../types';
 import {
   PronunciationConfig,
   DEFAULT_PRONUNCIATION_CONFIG,
@@ -19,7 +15,7 @@ import {
   CSS_CLASSES,
   UI_CONSTANTS,
 } from '../config';
-import { ApiConfig, DEFAULT_API_CONFIG } from '../../types';
+import { DEFAULT_API_CONFIG } from '../../types';
 
 /**
  * 定时器管理器 - 统一管理所有定时器
@@ -56,7 +52,12 @@ class TimerManager {
  * 通用定位工具类
  */
 class PositionUtils {
-  static positionTooltip(element: HTMLElement, tooltip: HTMLElement, zIndex: number = UI_CONSTANTS.TOOLTIP_Z_INDEX, position: 'top' | 'bottom' | 'auto' = 'auto'): void {
+  static positionTooltip(
+    element: HTMLElement,
+    tooltip: HTMLElement,
+    zIndex: number = UI_CONSTANTS.TOOLTIP_Z_INDEX,
+    position: 'top' | 'bottom' | 'auto' = 'auto',
+  ): void {
     // 先设置基本样式，让tooltip可以被测量
     tooltip.style.cssText = `
       position: fixed;
@@ -177,8 +178,13 @@ export class PronunciationService {
 
   constructor(config?: Partial<PronunciationConfig>) {
     this.config = { ...DEFAULT_PRONUNCIATION_CONFIG, ...config };
-    this.phoneticProvider = PhoneticProviderFactory.createProvider(this.config.provider);
-    this.ttsProvider = TTSProviderFactory.createProvider(this.config.ttsConfig.provider, this.config.ttsConfig);
+    this.phoneticProvider = PhoneticProviderFactory.createProvider(
+      this.config.provider,
+    );
+    this.ttsProvider = TTSProviderFactory.createProvider(
+      this.config.ttsConfig.provider,
+      this.config.ttsConfig,
+    );
     // 创建AI翻译提供者，使用默认API配置
     this.aiTranslationProvider = new AITranslationProvider(DEFAULT_API_CONFIG);
     this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig);
@@ -195,7 +201,11 @@ export class PronunciationService {
   /**
    * 为翻译元素添加发音功能
    */
-  async addPronunciationToElement(element: HTMLElement, word: string, isPhrase?: boolean): Promise<boolean> {
+  async addPronunciationToElement(
+    element: HTMLElement,
+    word: string,
+    isPhrase?: boolean,
+  ): Promise<boolean> {
     try {
       if (!element || !word || this.elementDataMap.has(element)) {
         return false;
@@ -203,7 +213,10 @@ export class PronunciationService {
 
       // 为元素添加唯一标识
       if (!element.getAttribute('data-wxt-id')) {
-        element.setAttribute('data-wxt-id', `wxt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+        element.setAttribute(
+          'data-wxt-id',
+          `wxt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        );
       }
 
       // 创建元素数据
@@ -260,7 +273,10 @@ export class PronunciationService {
     }
 
     // 移除CSS类名
-    element.classList.remove(CSS_CLASSES.PRONUNCIATION_ENABLED, CSS_CLASSES.PRONUNCIATION_LOADING);
+    element.classList.remove(
+      CSS_CLASSES.PRONUNCIATION_ENABLED,
+      CSS_CLASSES.PRONUNCIATION_LOADING,
+    );
 
     // 清理数据
     this.elementDataMap.delete(element);
@@ -290,7 +306,10 @@ export class PronunciationService {
       }
 
       // 主提供者失败，尝试回退到备用提供者
-      console.warn(`主TTS提供者(${this.ttsProvider.name})失败，回退到备用提供者`, primaryResult.error);
+      console.warn(
+        `主TTS提供者(${this.ttsProvider.name})失败，回退到备用提供者`,
+        primaryResult.error,
+      );
 
       // 检查备用提供者是否可用
       if (!this.fallbackTTSProvider.isAvailable()) {
@@ -304,7 +323,9 @@ export class PronunciationService {
       const fallbackResult = await this.fallbackTTSProvider.speak(text);
 
       if (fallbackResult.success) {
-        console.info(`TTS回退成功，使用备用提供者(${this.fallbackTTSProvider.name})`);
+        console.info(
+          `TTS回退成功，使用备用提供者(${this.fallbackTTSProvider.name})`,
+        );
         return {
           success: true,
           // 可以选择是否告知用户使用了备用方案
@@ -315,7 +336,6 @@ export class PronunciationService {
           error: `主TTS和备用TTS都失败: 主=${primaryResult.error}, 备用=${fallbackResult.error}`,
         };
       }
-
     } catch (error) {
       // 处理意外错误
       console.error('TTS朗读过程中发生意外错误:', error);
@@ -359,8 +379,8 @@ export class PronunciationService {
   }
 
   /**
- * 使用指定口音朗读文本
- */
+   * 使用指定口音朗读文本
+   */
   async speakTextWithAccent(text: string, lang: string): Promise<TTSResult> {
     try {
       console.log(`[DEBUG] 使用口音朗读: text="${text}", lang="${lang}"`);
@@ -371,7 +391,7 @@ export class PronunciationService {
       // 将语言代码转换为有道TTS支持的口音参数
       const accentMap: { [key: string]: 'us' | 'uk' } = {
         'en-US': 'us',
-        'en-GB': 'uk'
+        'en-GB': 'uk',
       };
 
       const accent = accentMap[lang];
@@ -392,7 +412,9 @@ export class PronunciationService {
           return primaryResult;
         }
 
-        console.warn(`有道TTS口音朗读失败: ${primaryResult.error}，尝试Web Speech`);
+        console.warn(
+          `有道TTS口音朗读失败: ${primaryResult.error}，尝试Web Speech`,
+        );
       }
 
       // 回退到Web Speech API
@@ -403,7 +425,10 @@ export class PronunciationService {
         volume: this.config.ttsConfig.volume,
       };
 
-      const fallbackResult = await this.fallbackTTSProvider.speak(text, webSpeechConfig);
+      const fallbackResult = await this.fallbackTTSProvider.speak(
+        text,
+        webSpeechConfig,
+      );
 
       if (fallbackResult.success) {
         return fallbackResult;
@@ -427,13 +452,21 @@ export class PronunciationService {
 
     // 更新音标提供者
     if (config.provider && config.provider !== this.phoneticProvider.name) {
-      this.phoneticProvider = PhoneticProviderFactory.createProvider(config.provider);
+      this.phoneticProvider = PhoneticProviderFactory.createProvider(
+        config.provider,
+      );
     }
 
     // 更新TTS提供者
     if (config.ttsConfig) {
-      if (config.ttsConfig.provider && config.ttsConfig.provider !== this.ttsProvider.name) {
-        this.ttsProvider = TTSProviderFactory.createProvider(config.ttsConfig.provider, config.ttsConfig);
+      if (
+        config.ttsConfig.provider &&
+        config.ttsConfig.provider !== this.ttsProvider.name
+      ) {
+        this.ttsProvider = TTSProviderFactory.createProvider(
+          config.ttsConfig.provider,
+          config.ttsConfig,
+        );
       } else {
         this.ttsProvider.updateConfig(config.ttsConfig);
       }
@@ -486,7 +519,9 @@ export class PronunciationService {
   /**
    * 预加载音标信息
    */
-  private async preloadPhonetic(elementData: PronunciationElementData): Promise<void> {
+  private async preloadPhonetic(
+    elementData: PronunciationElementData,
+  ): Promise<void> {
     if (elementData.phonetic) return;
 
     try {
@@ -530,7 +565,10 @@ export class PronunciationService {
   /**
    * 添加事件监听器
    */
-  private attachEventListeners(element: HTMLElement, elementData: PronunciationElementData): void {
+  private attachEventListeners(
+    element: HTMLElement,
+    elementData: PronunciationElementData,
+  ): void {
     const mouseEnterHandler = async () => {
       await this.handleMouseEnter(elementData);
     };
@@ -577,7 +615,9 @@ export class PronunciationService {
    *
    * @param elementData - 元素数据对象，包含单词、DOM元素等信息
    */
-  private async handleMouseEnter(elementData: PronunciationElementData): Promise<void> {
+  private async handleMouseEnter(
+    elementData: PronunciationElementData,
+  ): Promise<void> {
     if (!this.config.uiConfig.tooltipEnabled) return;
 
     const elementKey = this.getElementKey(elementData.element);
@@ -587,73 +627,86 @@ export class PronunciationService {
     this.timerManager.clear(`show-${elementKey}`);
 
     // 设置延迟显示定时器
-    this.timerManager.set(`show-${elementKey}`, async () => {
-      // 检查是否为短语
-      const words = this.extractWords(elementData.word);
-      const isPhrase = words.length > 1;
+    this.timerManager.set(
+      `show-${elementKey}`,
+      async () => {
+        // 检查是否为短语
+        const words = this.extractWords(elementData.word);
+        const isPhrase = words.length > 1;
 
-      // 如果是短语，直接显示悬浮框，不需要获取音标
-      if (isPhrase) {
+        // 如果是短语，直接显示悬浮框，不需要获取音标
+        if (isPhrase) {
+          this.showTooltip(elementData);
+          return;
+        }
+
+        // 单词情况：实现智能的数据加载策略
+        // 检查是否需要获取音标数据（音标优先级较高）
+        const needPhonetic = !elementData.phonetic;
+        // 检查是否需要获取AI翻译（可以与音标并行加载）
+        const needMeaning = !elementData.phonetic?.aiTranslation;
+
+        // 如果需要获取音标，先获取音标
+        if (needPhonetic) {
+          elementData.element.classList.add(CSS_CLASSES.PRONUNCIATION_LOADING);
+
+          try {
+            const phoneticResult = await this.phoneticProvider.getPhonetic(
+              elementData.word,
+            );
+            if (phoneticResult.success && phoneticResult.data) {
+              elementData.phonetic = phoneticResult.data;
+            }
+          } catch (error) {
+            console.error('获取音标失败:', error);
+          } finally {
+            elementData.element.classList.remove(
+              CSS_CLASSES.PRONUNCIATION_LOADING,
+            );
+          }
+        }
+
+        // 显示工具提示（包含音标和词义加载状态）
         this.showTooltip(elementData);
-        return;
-      }
 
-      // 单词情况：实现智能的数据加载策略
-      // 检查是否需要获取音标数据（音标优先级较高）
-      let needPhonetic = !elementData.phonetic;
-      // 检查是否需要获取AI翻译（可以与音标并行加载）
-      let needMeaning = !elementData.phonetic?.aiTranslation;
+        // 异步获取AI翻译（如果需要）
+        // 这个过程与界面显示并行进行，不会阻塞用户交互
+        if (needMeaning) {
+          try {
+            const meaningResult = await this.aiTranslationProvider.getMeaning(
+              elementData.word,
+            );
+            if (meaningResult.success && meaningResult.data) {
+              // 将AI翻译数据集成到音标信息结构中
+              if (!elementData.phonetic) {
+                // 如果没有音标数据，创建基础结构
+                elementData.phonetic = {
+                  word: elementData.word,
+                  phonetics: [],
+                  aiTranslation: meaningResult.data,
+                };
+              } else {
+                // 如果已有音标数据，添加翻译信息
+                elementData.phonetic.aiTranslation = meaningResult.data;
+              }
 
-      // 如果需要获取音标，先获取音标
-      if (needPhonetic) {
-        elementData.element.classList.add(CSS_CLASSES.PRONUNCIATION_LOADING);
-
-        try {
-          const phoneticResult = await this.phoneticProvider.getPhonetic(elementData.word);
-          if (phoneticResult.success && phoneticResult.data) {
-            elementData.phonetic = phoneticResult.data;
-          }
-        } catch (error) {
-          console.error('获取音标失败:', error);
-        } finally {
-          elementData.element.classList.remove(CSS_CLASSES.PRONUNCIATION_LOADING);
-        }
-      }
-
-      // 显示工具提示（包含音标和词义加载状态）
-      this.showTooltip(elementData);
-
-      // 异步获取AI翻译（如果需要）
-      // 这个过程与界面显示并行进行，不会阻塞用户交互
-      if (needMeaning) {
-        try {
-          const meaningResult = await this.aiTranslationProvider.getMeaning(elementData.word);
-          if (meaningResult.success && meaningResult.data) {
-            // 将AI翻译数据集成到音标信息结构中
-            if (!elementData.phonetic) {
-              // 如果没有音标数据，创建基础结构
-              elementData.phonetic = {
-                word: elementData.word,
-                phonetics: [],
-                aiTranslation: meaningResult.data,
-              };
-            } else {
-              // 如果已有音标数据，添加翻译信息
-              elementData.phonetic.aiTranslation = meaningResult.data;
+              // 动态更新已显示的悬浮框中的词义内容
+              // 实现无缝的用户体验，翻译结果实时显示
+              if (elementData.tooltip) {
+                this.tooltipRenderer.updateTooltipWithMeaning(
+                  elementData.tooltip,
+                  meaningResult.data.explain,
+                );
+              }
             }
-
-            // 动态更新已显示的悬浮框中的词义内容
-            // 实现无缝的用户体验，翻译结果实时显示
-            if (elementData.tooltip) {
-              this.tooltipRenderer.updateTooltipWithMeaning(elementData.tooltip, meaningResult.data.explain);
-            }
+          } catch (error) {
+            console.error('获取AI翻译失败:', error);
+            // 翻译失败不影响音标功能，实现优雅降级
           }
-        } catch (error) {
-          console.error('获取AI翻译失败:', error);
-          // 翻译失败不影响音标功能，实现优雅降级
         }
-      }
-    }, TIMER_CONSTANTS.SHOW_DELAY); // 显示延迟
+      },
+      TIMER_CONSTANTS.SHOW_DELAY,
+    ); // 显示延迟
   }
 
   /**
@@ -666,12 +719,16 @@ export class PronunciationService {
     this.timerManager.clear(`show-${elementKey}`);
 
     // 延迟隐藏工具提示，给用户时间移动到tooltip上
-    this.timerManager.set(`hide-${elementKey}`, () => {
-      // 只有在没有单词悬浮框显示时才隐藏主悬浮框
-      if (!this.currentWordTooltip) {
-        this.hideTooltip(elementData);
-      }
-    }, TIMER_CONSTANTS.HIDE_DELAY); // 隐藏延迟
+    this.timerManager.set(
+      `hide-${elementKey}`,
+      () => {
+        // 只有在没有单词悬浮框显示时才隐藏主悬浮框
+        if (!this.currentWordTooltip) {
+          this.hideTooltip(elementData);
+        }
+      },
+      TIMER_CONSTANTS.HIDE_DELAY,
+    ); // 隐藏延迟
   }
 
   /**
@@ -735,8 +792,6 @@ export class PronunciationService {
    * 清理其他元素的悬浮框，保留指定元素的定时器
    */
   private cleanupOtherTooltips(currentElement: HTMLElement): void {
-    const currentElementKey = this.getElementKey(currentElement);
-
     // 遍历所有元素，移除其他元素的悬浮框
     for (const [element, elementData] of this.elementDataMap.entries()) {
       if (element !== currentElement && elementData.tooltip) {
@@ -760,12 +815,14 @@ export class PronunciationService {
     this.currentMainElement = null;
 
     // 强制清理页面上所有悬浮框元素（包括可能的遗留元素）
-    const allTooltips = document.querySelectorAll('.wxt-pronunciation-tooltip, .wxt-word-tooltip');
-    allTooltips.forEach(tooltip => {
+    const allTooltips = document.querySelectorAll(
+      '.wxt-pronunciation-tooltip, .wxt-word-tooltip',
+    );
+    allTooltips.forEach((tooltip) => {
       try {
         tooltip.remove();
-      } catch (e) {
-        // 忽略移除失败的情况
+      } catch (_) {
+        console.info(_);
       }
     });
   }
@@ -778,7 +835,7 @@ export class PronunciationService {
     this.timerManager.clearAll();
 
     // 遍历所有元素，强制移除悬浮框
-    for (const [element, elementData] of this.elementDataMap.entries()) {
+    for (const [_, elementData] of this.elementDataMap.entries()) {
       if (elementData.tooltip) {
         elementData.tooltip.remove();
         elementData.tooltip = undefined;
@@ -790,11 +847,13 @@ export class PronunciationService {
     this.currentMainElement = null;
 
     // 强制清理页面上所有悬浮框元素（包括可能的遗留元素）
-    const allTooltips = document.querySelectorAll('.wxt-pronunciation-tooltip, .wxt-word-tooltip');
-    allTooltips.forEach(tooltip => {
+    const allTooltips = document.querySelectorAll(
+      '.wxt-pronunciation-tooltip, .wxt-word-tooltip',
+    );
+    allTooltips.forEach((tooltip) => {
       try {
         tooltip.remove();
-      } catch (e) {
+      } catch (_) {
         // 忽略移除失败的情况
       }
     });
@@ -816,7 +875,7 @@ export class PronunciationService {
 
     // 清理页面上所有可能遗留的单词悬浮框元素
     const existingWordTooltips = document.querySelectorAll('.wxt-word-tooltip');
-    existingWordTooltips.forEach(tooltip => tooltip.remove());
+    existingWordTooltips.forEach((tooltip) => tooltip.remove());
   }
 
   /**
@@ -844,14 +903,13 @@ export class PronunciationService {
     return tooltip;
   }
 
-
-
-
-
   /**
    * 为tooltip添加事件监听器
    */
-  private attachTooltipEventListeners(tooltip: HTMLElement, elementData: PronunciationElementData): void {
+  private attachTooltipEventListeners(
+    tooltip: HTMLElement,
+    elementData: PronunciationElementData,
+  ): void {
     const elementKey = this.getElementKey(elementData.element);
 
     tooltip.addEventListener('mouseenter', () => {
@@ -861,12 +919,16 @@ export class PronunciationService {
 
     tooltip.addEventListener('mouseleave', () => {
       // 鼠标离开悬浮框时，延迟隐藏主悬浮框
-      this.timerManager.set(`hide-${elementKey}`, () => {
-        // 只有在没有单词悬浮框显示时才隐藏主悬浮框
-        if (!this.currentWordTooltip) {
-          this.hideTooltip(elementData);
-        }
-      }, TIMER_CONSTANTS.HIDE_DELAY);
+      this.timerManager.set(
+        `hide-${elementKey}`,
+        () => {
+          // 只有在没有单词悬浮框显示时才隐藏主悬浮框
+          if (!this.currentWordTooltip) {
+            this.hideTooltip(elementData);
+          }
+        },
+        TIMER_CONSTANTS.HIDE_DELAY,
+      );
     });
 
     // 添加朗读功能
@@ -879,21 +941,17 @@ export class PronunciationService {
     }
   }
 
-
-
   /**
    * 提取单词
    */
   private extractWords(text: string): string[] {
     return text
       .split(/\s+/)
-      .map(word => word.trim())
-      .filter(word => word.length > 0 && /^[a-zA-Z\-']+$/.test(word))
-      .map(word => word.replace(/^[^\w\-']+|[^\w\-']+$/g, ''))
-      .filter(word => word.length > 0);
+      .map((word) => word.trim())
+      .filter((word) => word.length > 0 && /^[a-zA-Z\-']+$/.test(word))
+      .map((word) => word.replace(/^[^\w\-']+|[^\w\-']+$/g, ''))
+      .filter((word) => word.length > 0);
   }
-
-
 
   /**
    * 为短语悬浮框中的单词设置交互
@@ -914,9 +972,13 @@ export class PronunciationService {
         this.hideWordTooltip();
 
         // 设置延迟显示定时器
-        this.timerManager.set('word-show', async () => {
-          await this.showWordTooltip(wordElement as HTMLElement, word);
-        }, TIMER_CONSTANTS.WORD_SHOW_DELAY); // 单词悬浮框显示延迟
+        this.timerManager.set(
+          'word-show',
+          async () => {
+            await this.showWordTooltip(wordElement as HTMLElement, word);
+          },
+          TIMER_CONSTANTS.WORD_SHOW_DELAY,
+        ); // 单词悬浮框显示延迟
       });
 
       wordElement.addEventListener('mouseleave', () => {
@@ -924,9 +986,13 @@ export class PronunciationService {
         this.timerManager.clear('word-show');
 
         // 设置延迟隐藏定时器
-        this.timerManager.set('word-hide', () => {
-          this.hideWordTooltip();
-        }, TIMER_CONSTANTS.HIDE_DELAY);
+        this.timerManager.set(
+          'word-hide',
+          () => {
+            this.hideWordTooltip();
+          },
+          TIMER_CONSTANTS.HIDE_DELAY,
+        );
       });
     });
   }
@@ -934,7 +1000,10 @@ export class PronunciationService {
   /**
    * 显示单词悬浮框
    */
-  private async showWordTooltip(wordElement: HTMLElement, word: string): Promise<void> {
+  private async showWordTooltip(
+    wordElement: HTMLElement,
+    word: string,
+  ): Promise<void> {
     try {
       // 强制清理所有单词悬浮框
       this.forceCleanupWordTooltips();
@@ -956,7 +1025,10 @@ export class PronunciationService {
       const phoneticText = phonetic.phonetics?.[0]?.text || '';
 
       // 使用TooltipRenderer生成嵌套单词悬浮框HTML
-      wordTooltip.innerHTML = this.tooltipRenderer.createNestedWordTooltipHTML(word, phoneticText);
+      wordTooltip.innerHTML = this.tooltipRenderer.createNestedWordTooltipHTML(
+        word,
+        phoneticText,
+      );
 
       // 添加朗读功能
       const audioBtns = wordTooltip.querySelectorAll('.wxt-accent-audio-btn');
@@ -993,14 +1065,23 @@ export class PronunciationService {
       wordTooltip.addEventListener('mouseleave', (e) => {
         e.stopPropagation();
         // 鼠标离开单词悬浮框时，延迟隐藏
-        this.timerManager.set('word-hide', () => {
-          this.hideWordTooltip();
-        }, TIMER_CONSTANTS.HIDE_DELAY);
+        this.timerManager.set(
+          'word-hide',
+          () => {
+            this.hideWordTooltip();
+          },
+          TIMER_CONSTANTS.HIDE_DELAY,
+        );
       });
 
       // 定位和显示
       document.body.appendChild(wordTooltip);
-      PositionUtils.positionTooltip(wordElement, wordTooltip, UI_CONSTANTS.WORD_TOOLTIP_Z_INDEX, 'bottom');
+      PositionUtils.positionTooltip(
+        wordElement,
+        wordTooltip,
+        UI_CONSTANTS.WORD_TOOLTIP_Z_INDEX,
+        'bottom',
+      );
 
       // 设置为当前悬浮框，确保唯一性
       this.currentWordTooltip = wordTooltip;
@@ -1017,13 +1098,15 @@ export class PronunciationService {
         if (meaningResult.success && meaningResult.data) {
           // 检查悬浮框是否仍然是当前显示的悬浮框
           if (this.currentWordTooltip === wordTooltip) {
-            this.tooltipRenderer.updateTooltipWithMeaning(wordTooltip, meaningResult.data.explain);
+            this.tooltipRenderer.updateTooltipWithMeaning(
+              wordTooltip,
+              meaningResult.data.explain,
+            );
           }
         }
       } catch (error) {
         console.error('获取单词悬浮框词义失败:', error);
       }
-
     } catch (error) {
       console.error('显示单词悬浮框失败:', error);
     }
@@ -1047,11 +1130,15 @@ export class PronunciationService {
       const elementData = this.elementDataMap.get(this.currentMainElement);
       if (elementData) {
         const elementKey = this.getElementKey(this.currentMainElement);
-        this.timerManager.set(`hide-${elementKey}`, () => {
-          if (!this.currentWordTooltip) {
-            this.hideTooltip(elementData);
-          }
-        }, TIMER_CONSTANTS.HIDE_DELAY);
+        this.timerManager.set(
+          `hide-${elementKey}`,
+          () => {
+            if (!this.currentWordTooltip) {
+              this.hideTooltip(elementData);
+            }
+          },
+          TIMER_CONSTANTS.HIDE_DELAY,
+        );
       }
     }
   }

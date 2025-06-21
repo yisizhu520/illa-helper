@@ -73,11 +73,15 @@ export class TooltipRenderer {
             <div class="wxt-word-main">短语</div>
             <div class="wxt-phrase-text">${phrase}</div>
           </div>
-          ${this.uiConfig.showPlayButton ? `
+          ${
+            this.uiConfig.showPlayButton
+              ? `
             <button class="wxt-audio-btn" title="朗读">
               ${SVG_ICONS.SPEAKER}
             </button>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="wxt-tooltip-body">
           <div class="wxt-phrase-words">${interactiveWordList}</div>
@@ -88,9 +92,9 @@ export class TooltipRenderer {
   }
 
   /**
-* 创建单词悬浮框HTML
-* @param elementData 元素数据
-*/
+   * 创建单词悬浮框HTML
+   * @param elementData 元素数据
+   */
   private createWordTooltipHTML(elementData: PronunciationElementData): string {
     const phonetic = elementData.phonetic;
     const phoneticText = phonetic?.phonetics[0]?.text || '';
@@ -103,17 +107,22 @@ export class TooltipRenderer {
             <div class="wxt-word-main">${elementData.word}</div>
             ${phoneticText ? `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>` : ''}
             <div class="wxt-meaning-container">
-              ${aiTranslation ?
-        `<div class="wxt-meaning-text">${aiTranslation.explain}</div>` :
-        `<div class="wxt-meaning-loading">获取词义中...</div>`
-      }
+              ${
+                aiTranslation
+                  ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
+                  : `<div class="wxt-meaning-loading">获取词义中...</div>`
+              }
             </div>
           </div>
-          ${this.uiConfig.showPlayButton ? `
+          ${
+            this.uiConfig.showPlayButton
+              ? `
             <button class="wxt-audio-btn" title="朗读单词">
               ${SVG_ICONS.SPEAKER}
             </button>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <div class="wxt-tooltip-arrow"></div>
       </div>
@@ -176,13 +185,17 @@ export class TooltipRenderer {
     if (!meaningContainer) return;
 
     // 隐藏加载提示
-    const loadingElement = meaningContainer.querySelector('.wxt-meaning-loading');
+    const loadingElement = meaningContainer.querySelector(
+      '.wxt-meaning-loading',
+    );
     if (loadingElement) {
       loadingElement.remove();
     }
 
     // 显示或更新词义内容
-    let meaningElement = meaningContainer.querySelector('.wxt-meaning-text') as HTMLElement;
+    let meaningElement = meaningContainer.querySelector(
+      '.wxt-meaning-text',
+    ) as HTMLElement;
     if (!meaningElement) {
       meaningElement = document.createElement('div');
       meaningElement.className = 'wxt-meaning-text';

@@ -39,7 +39,10 @@ export class PhoneticProviderFactory {
    * @returns IPhoneticProvider 提供者实例
    * @throws Error 当提供者名称不受支持时抛出错误
    */
-  static createProvider(providerName: string, apiConfig?: ApiConfig): IPhoneticProvider {
+  static createProvider(
+    providerName: string,
+    apiConfig?: ApiConfig,
+  ): IPhoneticProvider {
     // 检查是否已存在实例（单例模式）
     // 避免重复创建，提升性能并保持状态一致性
     if (this.instances.has(providerName)) {

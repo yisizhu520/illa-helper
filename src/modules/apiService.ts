@@ -3,7 +3,7 @@
  * 负责调用 GPT 大模型 API 进行文本分析和翻译
  */
 
-import { getSystemPrompt } from './promptManager';
+import { getSystemPrompt, getSystemPromptByConfig } from './promptManager';
 import {
   UserSettings,
   FullTextAnalysisResponse,
@@ -46,9 +46,10 @@ export class ApiService {
 
   /**
    * 分析整个文本，识别并翻译句子中的特定部分
+   * 支持智能模式和传统模式
    * @param text 要分析的完整文本
    * @param settings 完整的用户设置对象
-   * @returns 分析结果，包含替换信息
+   * @returns 分析结果，包含替换信息和语言检测结果
    */
   async analyzeFullText(
     text: string,
@@ -69,12 +70,41 @@ export class ApiService {
       console.error('API 密钥未设置');
     }
     try {
-      // 动态生成系统提示词
-      const systemPrompt = getSystemPrompt(
-        settings.translationDirection,
-        settings.userLevel,
-        settings.replacementRate,
-      );
+      // 判断是否使用智能模式
+      const useIntelligentMode =
+        settings.multilingualConfig?.intelligentMode ||
+        settings.translationDirection === 'intelligent';
+
+      let systemPrompt: string;
+
+      if (useIntelligentMode) {
+        // 使用智能模式提示词，直接使用用户选择的目标语言
+        const targetLanguage = settings.multilingualConfig?.targetLanguage;
+
+        if (!targetLanguage) {
+          console.error('智能模式下未找到目标语言配置');
+          return {
+            original: originalText,
+            processed: originalText,
+            replacements: [],
+          };
+        }
+
+        systemPrompt = getSystemPromptByConfig({
+          translationDirection: 'intelligent',
+          targetLanguage: targetLanguage,
+          userLevel: settings.userLevel,
+          replacementRate: settings.replacementRate,
+          intelligentMode: true,
+        });
+      } else {
+        // 使用传统模式提示词
+        systemPrompt = getSystemPrompt(
+          settings.translationDirection,
+          settings.userLevel,
+          settings.replacementRate,
+        );
+      }
 
       const requestBody = {
         model: settings.apiConfig.model,
@@ -105,7 +135,16 @@ export class ApiService {
       }
 
       const data = await response.json();
-      return this.extractReplacements(data, originalText);
+
+      if (useIntelligentMode) {
+        return this.extractIntelligentReplacements(
+          data,
+          originalText,
+          settings,
+        );
+      } else {
+        return this.extractReplacements(data, originalText);
+      }
     } catch (error) {
       console.error('API 请求或解析失败:', error);
       return {
@@ -117,7 +156,56 @@ export class ApiService {
   }
 
   /**
-   * 从API响应中提取替换信息
+   * 极简化：提取智能模式的替换信息
+   * 只关注replacements数组，忽略其他所有信息
+   * @param data API返回的数据
+   * @param originalText 原始文本
+   * @param settings 用户设置
+   * @returns 分析结果，只包含replacements
+   */
+  private extractIntelligentReplacements(
+    data: any,
+    originalText: string,
+    settings: UserSettings,
+  ): FullTextAnalysisResponse {
+    try {
+      if (!data?.choices?.[0]?.message?.content) {
+        return {
+          original: originalText,
+          processed: '',
+          replacements: [],
+        };
+      }
+
+      let content;
+      try {
+        content = JSON.parse(data.choices[0].message.content);
+      } catch (parseError) {
+        console.error('解析智能模式API响应JSON失败:', parseError);
+        // 降级到传统模式处理
+        return this.extractReplacements(data, originalText);
+      }
+
+      // 只处理replacements数组
+      const replacements = this.addPositionsToReplacements(
+        originalText,
+        content.replacements || [],
+      );
+
+      return {
+        original: originalText,
+        processed: '',
+        replacements,
+      };
+    } catch (error) {
+      console.error('提取智能替换信息失败:', error);
+      // 降级处理
+      return this.extractReplacements(data, originalText);
+    }
+  }
+
+  /**
+   * 保持向后兼容：从传统模式API响应中提取替换信息
    * @param data API返回的数据
    * @param originalText 原始文本
    * @returns 分析结果，包含替换信息
@@ -200,24 +288,12 @@ export class ApiService {
             start: index,
             end: index + rep.original.length,
           },
-          isNew: true, // 默认为生词
+          isNew: true,
         });
         lastIndex = index + rep.original.length;
-      } else {
-        // Fallback: 如果按顺序找不到，则从头开始搜索
-        const fallbackIndex = originalText.indexOf(rep.original);
-        if (fallbackIndex !== -1) {
-          result.push({
-            ...rep,
-            position: {
-              start: fallbackIndex,
-              end: fallbackIndex + rep.original.length,
-            },
-            isNew: true,
-          });
-        }
       }
     }
+
     return result;
   }
 }

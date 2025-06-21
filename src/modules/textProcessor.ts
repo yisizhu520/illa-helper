@@ -274,8 +274,7 @@ export class TextProcessor {
           originalWordDisplayMode,
         );
       }
-    } catch (error) {
-      console.error('Error in processTextGroup:', error);
+    } catch (_) {
       if (result && result.replacements && result.replacements.length > 0) {
         this.applyReplacementsInFallback(
           textGroup,

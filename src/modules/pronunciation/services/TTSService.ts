@@ -88,7 +88,10 @@ export class TTSService {
       utterance.volume = finalConfig.volume || 1.0;
 
       // 选择合适的语音
-      const voice = this.selectVoice(finalConfig.lang || 'en-US', finalConfig.voice);
+      const voice = this.selectVoice(
+        finalConfig.lang || 'en-US',
+        finalConfig.voice,
+      );
       if (voice) {
         utterance.voice = voice;
       }
@@ -174,20 +177,23 @@ export class TTSService {
    * 获取指定语言的语音
    */
   getVoicesByLanguage(lang: string): SpeechSynthesisVoice[] {
-    return this.voices.filter(voice =>
-      voice.lang.toLowerCase().startsWith(lang.toLowerCase())
+    return this.voices.filter((voice) =>
+      voice.lang.toLowerCase().startsWith(lang.toLowerCase()),
     );
   }
 
   /**
    * 选择合适的语音
    */
-  private selectVoice(lang: string, preferredVoice?: string): SpeechSynthesisVoice | null {
+  private selectVoice(
+    lang: string,
+    preferredVoice?: string,
+  ): SpeechSynthesisVoice | null {
     if (this.voices.length === 0) return null;
 
     // 如果指定了特定语音，尝试找到它
     if (preferredVoice) {
-      const voice = this.voices.find(v => v.name === preferredVoice);
+      const voice = this.voices.find((v) => v.name === preferredVoice);
       if (voice) return voice;
     }
 
@@ -195,7 +201,7 @@ export class TTSService {
     const languageVoices = this.getVoicesByLanguage(lang);
     if (languageVoices.length > 0) {
       // 优先选择本地语音
-      const localVoice = languageVoices.find(v => v.localService);
+      const localVoice = languageVoices.find((v) => v.localService);
       if (localVoice) return localVoice;
 
       // 否则返回第一个匹配的语音

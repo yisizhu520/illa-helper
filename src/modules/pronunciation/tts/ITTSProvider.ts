@@ -17,8 +17,6 @@ export interface TTSProviderConfig {
   accent?: 'us' | 'uk'; // 美式或英式发音
 }
 
-
-
 export interface ITTSProvider {
   readonly name: string;
 

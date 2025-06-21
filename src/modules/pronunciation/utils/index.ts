@@ -8,5 +8,9 @@ export * from './DOMUtils';
 
 // 便捷导入
 export { TimerManager } from './TimerManager';
-export { PositionUtils, type TooltipPosition, type PositionResult } from './PositionUtils';
+export {
+  PositionUtils,
+  type TooltipPosition,
+  type PositionResult,
+} from './PositionUtils';
 export { DOMUtils } from './DOMUtils';

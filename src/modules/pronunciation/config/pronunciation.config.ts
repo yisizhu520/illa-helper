@@ -68,7 +68,10 @@ export class ConfigValidator {
    * 验证TTS配置
    */
   static validateTTSConfig(config: Partial<TTSConfig>): boolean {
-    if (config.provider && !['web-speech', 'youdao'].includes(config.provider)) {
+    if (
+      config.provider &&
+      !['web-speech', 'youdao'].includes(config.provider)
+    ) {
       return false;
     }
 
@@ -94,7 +97,9 @@ export class ConfigValidator {
   /**
    * 验证发音配置
    */
-  static validatePronunciationConfig(config: Partial<PronunciationConfig>): boolean {
+  static validatePronunciationConfig(
+    config: Partial<PronunciationConfig>,
+  ): boolean {
     if (config.cacheTTL && config.cacheTTL < 0) {
       return false;
     }
@@ -110,11 +115,11 @@ export class ConfigValidator {
 // 配置合并工具
 export class ConfigMerger {
   /**
-* 深度合并配置对象
-*/
+   * 深度合并配置对象
+   */
   static mergeConfig<T extends Record<string, any>>(
     defaultConfig: T,
-    userConfig: Partial<T>
+    userConfig: Partial<T>,
   ): T {
     const result = { ...defaultConfig };
 
@@ -123,8 +128,14 @@ export class ConfigMerger {
       const defaultValue = defaultConfig[key];
 
       if (userValue !== undefined) {
-        if (typeof userValue === 'object' && userValue !== null && !Array.isArray(userValue) &&
-          typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
+        if (
+          typeof userValue === 'object' &&
+          userValue !== null &&
+          !Array.isArray(userValue) &&
+          typeof defaultValue === 'object' &&
+          defaultValue !== null &&
+          !Array.isArray(defaultValue)
+        ) {
           (result as any)[key] = this.mergeConfig(defaultValue, userValue);
         } else {
           (result as any)[key] = userValue;

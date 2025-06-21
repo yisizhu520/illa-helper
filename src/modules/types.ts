@@ -16,6 +16,9 @@ export interface Replacement {
   // 发音相关字段
   hasPhonetic?: boolean;
   phoneticData?: any; // 将在pronunciation模块中定义具体类型
+  // 新增：语言检测信息
+  detectedSourceLanguage?: string;
+  targetLanguage?: string;
 }
 
 export interface FullTextAnalysisResponse {
@@ -41,6 +44,21 @@ export interface ReplacementConfig {
   inlineTranslation: boolean;
   translationStyle: TranslationStyle;
   translationDirection: string;
+}
+
+// 简化：多语言翻译配置接口
+export interface MultilingualConfig {
+  intelligentMode: boolean;
+  targetLanguage: string;
+  sourceLanguageOverride?: string; // 用户手动指定源语言时使用
+}
+
+// 新增：语言选项接口
+export interface LanguageOption {
+  code: string;
+  name: string;
+  nativeName: string;
+  isPopular?: boolean;
 }
 
 export const DEFAULT_API_CONFIG: ApiConfig = {
@@ -93,7 +111,15 @@ export interface UserSettings {
   translationDirection: string;
   originalWordDisplayMode: OriginalWordDisplayMode;
   enablePronunciationTooltip: boolean;
+  // 新增：多语言智能翻译设置
+  multilingualConfig: MultilingualConfig;
 }
+
+// 简化：默认多语言配置
+export const DEFAULT_MULTILINGUAL_CONFIG: MultilingualConfig = {
+  intelligentMode: false,
+  targetLanguage: 'en', // 无默认语言，强制用户选择
+};
 
 export const DEFAULT_SETTINGS: UserSettings = {
   userLevel: UserLevel.BEGINNER,
@@ -104,7 +130,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
   translationStyle: TranslationStyle.DEFAULT,
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,
-  translationDirection: 'auto',
+  translationDirection: 'intelligent',
   originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,
   enablePronunciationTooltip: true,
+  multilingualConfig: DEFAULT_MULTILINGUAL_CONFIG,
 };

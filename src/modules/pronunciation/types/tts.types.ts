@@ -4,8 +4,8 @@
 
 // TTS结果
 export interface TTSResult {
-    success: boolean;
-    error?: string;
+  success: boolean;
+  error?: string;
 }
 
 // TTS提供者类型
@@ -13,13 +13,13 @@ export type TTSProviderType = 'web-speech' | 'youdao';
 
 // TTS提供者状态
 export interface TTSProviderStatus {
-    name: string;
-    available: boolean;
-    speaking: boolean;
+  name: string;
+  available: boolean;
+  speaking: boolean;
 }
 
 // TTS服务状态
 export interface TTSServiceStatus {
-    primary: TTSProviderStatus;
-    fallback: TTSProviderStatus;
+  primary: TTSProviderStatus;
+  fallback: TTSProviderStatus;
 }

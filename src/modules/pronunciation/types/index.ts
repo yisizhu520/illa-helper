@@ -9,28 +9,28 @@ export * from './ui.types';
 
 // 便捷导入 - 音标相关
 export type {
-    PhoneticInfo,
-    PhoneticEntry,
-    MeaningEntry,
-    DefinitionEntry,
-    PhoneticResult,
-    CacheEntry,
+  PhoneticInfo,
+  PhoneticEntry,
+  MeaningEntry,
+  DefinitionEntry,
+  PhoneticResult,
+  CacheEntry,
 } from './phonetic.types';
 
 // 便捷导入 - TTS相关
 export type {
-    TTSResult,
-    TTSProviderType,
-    TTSProviderStatus,
-    TTSServiceStatus,
+  TTSResult,
+  TTSProviderType,
+  TTSProviderStatus,
+  TTSServiceStatus,
 } from './tts.types';
 
 // 便捷导入 - UI相关
 export type {
-    PronunciationElementData,
-    TooltipType,
-    TooltipState,
-    InteractionEventType,
-    InteractionEventHandler,
-    ElementEventHandlers,
+  PronunciationElementData,
+  TooltipType,
+  TooltipState,
+  InteractionEventType,
+  InteractionEventHandler,
+  ElementEventHandlers,
 } from './ui.types';

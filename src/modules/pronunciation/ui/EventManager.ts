@@ -26,11 +26,13 @@ export class EventManager {
     element: HTMLElement,
     elementData: PronunciationElementData,
     onMouseEnter: (elementData: PronunciationElementData) => void,
-    onMouseLeave: (elementData: PronunciationElementData) => void
+    onMouseLeave: (elementData: PronunciationElementData) => void,
   ): void {
     // 创建事件处理器
     const mouseEnterHandler = (event: Event) => {
-      this.timerManager.clear(`${element.dataset.pronunciationId || 'unknown'}_hide`);
+      this.timerManager.clear(
+        `${element.dataset.pronunciationId || 'unknown'}_hide`,
+      );
       onMouseEnter(elementData);
     };
 
@@ -41,7 +43,7 @@ export class EventManager {
     // 存储事件处理器引用
     this.eventHandlers.set(element, {
       mouseEnterHandler,
-      mouseLeaveHandler
+      mouseLeaveHandler,
     });
 
     // 添加事件监听器
@@ -62,11 +64,12 @@ export class EventManager {
     elementData: PronunciationElementData,
     onMouseEnter: (elementData: PronunciationElementData) => void,
     onMouseLeave: (elementData: PronunciationElementData) => void,
-    onAudioClick: (word: string) => void
+    onAudioClick: (word: string) => void,
   ): void {
     // 鼠标进入悬浮框
     tooltip.addEventListener('mouseenter', () => {
-      const elementId = elementData.element.dataset.pronunciationId || 'unknown';
+      const elementId =
+        elementData.element.dataset.pronunciationId || 'unknown';
       this.timerManager.clear(`${elementId}_hide`);
       this.timerManager.clear(`${elementId}_wordHide`);
     });
@@ -105,7 +108,7 @@ export class EventManager {
     wordElement: HTMLElement,
     word: string,
     onWordMouseEnter: (word: string, element: HTMLElement) => void,
-    onWordMouseLeave: () => void
+    onWordMouseLeave: () => void,
   ): void {
     wordElement.addEventListener('mouseenter', () => {
       const wordElementId = wordElement.dataset.wordId || word;
@@ -127,7 +130,7 @@ export class EventManager {
   attachWordTooltipEvents(
     wordTooltip: HTMLElement,
     word: string,
-    onAudioClick: (word: string, accent?: string) => void
+    onAudioClick: (word: string, accent?: string) => void,
   ): void {
     // 阻止事件冒泡
     wordTooltip.addEventListener('mouseenter', (event) => {

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, reactive } from 'vue';
 import {
   UserLevel,
   TranslationStyle,
@@ -7,15 +7,24 @@ import {
   DEFAULT_SETTINGS,
   UserSettings,
   OriginalWordDisplayMode,
+  DEFAULT_MULTILINGUAL_CONFIG,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';
-import { getTranslationDirectionOptions } from '@/src/modules/languageManager';
+import {
+  getTranslationDirectionOptions,
+  getTargetLanguageOptions,
+} from '@/src/modules/languageManager';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
+
 onMounted(async () => {
   const storageManager = new StorageManager();
-  settings.value = await storageManager.getUserSettings();
+  const loadedSettings = await storageManager.getUserSettings();
+  if (!loadedSettings.multilingualConfig) {
+    loadedSettings.multilingualConfig = { ...DEFAULT_MULTILINGUAL_CONFIG };
+  }
+  settings.value = loadedSettings;
 });
 
 let debounceTimer: number;
@@ -23,26 +32,34 @@ watch(
   settings,
   () => {
     clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(() => {
-      saveSettings();
-    }, 500);
+    debounceTimer = window.setTimeout(saveSettings, 500);
   },
-  { deep: true, immediate: false },
+  { deep: true },
 );
 
 const saveSettings = async () => {
-  const storageManager = new StorageManager();
-  await storageManager.saveUserSettings(settings.value);
-  await notifySettingsChanged(settings.value);
-  showSavedMessage();
+  try {
+    if (
+      settings.value.translationDirection === 'intelligent' &&
+      !settings.value.multilingualConfig?.targetLanguage?.trim()
+    ) {
+      alert('请选择目标语言后再保存设置');
+      return;
+    }
+    const storageManager = new StorageManager();
+    await storageManager.saveUserSettings(settings.value);
+    await notifySettingsChanged(settings.value);
+    showSavedMessage();
+  } catch (error) {
+    console.error('保存设置失败:', error);
+    alert('保存设置失败，请重试');
+  }
 };
 
 const saveMessage = ref('');
 const showSavedMessage = () => {
   saveMessage.value = '设置已保存';
-  setTimeout(() => {
-    saveMessage.value = '';
-  }, 2000);
+  setTimeout(() => (saveMessage.value = ''), 2000);
 };
 
 const manualTranslate = async () => {
@@ -60,8 +77,40 @@ const manualTranslate = async () => {
 };
 
 const showApiSettings = ref(false);
-const toggleApiSettings = () => {
-  showApiSettings.value = !showApiSettings.value;
+const toggleApiSettings = () =>
+  (showApiSettings.value = !showApiSettings.value);
+const intelligentModeEnabled = computed(
+  () => settings.value.translationDirection === 'intelligent',
+);
+
+watch(
+  () => settings.value.translationDirection,
+  (newDirection) => {
+    if (newDirection === 'intelligent') {
+      if (!settings.value.multilingualConfig) {
+        settings.value.multilingualConfig = reactive({
+          intelligentMode: true,
+          targetLanguage: '',
+        });
+      } else {
+        settings.value.multilingualConfig.intelligentMode = true;
+      }
+      saveSettings();
+    } else if (settings.value.multilingualConfig) {
+      settings.value.multilingualConfig.intelligentMode = false;
+    }
+  },
+);
+
+const targetLanguageOptions = computed(() => getTargetLanguageOptions());
+const directionOptions = computed(() => getTranslationDirectionOptions());
+
+const onTargetLanguageChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement;
+  if (settings.value.multilingualConfig) {
+    settings.value.multilingualConfig.targetLanguage = target.value;
+    saveSettings();
+  }
 };
 
 const levelOptions = [
@@ -87,14 +136,9 @@ const triggerOptions = [
   { value: TriggerMode.MANUAL, label: '手动触发' },
 ];
 
-const directionOptions = computed(() => getTranslationDirectionOptions());
-
 const originalWordDisplayOptions = [
   { value: OriginalWordDisplayMode.VISIBLE, label: '显示' },
-  {
-    value: OriginalWordDisplayMode.LEARNING,
-    label: '学习模式',
-  },
+  { value: OriginalWordDisplayMode.LEARNING, label: '学习模式' },
   { value: OriginalWordDisplayMode.HIDDEN, label: '不显示' },
 ];
 </script>
@@ -104,95 +148,195 @@ const originalWordDisplayOptions = [
     <header>
       <div class="header-content">
         <div class="logo">
-          <img src="/assets/vue.svg" alt="logo" style="width: 24px; height: 24px" />
+          <img
+            src="/assets/vue.svg"
+            alt="logo"
+            style="width: 24px; height: 24px"
+          />
         </div>
         <div class="title-container">
           <h1>浸入式学语言助手</h1>
           <p>在浏览中轻松学外语</p>
         </div>
       </div>
-      <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn" title="翻译">
+      <button
+        v-if="settings.triggerMode === 'manual'"
+        @click="manualTranslate"
+        class="manual-translate-btn"
+        title="翻译"
+      >
         翻译
       </button>
     </header>
 
     <div class="settings">
       <div class="main-layout">
-        <div class="basic-settings-grid">
-          <div class="setting-group">
-            <label>翻译方向</label>
-            <select v-model="settings.translationDirection">
-              <option v-for="option in directionOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
+        <div class="settings-card">
+          <div class="basic-settings-grid">
+            <div class="setting-group">
+              <label>翻译模式</label>
+              <select v-model="settings.translationDirection">
+                <option
+                  v-for="option in directionOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
 
-          <div class="setting-group">
-            <label>英语水平</label>
-            <select v-model="settings.userLevel">
-              <option v-for="option in levelOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
+            <div
+              v-if="intelligentModeEnabled && settings.multilingualConfig"
+              class="setting-group"
+            >
+              <label>目标语言</label>
+              <select
+                :value="settings.multilingualConfig.targetLanguage"
+                @change="onTargetLanguageChange"
+              >
+                <option value="" disabled>请选择目标语言</option>
+                <optgroup label="常用语言">
+                  <option
+                    v-for="option in targetLanguageOptions.filter(
+                      (opt) => opt.isPopular,
+                    )"
+                    :key="option.code"
+                    :value="option.code"
+                  >
+                    {{ option.nativeName }}
+                  </option>
+                </optgroup>
+                <optgroup label="其他语言">
+                  <option
+                    v-for="option in targetLanguageOptions.filter(
+                      (opt) => !opt.isPopular,
+                    )"
+                    :key="option.code"
+                    :value="option.code"
+                  >
+                    {{ option.nativeName }}
+                  </option>
+                </optgroup>
+              </select>
+            </div>
 
-          <div class="setting-group">
-            <label>翻译样式</label>
-            <select v-model="settings.translationStyle">
-              <option v-for="option in styleOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
+            <div class="setting-group">
+              <label>语言水平</label>
+              <select v-model="settings.userLevel">
+                <option
+                  v-for="option in levelOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
 
-          <div class="setting-group">
-            <label>原文显示模式</label>
-            <select v-model="settings.originalWordDisplayMode">
-              <option v-for="option in originalWordDisplayOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
+            <div class="setting-group">
+              <label>翻译样式</label>
+              <select v-model="settings.translationStyle">
+                <option
+                  v-for="option in styleOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
 
+            <div class="setting-group">
+              <label>触发模式</label>
+              <select v-model="settings.triggerMode">
+                <option
+                  v-for="option in triggerOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
 
-          <div class="setting-group">
-            <label>触发模式</label>
-            <select v-model="settings.triggerMode">
-              <option v-for="option in triggerOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-          <div class="setting-group checkbox">
-            <label>发音悬浮框</label>
-            <div class="checkbox-container">
-              <input type="checkbox" v-model="settings.enablePronunciationTooltip" />
+            <div class="setting-group">
+              <label>原文显示</label>
+              <select v-model="settings.originalWordDisplayMode">
+                <option
+                  v-for="option in originalWordDisplayOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+            <div class="topping-settings-card">
+              <div class="setting-group">
+                <label>悬浮框</label>
+                <div class="toggle-container">
+                  <input
+                    type="checkbox"
+                    v-model="settings.enablePronunciationTooltip"
+                    id="tooltip-toggle"
+                    class="toggle-input"
+                  />
+                  <label for="tooltip-toggle" class="toggle-label">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="setting-group full-width">
+              <label>
+                替换比例: {{ Math.round(settings.replacementRate * 100) }}%
+              </label>
+              <input
+                type="range"
+                v-model.number="settings.replacementRate"
+                min="0.01"
+                max="1"
+                step="0.01"
+              />
+            </div>
+
+            <div class="setting-group full-width">
+              <label>段落最大长度: {{ settings.maxLength }}</label>
+              <input
+                type="range"
+                v-model.number="settings.maxLength"
+                min="10"
+                max="2000"
+                step="10"
+              />
+              <p class="setting-note" style="margin-top: 0">
+                建议值: 80-100。较短的段落能更快获得AI响应。
+              </p>
             </div>
           </div>
-          <div class="setting-group">
-            <label>
-              替换比例: {{ Math.round(settings.replacementRate * 100) }}%
-            </label>
-            <input type="range" v-model.number="settings.replacementRate" min="0.01" max="1" step="0.01" />
-          </div>
-          <div class="setting-group">
-            <label>段落最大长度: {{ settings.maxLength }}</label>
-            <input type="range" v-model.number="settings.maxLength" min="10" max="1000" step="10" />
-            <p class="setting-note" style="margin-top: 0">
-              建议值: 80-800。较短的段落能更快获得AI响应。
-            </p>
-          </div>
-
         </div>
 
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
             <span>模型 API 设置</span>
-            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
-              fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" />
+            <svg
+              class="toggle-icon"
+              :class="{ 'is-open': showApiSettings }"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M6 9L12 15L18 9"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </div>
 
@@ -200,22 +344,38 @@ const originalWordDisplayOptions = [
             <div>
               <div class="sub-setting-group">
                 <label>API 端点</label>
-                <input type="text" v-model="settings.apiConfig.apiEndpoint"
-                  placeholder="例如: https://xxxxx/completions" />
+                <input
+                  type="text"
+                  v-model="settings.apiConfig.apiEndpoint"
+                  placeholder="例如: https://xxxxx/completions"
+                />
               </div>
               <div class="sub-setting-group">
                 <label>API 密钥</label>
-                <input type="password" v-model="settings.apiConfig.apiKey" placeholder="输入您的 API 密钥" />
+                <input
+                  type="password"
+                  v-model="settings.apiConfig.apiKey"
+                  placeholder="输入您的 API 密钥"
+                />
               </div>
 
               <div class="sub-setting-group">
                 <label>模型</label>
-                <input type="text" v-model.number="settings.apiConfig.model"
-                  placeholder="例如: doubao-1-5-lite-32k-250115" />
+                <input
+                  type="text"
+                  v-model.number="settings.apiConfig.model"
+                  placeholder="例如: doubao-1-5-lite-32k-250115"
+                />
               </div>
               <div class="sub-setting-group">
                 <label>温度: {{ settings.apiConfig.temperature }}</label>
-                <input type="range" v-model.number="settings.apiConfig.temperature" min="0" max="1" step="0.1" />
+                <input
+                  type="range"
+                  v-model.number="settings.apiConfig.temperature"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                />
               </div>
 
               <p class="setting-note">
@@ -242,25 +402,21 @@ const originalWordDisplayOptions = [
 }
 
 .container {
-  /* Light theme variables */
   --bg-color: #f0f4f8;
   --card-bg-color: #ffffff;
   --primary-color: #6a88e0;
   --primary-hover-color: #5a78d0;
-  --accent-color: #ffafcc;
   --text-color: #37474f;
   --label-color: #546e7a;
   --border-color: #e0e6ed;
-  --shadow-color: rgba(106, 136, 224, 0.1);
   --success-color: #4caf50;
-  --green-color: #4caf50;
   --input-bg-color: #fdfdff;
   --input-text-color: #37474f;
   --select-option-text-color: #000;
   --select-option-bg-color: #fff;
 
   width: 360px;
-  padding: 20px;
+  padding: 10px;
   font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
@@ -276,11 +432,26 @@ const originalWordDisplayOptions = [
     --text-color: rgba(255, 255, 255, 0.87);
     --label-color: rgba(255, 255, 255, 0.7);
     --border-color: #3c3c3c;
-    --shadow-color: rgba(0, 0, 0, 0.5);
     --input-bg-color: #3c3c3c;
     --input-text-color: rgba(255, 255, 255, 0.87);
     --select-option-text-color: #fff;
     --select-option-bg-color: #3c3c3c;
+  }
+
+  .toggle-slider {
+    background-color: #f0f0f0 !important;
+  }
+
+  .toggle-label:hover {
+    background-color: rgba(100, 108, 255, 0.2) !important;
+  }
+
+  .settings-card {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .settings-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
   }
 }
 
@@ -297,209 +468,241 @@ header {
 }
 
 .logo {
-  font-size: 24px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
+  flex-shrink: 0;
 }
 
-.title-container {
-  text-align: left;
-}
-
-h1 {
+.title-container h1 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   color: var(--primary-color);
-  line-height: 1.2;
 }
 
-header p {
-  margin: 2px 0 0;
+.title-container p {
+  margin: 4px 0 0 0;
   font-size: 12px;
   color: var(--label-color);
 }
 
+.manual-translate-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.manual-translate-btn:hover {
+  background: var(--primary-hover-color);
+}
+
 .settings {
-  transition: opacity 0.3s;
+  margin-bottom: 16px;
 }
 
 .main-layout {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  align-items: stretch;
+}
+
+.settings-card {
+  background: var(--card-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.settings-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .basic-settings-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.basic-settings-grid .setting-group {
-  margin-bottom: 0;
+.setting-group.full-width {
+  grid-column: 1 / -1;
 }
 
 .setting-group {
-  background-color: var(--card-bg-color);
-  border-radius: 12px;
-  padding: 8px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border-color);
-  box-shadow: 0 4px 12px var(--shadow-color);
-  transition: all 0.2s ease-in-out;
-  color: var(--label-color);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.setting-group:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px var(--shadow-color);
+.topping-settings-card {
+  background-color: var(--card-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toggle-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-label {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background-color: var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-label:hover {
+  background-color: rgba(106, 136, 224, 0.2);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+  border-radius: 50%;
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-input:checked + .toggle-label {
+  background-color: var(--primary-color);
+}
+
+.toggle-input:checked + .toggle-label .toggle-slider {
+  transform: translateX(20px);
+  box-shadow: 0 2px 6px rgba(106, 136, 224, 0.4);
+}
+
+.toggle-input:focus + .toggle-label {
+  box-shadow: 0 0 0 2px rgba(106, 136, 224, 0.3);
 }
 
 .setting-group label {
-  display: block;
-  margin-bottom: 10px;
   font-size: 14px;
   font-weight: 500;
   color: var(--label-color);
 }
 
-.setting-group.checkbox {
-  padding: 12px 16px;
-}
-
-.setting-group.checkbox label {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  margin-bottom: 0;
-  width: 100%;
-}
-
-select,
-input[type='text'],
-input[type='password'] {
-  width: 100%;
-  padding: 10px 12px;
+.setting-group input,
+.setting-group select {
+  padding: 8px 12px;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-sizing: border-box;
+  border-radius: 6px;
+  font-size: 14px;
   background-color: var(--input-bg-color);
   color: var(--input-text-color);
   transition:
     border-color 0.2s,
     box-shadow 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
-select:focus,
-input[type='text']:focus,
-input[type='password']:focus {
+.setting-group input:focus,
+.setting-group select:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(106, 136, 224, 0.2);
+  box-shadow: 0 0 0 2px rgba(106, 136, 224, 0.2);
 }
 
-select option {
+.setting-group select option {
   color: var(--select-option-text-color);
   background-color: var(--select-option-bg-color);
 }
 
-.setting-group.checkbox .label-text {
-  margin-left: 12px;
-}
-
-.setting-group.checkbox input[type='checkbox'] {
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  width: 40px;
-  height: 22px;
-  background-color: #dce4ec;
-  border-radius: 11px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.setting-group.checkbox input[type='checkbox']::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  background-color: white;
-  border-radius: 50%;
-  transition: transform 0.3s;
-}
-
-.setting-group.checkbox input[type='checkbox']:checked {
-  background-color: var(--primary-color);
-}
-
-.setting-group.checkbox input[type='checkbox']:checked::before {
-  transform: translateX(18px);
-}
-
-input[type='range'] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 6px;
-  background: #e0e6ed;
-  border-radius: 3px;
-  outline: none;
+.setting-group input[type='range'] {
   padding: 0;
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 3px;
+  appearance: none;
+  cursor: pointer;
 }
 
-input[type='range']::-webkit-slider-thumb {
-  -webkit-appearance: none;
+.setting-group input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: 18px;
   height: 18px;
   background: var(--primary-color);
-  cursor: pointer;
   border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.1s;
 }
 
-input[type='range']::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  background: var(--primary-color);
-  cursor: pointer;
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.setting-group input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
 }
 
 .setting-note {
   font-size: 12px;
-  color: #90a4ae;
-  margin-top: 8px;
-  text-align: left;
+  color: var(--label-color);
+  margin: 4px 0 0 0;
+  font-style: italic;
 }
 
 .api-settings {
-  padding: 0;
+  background: var(--card-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
   overflow: hidden;
 }
 
-.api-header,
-.advanced-api-header {
+.api-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding: 12px 16px;
   cursor: pointer;
+  transition: background-color 0.2s;
+  background: var(--card-bg-color);
+}
+
+.api-header:hover {
+  background: rgba(106, 136, 224, 0.05);
+}
+
+.api-header span {
   font-weight: 500;
-  padding: 16px;
+  color: var(--text-color);
 }
 
 .toggle-icon {
-  color: var(--primary-color);
-  transition: transform 0.3s ease;
+  transition: transform 0.2s;
+  color: var(--label-color);
 }
 
 .toggle-icon.is-open {
@@ -507,169 +710,50 @@ input[type='range']::-moz-range-thumb {
 }
 
 .api-content {
-  padding: 0 16px 16px;
+  padding: 0 16px 16px 16px;
   border-top: 1px solid var(--border-color);
 }
 
 .sub-setting-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   margin-bottom: 12px;
 }
 
-.sub-setting-group:last-child {
+.sub-setting-group:last-of-type {
   margin-bottom: 0;
 }
 
 .sub-setting-group label {
   font-size: 13px;
-  margin-bottom: 6px;
-}
-
-.advanced-api-header {
-  padding: 12px 0;
-  font-size: 14px;
-  font-weight: normal;
-  color: var(--label-color);
-}
-
-.advanced-api-content {
-  margin-top: 8px;
-  padding: 12px;
-  background-color: var(--border-color);
-  border-radius: 8px;
-}
-
-.advanced-api-content .sub-setting-group label {
-  color: var(--label-color);
-}
-
-.advanced-api-content input[type='text'],
-.advanced-api-content input[type='password'] {
-  background-color: #ffffff;
-}
-
-.button-container {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-button {
-  flex-grow: 1;
-  background: var(--primary-color);
-  color: white;
-  border: none;
-  padding: 12px 16px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 15px;
   font-weight: 500;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(106, 136, 224, 0.3);
-}
-
-button:hover {
-  background-color: var(--primary-hover-color);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(106, 136, 224, 0.4);
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-.manual-translate-btn {
-  position: absolute;
-  top: 13px;
-  right: 16px;
-  width: auto;
-  height: auto;
-  padding: 4px 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--primary-color);
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(106, 136, 224, 0.3);
-  flex-grow: 0;
-  transition: all 0.2s ease-in-out;
-  font-size: 13px;
-  font-weight: 500;
-  color: #fff;
-  letter-spacing: 0.3px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.manual-translate-btn:hover {
-  background-color: var(--primary-hover-color);
-  box-shadow: 0 4px 12px rgba(106, 136, 224, 0.4);
-  transform: translateY(-2px);
+  color: var(--label-color);
 }
 
 .save-message-container {
-  text-align: center;
-  margin-top: 12px;
   height: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .save-message {
   color: var(--success-color);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 }
 
 footer {
-  margin-top: 24px;
   text-align: center;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+footer p {
+  margin: 0;
   font-size: 12px;
-  color: #90a4ae;
-}
-
-.style-preview {
-  margin-top: 8px;
-  padding: 8px;
-  border: 1px dashed #ddd;
-  border-radius: 4px;
-}
-
-.style-preview .wxt-english.wxt-style-default {
-  color: #4a6fa5;
-}
-
-.style-preview .wxt-english.wxt-style-subtle {
-  color: #6c757d;
-  opacity: 0.8;
-}
-
-.style-preview .wxt-english.wxt-style-bold {
-  color: #4a6fa5;
-  font-weight: bold;
-}
-
-.style-preview .wxt-english.wxt-style-italic {
-  color: #4a6fa5;
-  font-style: italic;
-}
-
-.style-preview .wxt-english.wxt-style-underlined {
-  color: #4a6fa5;
-  text-decoration: underline;
-}
-
-.style-preview .wxt-english.wxt-style-highlighted {
-  color: #212529;
-  background-color: #ffeb3b;
-  padding: 0 2px;
-  border-radius: 2px;
-}
-
-.checkbox-container {
-  margin: 10px 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
+  color: var(--label-color);
 }
 </style>
