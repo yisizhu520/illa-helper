@@ -8,6 +8,7 @@ import {
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
+import { FloatingBallManager } from '@/src/modules/floatingBall';
 export default defineContentScript({
   // 匹配所有网站
   matches: ['<all_urls>'],
@@ -37,9 +38,21 @@ export default defineContentScript({
       settings.enablePronunciationTooltip,
     );
     const textReplacer = new TextReplacer(createReplacementConfig(settings));
+    const floatingBallManager = new FloatingBallManager(settings.floatingBall);
 
     // --- 应用初始配置 ---
     updateConfiguration(settings, styleManager, textReplacer);
+
+    // --- 初始化悬浮球 ---
+    floatingBallManager.init(() => {
+      // 悬浮球点击翻译回调
+      processPage(
+        textProcessor,
+        textReplacer,
+        settings.originalWordDisplayMode,
+        settings.maxLength,
+      );
+    });
 
     // --- 根据触发模式执行操作 ---
     if (settings.triggerMode === TriggerMode.AUTOMATIC) {
@@ -52,7 +65,13 @@ export default defineContentScript({
     }
 
     // --- 监听消息和DOM变化 ---
-    setupListeners(settings, styleManager, textProcessor, textReplacer);
+    setupListeners(
+      settings,
+      styleManager,
+      textProcessor,
+      textReplacer,
+      floatingBallManager,
+    );
   },
 });
 
@@ -105,6 +124,7 @@ function setupListeners(
   styleManager: StyleManager,
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
+  floatingBallManager: FloatingBallManager,
 ) {
   // 监听来自 popup 的消息
   browser.runtime.onMessage.addListener(async (message) => {
@@ -112,13 +132,17 @@ function setupListeners(
       console.log('设置已更新:', message.settings);
       const newSettings: UserSettings = message.settings;
 
-      // 如果关键模式发生变化，刷新页面
-      if (
+      // 检查是否需要刷新页面的关键设置
+      const needsPageReload =
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip
-      ) {
+          newSettings.enablePronunciationTooltip ||
+        settings.translationDirection !== newSettings.translationDirection ||
+        settings.userLevel !== newSettings.userLevel ||
+        settings.useGptApi !== newSettings.useGptApi;
+
+      if (needsPageReload) {
         window.location.reload();
         return;
       }
@@ -129,10 +153,8 @@ function setupListeners(
       // 应用新配置
       updateConfiguration(settings, styleManager, textReplacer);
 
-      // 自动模式下重新处理文档
-      if (settings.triggerMode === TriggerMode.AUTOMATIC) {
-        window.location.reload();
-      }
+      // 更新悬浮球配置
+      floatingBallManager.updateConfig(settings.floatingBall);
     } else if (message.type === 'MANUAL_TRANSLATE') {
       console.log('收到手动翻译请求');
       if (settings.triggerMode === TriggerMode.MANUAL) {

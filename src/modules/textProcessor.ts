@@ -250,7 +250,6 @@ export class TextProcessor {
     // 预先标记正在处理，避免重复处理
     const textGroupId = this.generateTextGroupId(textGroup);
     if (this.isTextGroupProcessing(textGroupId)) {
-      console.log('跳过正在处理的文本组:', textGroupId);
       return;
     }
 

@@ -115,6 +115,7 @@ export class StyleManager {
       .wxt-translation-term--learning {
         filter: blur(5px);
         cursor: pointer;
+        color: var(--wxt-primary-color);
         transition: filter 0.2s ease-in-out;
       }
       .wxt-translation-term--learning:hover {

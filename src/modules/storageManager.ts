@@ -8,6 +8,7 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_MULTILINGUAL_CONFIG,
   DEFAULT_TOOLTIP_HOTKEY,
+  DEFAULT_FLOATING_BALL_CONFIG,
 } from './types';
 
 // 存储管理器
@@ -241,6 +242,30 @@ export class StorageManager {
       // 验证必要字段
       if (typeof fixedSettings.pronunciationHotkey.enabled !== 'boolean') {
         fixedSettings.pronunciationHotkey.enabled = true;
+      }
+    }
+
+    // 验证悬浮球配置
+    if (!fixedSettings.floatingBall) {
+      fixedSettings.floatingBall = { ...DEFAULT_FLOATING_BALL_CONFIG };
+    } else {
+      // 验证必要字段
+      if (typeof fixedSettings.floatingBall.enabled !== 'boolean') {
+        fixedSettings.floatingBall.enabled = false;
+      }
+      if (
+        typeof fixedSettings.floatingBall.position !== 'number' ||
+        fixedSettings.floatingBall.position < 0 ||
+        fixedSettings.floatingBall.position > 100
+      ) {
+        fixedSettings.floatingBall.position = 50;
+      }
+      if (
+        typeof fixedSettings.floatingBall.opacity !== 'number' ||
+        fixedSettings.floatingBall.opacity < 0.1 ||
+        fixedSettings.floatingBall.opacity > 1
+      ) {
+        fixedSettings.floatingBall.opacity = 0.8;
       }
     }
 

@@ -66,6 +66,20 @@ export interface TooltipHotkey {
   enabled: boolean; // 是否启用快捷键要求（Ctrl+鼠标悬停）
 }
 
+// 悬浮球配置接口
+export interface FloatingBallConfig {
+  enabled: boolean; // 是否启用悬浮球
+  position: number; // 垂直位置百分比 (0-100)
+  opacity: number; // 透明度 (0.1-1.0)
+}
+
+// 默认悬浮球配置
+export const DEFAULT_FLOATING_BALL_CONFIG: FloatingBallConfig = {
+  enabled: false,
+  position: 50, // 中间位置
+  opacity: 0.8, // 80% 透明度
+};
+
 export const DEFAULT_API_CONFIG: ApiConfig = {
   apiKey: import.meta.env.VITE_WXT_DEFAULT_API_KEY,
   apiEndpoint: import.meta.env.VITE_WXT_DEFAULT_API_ENDPOINT,
@@ -120,6 +134,8 @@ export interface UserSettings {
   multilingualConfig: MultilingualConfig;
   // 新增：发音弹出框快捷键设置
   pronunciationHotkey: TooltipHotkey;
+  // 新增：悬浮球设置
+  floatingBall: FloatingBallConfig;
 }
 
 // 简化：默认多语言配置
@@ -147,4 +163,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   enablePronunciationTooltip: true,
   multilingualConfig: DEFAULT_MULTILINGUAL_CONFIG,
   pronunciationHotkey: DEFAULT_TOOLTIP_HOTKEY,
+  floatingBall: DEFAULT_FLOATING_BALL_CONFIG,
 };

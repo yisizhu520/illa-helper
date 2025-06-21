@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted, watch, computed, reactive } from 'vue';
+import { ref, onMounted, watch, computed, reactive, nextTick } from 'vue';
 import {
   UserLevel,
   TranslationStyle,
@@ -9,6 +9,7 @@ import {
   OriginalWordDisplayMode,
   DEFAULT_MULTILINGUAL_CONFIG,
   DEFAULT_TOOLTIP_HOTKEY,
+  DEFAULT_FLOATING_BALL_CONFIG,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';
@@ -22,52 +23,69 @@ const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 onMounted(async () => {
   const storageManager = new StorageManager();
   const loadedSettings = await storageManager.getUserSettings();
+
+  // 确保所有配置项存在
   if (!loadedSettings.multilingualConfig) {
-    loadedSettings.multilingualConfig = reactive({
-      ...DEFAULT_MULTILINGUAL_CONFIG,
-    });
+    loadedSettings.multilingualConfig = { ...DEFAULT_MULTILINGUAL_CONFIG };
   }
   if (!loadedSettings.pronunciationHotkey) {
-    loadedSettings.pronunciationHotkey = reactive({
-      ...DEFAULT_TOOLTIP_HOTKEY,
-    });
+    loadedSettings.pronunciationHotkey = { ...DEFAULT_TOOLTIP_HOTKEY };
   }
+  if (!loadedSettings.floatingBall) {
+    loadedSettings.floatingBall = { ...DEFAULT_FLOATING_BALL_CONFIG };
+  }
+
+  // 设置settings.value后标记初始化完成
   settings.value = reactive(loadedSettings);
+
+  // 延迟标记初始化完成，确保所有响应式更新都完成
+  nextTick(() => {
+    isInitializing = false;
+  });
 });
 
+// 设置更新状态管理
 let debounceTimer: number;
+let isInitializing = true;
+
+// 统一的设置更新监听
 watch(
   settings,
   () => {
+    // 跳过初始化阶段的触发
+    if (isInitializing) return;
+
     clearTimeout(debounceTimer);
-    debounceTimer = window.setTimeout(saveSettings, 500);
+    debounceTimer = window.setTimeout(saveAndNotifySettings, 200);
   },
   { deep: true },
 );
 
-const saveSettings = async () => {
+// 统一的保存和通知函数
+const saveAndNotifySettings = async () => {
   try {
     if (
       settings.value.translationDirection === 'intelligent' &&
       !settings.value.multilingualConfig?.targetLanguage?.trim()
     ) {
-      alert('请选择目标语言后再保存设置');
+      showSavedMessage('请选择目标语言后再保存设置');
       return;
     }
 
     const storageManager = new StorageManager();
     await storageManager.saveUserSettings(settings.value);
     await notifySettingsChanged(settings.value);
-    showSavedMessage();
+    showSavedMessage('设置已保存');
   } catch (error) {
     console.error('保存设置失败:', error);
-    alert('保存设置失败，请重试');
+    showSavedMessage('保存设置失败');
   }
 };
 
+
 const saveMessage = ref('');
-const showSavedMessage = () => {
-  saveMessage.value = '设置已保存';
+const showSavedMessage = (message: string) => {
+  saveMessage.value = message;
   setTimeout(() => (saveMessage.value = ''), 2000);
 };
 
@@ -95,16 +113,17 @@ const intelligentModeEnabled = computed(
 watch(
   () => settings.value.translationDirection,
   (newDirection) => {
+    if (isInitializing) return;
+
     if (newDirection === 'intelligent') {
       if (!settings.value.multilingualConfig) {
-        settings.value.multilingualConfig = reactive({
+        settings.value.multilingualConfig = {
           intelligentMode: true,
           targetLanguage: '',
-        });
+        };
       } else {
         settings.value.multilingualConfig.intelligentMode = true;
       }
-      saveSettings();
     } else if (settings.value.multilingualConfig) {
       settings.value.multilingualConfig.intelligentMode = false;
     }
@@ -118,7 +137,6 @@ const onTargetLanguageChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
   if (settings.value.multilingualConfig) {
     settings.value.multilingualConfig.targetLanguage = target.value;
-    saveSettings();
   }
 };
 
@@ -157,23 +175,14 @@ const originalWordDisplayOptions = [
     <header>
       <div class="header-content">
         <div class="logo">
-          <img
-            src="/assets/vue.svg"
-            alt="logo"
-            style="width: 24px; height: 24px"
-          />
+          <img src="/assets/vue.svg" alt="logo" style="width: 24px; height: 24px" />
         </div>
         <div class="title-container">
           <h1>浸入式学语言助手</h1>
           <p>在浏览中轻松学外语</p>
         </div>
       </div>
-      <button
-        v-if="settings.triggerMode === 'manual'"
-        @click="manualTranslate"
-        class="manual-translate-btn"
-        title="翻译"
-      >
+      <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn" title="翻译">
         翻译
       </button>
     </header>
@@ -185,45 +194,27 @@ const originalWordDisplayOptions = [
             <div class="setting-group">
               <label>翻译模式</label>
               <select v-model="settings.translationDirection">
-                <option
-                  v-for="option in directionOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in directionOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
             </div>
 
-            <div
-              v-if="intelligentModeEnabled && settings.multilingualConfig"
-              class="setting-group"
-            >
+            <div v-if="intelligentModeEnabled && settings.multilingualConfig" class="setting-group">
               <label>目标语言</label>
-              <select
-                :value="settings.multilingualConfig.targetLanguage"
-                @change="onTargetLanguageChange"
-              >
+              <select :value="settings.multilingualConfig.targetLanguage" @change="onTargetLanguageChange">
                 <option value="" disabled>请选择目标语言</option>
                 <optgroup label="常用语言">
-                  <option
-                    v-for="option in targetLanguageOptions.filter(
-                      (opt) => opt.isPopular,
-                    )"
-                    :key="option.code"
-                    :value="option.code"
-                  >
+                  <option v-for="option in targetLanguageOptions.filter(
+                    (opt) => opt.isPopular,
+                  )" :key="option.code" :value="option.code">
                     {{ option.nativeName }}
                   </option>
                 </optgroup>
                 <optgroup label="其他语言">
-                  <option
-                    v-for="option in targetLanguageOptions.filter(
-                      (opt) => !opt.isPopular,
-                    )"
-                    :key="option.code"
-                    :value="option.code"
-                  >
+                  <option v-for="option in targetLanguageOptions.filter(
+                    (opt) => !opt.isPopular,
+                  )" :key="option.code" :value="option.code">
                     {{ option.nativeName }}
                   </option>
                 </optgroup>
@@ -233,11 +224,7 @@ const originalWordDisplayOptions = [
             <div class="setting-group">
               <label>语言水平</label>
               <select v-model="settings.userLevel">
-                <option
-                  v-for="option in levelOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in levelOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -246,11 +233,7 @@ const originalWordDisplayOptions = [
             <div class="setting-group">
               <label>翻译样式</label>
               <select v-model="settings.translationStyle">
-                <option
-                  v-for="option in styleOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in styleOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -259,11 +242,7 @@ const originalWordDisplayOptions = [
             <div class="setting-group">
               <label>触发模式</label>
               <select v-model="settings.triggerMode">
-                <option
-                  v-for="option in triggerOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in triggerOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -272,11 +251,7 @@ const originalWordDisplayOptions = [
             <div class="setting-group">
               <label>原文显示</label>
               <select v-model="settings.originalWordDisplayMode">
-                <option
-                  v-for="option in originalWordDisplayOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
+                <option v-for="option in originalWordDisplayOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
                 </option>
               </select>
@@ -285,12 +260,8 @@ const originalWordDisplayOptions = [
               <div class="setting-group">
                 <label>悬浮框</label>
                 <div class="toggle-container">
-                  <input
-                    type="checkbox"
-                    v-model="settings.enablePronunciationTooltip"
-                    id="tooltip-toggle"
-                    class="toggle-input"
-                  />
+                  <input type="checkbox" v-model="settings.enablePronunciationTooltip" id="tooltip-toggle"
+                    class="toggle-input" />
                   <label for="tooltip-toggle" class="toggle-label">
                     <span class="toggle-slider"></span>
                   </label>
@@ -298,21 +269,39 @@ const originalWordDisplayOptions = [
               </div>
 
               <!-- 快捷键设置 -->
-              <div
-                v-if="settings.enablePronunciationTooltip"
-                class="setting-group"
-              >
-                <label>需要Ctrl+鼠标悬停</label>
+              <div v-if="settings.enablePronunciationTooltip" class="setting-group">
+                <label>Ctrl+鼠标悬停</label>
                 <div class="toggle-container">
-                  <input
-                    type="checkbox"
-                    v-model="settings.pronunciationHotkey.enabled"
-                    id="hotkey-enabled-toggle"
-                    class="toggle-input"
-                  />
+                  <input type="checkbox" v-model="settings.pronunciationHotkey.enabled" id="hotkey-enabled-toggle"
+                    class="toggle-input" />
                   <label for="hotkey-enabled-toggle" class="toggle-label">
                     <span class="toggle-slider"></span>
                   </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="topping-settings-card">
+              <!-- 悬浮球设置 -->
+              <div class="setting-group">
+                <label>悬浮翻译球</label>
+                <div class="toggle-container">
+                  <input type="checkbox" v-model="settings.floatingBall.enabled" id="floating-ball-toggle"
+                    class="toggle-input" />
+                  <label for="floating-ball-toggle" class="toggle-label">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 悬浮球详细设置 -->
+              <div v-if="settings.floatingBall.enabled" class="floating-ball-settings">
+                <div class="setting-group">
+                  <label>
+                    透明度:
+                    {{ Math.round(settings.floatingBall.opacity * 100) }}%
+                  </label>
+                  <input type="range" v-model.number="settings.floatingBall.opacity" min="0.3" max="1" step="0.1" />
                 </div>
               </div>
             </div>
@@ -321,24 +310,12 @@ const originalWordDisplayOptions = [
               <label>
                 替换比例: {{ Math.round(settings.replacementRate * 100) }}%
               </label>
-              <input
-                type="range"
-                v-model.number="settings.replacementRate"
-                min="0.01"
-                max="1"
-                step="0.01"
-              />
+              <input type="range" v-model.number="settings.replacementRate" min="0.01" max="1" step="0.01" />
             </div>
 
             <div class="setting-group full-width">
               <label>段落最大长度: {{ settings.maxLength }}</label>
-              <input
-                type="range"
-                v-model.number="settings.maxLength"
-                min="10"
-                max="2000"
-                step="10"
-              />
+              <input type="range" v-model.number="settings.maxLength" min="10" max="2000" step="10" />
               <p class="setting-note" style="margin-top: 0">
                 建议值: 80-100。较短的段落能更快获得AI响应。
               </p>
@@ -349,22 +326,10 @@ const originalWordDisplayOptions = [
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
             <span>模型 API 设置</span>
-            <svg
-              class="toggle-icon"
-              :class="{ 'is-open': showApiSettings }"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M6 9L12 15L18 9"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
+            <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
+              fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
             </svg>
           </div>
 
@@ -372,38 +337,22 @@ const originalWordDisplayOptions = [
             <div>
               <div class="sub-setting-group">
                 <label>API 端点</label>
-                <input
-                  type="text"
-                  v-model="settings.apiConfig.apiEndpoint"
-                  placeholder="例如: https://xxxxx/completions"
-                />
+                <input type="text" v-model="settings.apiConfig.apiEndpoint"
+                  placeholder="例如: https://xxxxx/completions" />
               </div>
               <div class="sub-setting-group">
                 <label>API 密钥</label>
-                <input
-                  type="password"
-                  v-model="settings.apiConfig.apiKey"
-                  placeholder="输入您的 API 密钥"
-                />
+                <input type="password" v-model="settings.apiConfig.apiKey" placeholder="输入您的 API 密钥" />
               </div>
 
               <div class="sub-setting-group">
                 <label>模型</label>
-                <input
-                  type="text"
-                  v-model.number="settings.apiConfig.model"
-                  placeholder="例如: doubao-1-5-lite-32k-250115"
-                />
+                <input type="text" v-model.number="settings.apiConfig.model"
+                  placeholder="例如: doubao-1-5-lite-32k-250115" />
               </div>
               <div class="sub-setting-group">
                 <label>温度: {{ settings.apiConfig.temperature }}</label>
-                <input
-                  type="range"
-                  v-model.number="settings.apiConfig.temperature"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                />
+                <input type="range" v-model.number="settings.apiConfig.temperature" min="0" max="1" step="0.1" />
               </div>
 
               <p class="setting-note">
@@ -625,16 +574,16 @@ header {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-input:checked + .toggle-label {
+.toggle-input:checked+.toggle-label {
   background-color: var(--primary-color);
 }
 
-.toggle-input:checked + .toggle-label .toggle-slider {
+.toggle-input:checked+.toggle-label .toggle-slider {
   transform: translateX(20px);
   box-shadow: 0 2px 6px rgba(106, 136, 224, 0.4);
 }
 
-.toggle-input:focus + .toggle-label {
+.toggle-input:focus+.toggle-label {
   box-shadow: 0 0 0 2px rgba(106, 136, 224, 0.3);
 }
 
