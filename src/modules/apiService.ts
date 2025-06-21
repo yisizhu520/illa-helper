@@ -179,9 +179,12 @@ export class ApiService {
 
       let content;
       try {
-        content = JSON.parse(data.choices[0].message.content);
+        // 清理AI响应中的Markdown格式
+        const cleanedContent = this.cleanMarkdownFromResponse(data.choices[0].message.content);
+        content = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('解析智能模式API响应JSON失败:', parseError);
+        console.error('原始响应内容:', data.choices[0].message.content);
         // 降级到传统模式处理
         return this.extractReplacements(data, originalText);
       }
@@ -225,9 +228,12 @@ export class ApiService {
 
       let content;
       try {
-        content = JSON.parse(data.choices[0].message.content);
+        // 清理AI响应中的Markdown格式
+        const cleanedContent = this.cleanMarkdownFromResponse(data.choices[0].message.content);
+        content = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('解析API响应JSON失败:', parseError);
+        console.error('原始响应内容:', data.choices[0].message.content);
         return {
           original: originalText,
           processed: originalText,
@@ -261,6 +267,35 @@ export class ApiService {
         replacements: [],
       };
     }
+  }
+
+  /**
+   * 清理AI响应中的Markdown格式
+   * @param content AI返回的原始内容
+   * @returns 清理后的JSON字符串
+   */
+  private cleanMarkdownFromResponse(content: string): string {
+    if (!content || typeof content !== 'string') {
+      return content;
+    }
+
+    // 移除Markdown代码块标记
+    let cleaned = content.trim();
+
+    // 移除开头的```json或```
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, '');
+
+    // 移除结尾的```
+    cleaned = cleaned.replace(/\n?\s*```\s*$/i, '');
+
+    // 移除其他可能的Markdown格式
+    cleaned = cleaned.replace(/^\s*```[\s\S]*?\n/, ''); // 移除开头的代码块
+    cleaned = cleaned.replace(/\n```\s*$/, ''); // 移除结尾的代码块
+
+    // 移除可能的额外空白字符
+    cleaned = cleaned.trim();
+
+    return cleaned;
   }
 
   /**

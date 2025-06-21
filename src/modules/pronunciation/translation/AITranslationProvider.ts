@@ -276,8 +276,8 @@ export class AITranslationProvider implements IPhoneticProvider {
       if (!explain || typeof explain !== 'string') {
         explain = `${word} 的释义暂不可用`;
       } else {
-        // 清理文本格式
-        explain = explain.trim();
+        // 清理Markdown格式和文本格式
+        explain = this.cleanMarkdownFromResponse(explain);
         // 如果解释过长，截取前200个字符
         if (explain.length > 200) {
           explain = explain.substring(0, 200) + '...';
@@ -295,6 +295,34 @@ export class AITranslationProvider implements IPhoneticProvider {
         source: 'ai-translation',
       };
     }
+  }
+
+  /**
+   * 清理AI响应中的Markdown格式
+   * @param content AI返回的原始内容
+   * @returns 清理后的文本
+   */
+  private cleanMarkdownFromResponse(content: string): string {
+    if (!content || typeof content !== 'string') {
+      return content;
+    }
+
+    let cleaned = content.trim();
+
+    // 移除Markdown代码块标记
+    cleaned = cleaned.replace(/^```(?:\w+)?\s*\n?/gi, '');
+    cleaned = cleaned.replace(/\n?\s*```\s*$/gi, '');
+
+    // 移除Markdown格式标记
+    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1'); // 粗体
+    cleaned = cleaned.replace(/\*(.*?)\*/g, '$1'); // 斜体
+    cleaned = cleaned.replace(/`(.*?)`/g, '$1'); // 行内代码
+    cleaned = cleaned.replace(/^#+\s*/gm, ''); // 标题
+
+    // 移除多余的空白字符
+    cleaned = cleaned.replace(/\n\s*\n/g, '\n').trim();
+
+    return cleaned;
   }
 
   /**
