@@ -10,6 +10,7 @@ export interface PronunciationElementData {
   element: HTMLElement;
   phonetic?: PhoneticInfo;
   tooltip?: HTMLElement;
+  isMouseOver?: boolean; // 标记鼠标是否在元素上
 }
 
 // 悬浮框类型

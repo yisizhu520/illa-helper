@@ -17,12 +17,22 @@ export interface TTSConfig {
   accent?: 'us' | 'uk'; // 美式或英式发音
 }
 
+// 快捷键配置接口
+export interface TooltipHotkey {
+  enabled: boolean; // 是否启用快捷键要求
+  requireModifier: boolean; // 是否需要修饰键
+  modifierKeys: string[]; // 修饰键数组 ['ctrl', 'alt', 'shift']
+  key?: string; // 可选的附加键
+  description?: string; // 快捷键描述
+}
+
 // 发音UI配置
 export interface PronunciationUIConfig {
   showPhonetic: boolean;
   showPlayButton: boolean;
   tooltipEnabled: boolean;
   inlineDisplay: boolean;
+  hotkey?: TooltipHotkey; // 快捷键配置
 }
 
 // 发音服务配置
@@ -45,12 +55,21 @@ export const DEFAULT_TTS_CONFIG: TTSConfig = {
   accent: 'us',
 };
 
+// 默认快捷键配置
+export const DEFAULT_TOOLTIP_HOTKEY: TooltipHotkey = {
+  enabled: true,
+  requireModifier: true,
+  modifierKeys: ['ctrl'],
+  description: 'Ctrl + 鼠标悬停',
+};
+
 // 默认UI配置
 export const DEFAULT_UI_CONFIG: PronunciationUIConfig = {
   showPhonetic: true,
   showPlayButton: true,
   tooltipEnabled: true,
   inlineDisplay: false, // 禁用内联显示，只在悬浮框中显示
+  hotkey: DEFAULT_TOOLTIP_HOTKEY,
 };
 
 // 默认发音配置

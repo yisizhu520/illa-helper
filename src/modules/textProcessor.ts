@@ -316,8 +316,8 @@ export class TextProcessor {
   }
 
   /**
- * 改进的元素跳过逻辑
- */
+   * 改进的元素跳过逻辑
+   */
   private shouldSkipElement(element: Element): boolean {
     // 检查是否在忽略列表中
     if (element.closest(this.ignoreSelector)) {
@@ -340,7 +340,11 @@ export class TextProcessor {
   /**
    * 生成文本组唯一标识
    */
-  private generateTextGroupId(textGroup: { nodes: Text[]; combinedText: string; container: Element }): string {
+  private generateTextGroupId(textGroup: {
+    nodes: Text[];
+    combinedText: string;
+    container: Element;
+  }): string {
     return `${textGroup.container.tagName}-${textGroup.combinedText.slice(0, 50).replace(/\s+/g, '_')}`;
   }
 
@@ -364,8 +368,6 @@ export class TextProcessor {
   private unmarkTextGroupAsProcessing(textGroupId: string): void {
     this.processingTextGroups.delete(textGroupId);
   }
-
-
 
   private applyReplacements(
     textGroup: { nodes: Text[]; combinedText: string; container: Element },

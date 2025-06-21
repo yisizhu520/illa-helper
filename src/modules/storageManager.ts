@@ -7,6 +7,7 @@ import {
   UserSettings,
   DEFAULT_SETTINGS,
   DEFAULT_MULTILINGUAL_CONFIG,
+  DEFAULT_TOOLTIP_HOTKEY,
 } from './types';
 
 // 存储管理器
@@ -231,6 +232,16 @@ export class StorageManager {
     // 验证API配置
     if (!fixedSettings.apiConfig) {
       fixedSettings.apiConfig = DEFAULT_SETTINGS.apiConfig;
+    }
+
+    // 验证发音快捷键配置
+    if (!fixedSettings.pronunciationHotkey) {
+      fixedSettings.pronunciationHotkey = { ...DEFAULT_TOOLTIP_HOTKEY };
+    } else {
+      // 验证必要字段
+      if (typeof fixedSettings.pronunciationHotkey.enabled !== 'boolean') {
+        fixedSettings.pronunciationHotkey.enabled = true;
+      }
     }
 
     return fixedSettings;

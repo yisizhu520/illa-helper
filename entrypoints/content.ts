@@ -117,7 +117,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-        newSettings.enablePronunciationTooltip
+          newSettings.enablePronunciationTooltip
       ) {
         window.location.reload();
         return;
@@ -205,7 +205,6 @@ function setupDomObserver(
     debounceTimer = window.setTimeout(async () => {
       if (nodesToProcess.size === 0) return;
 
-
       const topLevelNodes = new Set<Node>();
       nodesToProcess.forEach((node) => {
         if (
@@ -254,16 +253,19 @@ function isContentAlreadyProcessed(node: Node): boolean {
     }
 
     // 对于新增的内容，只有当90%以上的文本已被处理时才跳过
-    const processedElements = element.querySelectorAll('[data-wxt-text-processed]');
+    const processedElements = element.querySelectorAll(
+      '[data-wxt-text-processed]',
+    );
     if (processedElements.length > 0) {
       const textContent = element.textContent?.trim() || '';
       const processedTextContent = Array.from(processedElements)
-        .map(el => el.textContent?.trim() || '')
+        .map((el) => el.textContent?.trim() || '')
         .join(' ');
 
       // 提高阈值，减少误判
       const threshold = 0.9;
-      const isProcessed = textContent.length > 0 &&
+      const isProcessed =
+        textContent.length > 0 &&
         processedTextContent.length / textContent.length > threshold;
 
       return isProcessed;
@@ -279,7 +281,9 @@ function cleanupProcessedMarkers(): void {
   const currentTime = Date.now();
   const sixHoursAgo = currentTime - 6 * 60 * 60 * 1000; // 6小时前，延长有效期
 
-  const processedElements = document.querySelectorAll('[data-wxt-processed-time]');
+  const processedElements = document.querySelectorAll(
+    '[data-wxt-processed-time]',
+  );
   processedElements.forEach((element) => {
     const processedTime = element.getAttribute('data-wxt-processed-time');
     if (processedTime && parseInt(processedTime) < sixHoursAgo) {

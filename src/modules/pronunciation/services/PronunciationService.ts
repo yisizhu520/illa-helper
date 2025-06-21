@@ -569,21 +569,41 @@ export class PronunciationService {
     element: HTMLElement,
     elementData: PronunciationElementData,
   ): void {
-    const mouseEnterHandler = async () => {
+    const mouseEnterHandler = async (event: MouseEvent) => {
+      elementData.isMouseOver = true;
+      // 检查快捷键要求
+      if (!(await this.checkHotkey(event))) {
+        return;
+      }
       await this.handleMouseEnter(elementData);
     };
 
     const mouseLeaveHandler = () => {
+      elementData.isMouseOver = false;
       this.handleMouseLeave(elementData);
+    };
+
+    // 键盘按下处理 - 支持先鼠标悬停后按快捷键的情况
+    const keyDownHandler = async (event: KeyboardEvent) => {
+      // 只有鼠标在元素上且按下了正确的快捷键时才触发
+      if (
+        elementData.isMouseOver &&
+        (await this.checkHotkeyFromKeyboard(event))
+      ) {
+        event.preventDefault(); // 防止默认行为
+        await this.handleMouseEnter(elementData);
+      }
     };
 
     element.addEventListener('mouseenter', mouseEnterHandler);
     element.addEventListener('mouseleave', mouseLeaveHandler);
+    document.addEventListener('keydown', keyDownHandler);
 
     // 存储处理器引用以便后续移除
     (element as any).__wxtHandlers = {
       mouseEnterHandler,
       mouseLeaveHandler,
+      keyDownHandler,
     };
   }
 
@@ -595,7 +615,64 @@ export class PronunciationService {
     if (handlers) {
       element.removeEventListener('mouseenter', handlers.mouseEnterHandler);
       element.removeEventListener('mouseleave', handlers.mouseLeaveHandler);
+      if (handlers.keyDownHandler) {
+        document.removeEventListener('keydown', handlers.keyDownHandler);
+      }
       delete (element as any).__wxtHandlers;
+    }
+  }
+
+  /**
+   * 检查快捷键是否满足要求
+   */
+  private async checkHotkey(event: MouseEvent): Promise<boolean> {
+    try {
+      // 动态获取用户设置中的快捷键配置
+      const storageManager = new (
+        await import('../../storageManager')
+      ).StorageManager();
+      const userSettings = await storageManager.getUserSettings();
+      const hotkey = userSettings.pronunciationHotkey;
+
+      // 如果没有配置或未启用快捷键，直接允许
+      if (!hotkey || !hotkey.enabled) {
+        return true;
+      }
+
+      // 检查Ctrl键是否按下
+      return event.ctrlKey;
+    } catch (error) {
+      console.error('获取快捷键配置失败:', error);
+      // 出错时默认允许
+      return true;
+    }
+  }
+
+  /**
+   * 检查快捷键是否满足要求（键盘事件）
+   */
+  private async checkHotkeyFromKeyboard(
+    event: KeyboardEvent,
+  ): Promise<boolean> {
+    try {
+      // 动态获取用户设置中的快捷键配置
+      const storageManager = new (
+        await import('../../storageManager')
+      ).StorageManager();
+      const userSettings = await storageManager.getUserSettings();
+      const hotkey = userSettings.pronunciationHotkey;
+
+      // 如果没有配置或未启用快捷键，直接允许
+      if (!hotkey || !hotkey.enabled) {
+        return true;
+      }
+
+      // 检查Ctrl键是否按下
+      return event.ctrlKey;
+    } catch (error) {
+      console.error('获取快捷键配置失败:', error);
+      // 出错时默认允许
+      return true;
     }
   }
 

@@ -8,6 +8,7 @@ import {
   UserSettings,
   OriginalWordDisplayMode,
   DEFAULT_MULTILINGUAL_CONFIG,
+  DEFAULT_TOOLTIP_HOTKEY,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { notifySettingsChanged } from '@/src/modules/messaging';
@@ -22,9 +23,16 @@ onMounted(async () => {
   const storageManager = new StorageManager();
   const loadedSettings = await storageManager.getUserSettings();
   if (!loadedSettings.multilingualConfig) {
-    loadedSettings.multilingualConfig = { ...DEFAULT_MULTILINGUAL_CONFIG };
+    loadedSettings.multilingualConfig = reactive({
+      ...DEFAULT_MULTILINGUAL_CONFIG,
+    });
   }
-  settings.value = loadedSettings;
+  if (!loadedSettings.pronunciationHotkey) {
+    loadedSettings.pronunciationHotkey = reactive({
+      ...DEFAULT_TOOLTIP_HOTKEY,
+    });
+  }
+  settings.value = reactive(loadedSettings);
 });
 
 let debounceTimer: number;
@@ -46,6 +54,7 @@ const saveSettings = async () => {
       alert('请选择目标语言后再保存设置');
       return;
     }
+
     const storageManager = new StorageManager();
     await storageManager.saveUserSettings(settings.value);
     await notifySettingsChanged(settings.value);
@@ -283,6 +292,25 @@ const originalWordDisplayOptions = [
                     class="toggle-input"
                   />
                   <label for="tooltip-toggle" class="toggle-label">
+                    <span class="toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- 快捷键设置 -->
+              <div
+                v-if="settings.enablePronunciationTooltip"
+                class="setting-group"
+              >
+                <label>需要Ctrl+鼠标悬停</label>
+                <div class="toggle-container">
+                  <input
+                    type="checkbox"
+                    v-model="settings.pronunciationHotkey.enabled"
+                    id="hotkey-enabled-toggle"
+                    class="toggle-input"
+                  />
+                  <label for="hotkey-enabled-toggle" class="toggle-label">
                     <span class="toggle-slider"></span>
                   </label>
                 </div>

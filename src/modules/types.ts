@@ -61,6 +61,11 @@ export interface LanguageOption {
   isPopular?: boolean;
 }
 
+// 新增：快捷键配置接口
+export interface TooltipHotkey {
+  enabled: boolean; // 是否启用快捷键要求（Ctrl+鼠标悬停）
+}
+
 export const DEFAULT_API_CONFIG: ApiConfig = {
   apiKey: import.meta.env.VITE_WXT_DEFAULT_API_KEY,
   apiEndpoint: import.meta.env.VITE_WXT_DEFAULT_API_ENDPOINT,
@@ -113,12 +118,19 @@ export interface UserSettings {
   enablePronunciationTooltip: boolean;
   // 新增：多语言智能翻译设置
   multilingualConfig: MultilingualConfig;
+  // 新增：发音弹出框快捷键设置
+  pronunciationHotkey: TooltipHotkey;
 }
 
 // 简化：默认多语言配置
 export const DEFAULT_MULTILINGUAL_CONFIG: MultilingualConfig = {
   intelligentMode: false,
   targetLanguage: 'en', // 无默认语言，强制用户选择
+};
+
+// 默认快捷键配置
+export const DEFAULT_TOOLTIP_HOTKEY: TooltipHotkey = {
+  enabled: true,
 };
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -134,4 +146,5 @@ export const DEFAULT_SETTINGS: UserSettings = {
   originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,
   enablePronunciationTooltip: true,
   multilingualConfig: DEFAULT_MULTILINGUAL_CONFIG,
+  pronunciationHotkey: DEFAULT_TOOLTIP_HOTKEY,
 };
