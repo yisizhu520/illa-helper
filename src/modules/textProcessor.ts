@@ -61,6 +61,7 @@ const BLOCK_TAGS = new Set([
 export class TextProcessor {
   private ignoreSelector: string;
   private pronunciationService: PronunciationService;
+  private processingTextGroups: Set<string> = new Set();
 
   constructor(enablePronunciationTooltip: boolean = true) {
     // 将IGNORE_TAGS转换为CSS选择器
@@ -68,7 +69,7 @@ export class TextProcessor {
 
     this.ignoreSelector = `
       .wxt-translation-term, .wxt-original-word,
-      [data-wxt-processed="true"], [data-wxt-word-processed="true"],
+      [data-wxt-word-processed="true"],
       ${ignoreTagsSelector},
       svg, canvas, audio, video, iframe, embed, object,
       .code, .highlight, .hljs,
@@ -148,14 +149,8 @@ export class TextProcessor {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
       acceptNode: (node) => {
         const element = node as Element;
-        // 核心过滤逻辑
-        if (
-          element.closest('[data-wxt-processed="true"]') ||
-          element.closest(this.ignoreSelector)
-        ) {
-          return NodeFilter.FILTER_REJECT;
-        }
-        if (window.getComputedStyle(element).display === 'none') {
+        // 使用改进的跳过逻辑
+        if (this.shouldSkipElement(element)) {
           return NodeFilter.FILTER_REJECT;
         }
         if (BLOCK_TAGS.has(element.tagName.toUpperCase())) {
@@ -175,6 +170,7 @@ export class TextProcessor {
       }> = [];
       this.buildGroupsFromBlock(blockElement as Element, textGroups, maxLength);
 
+      // 串行处理文本组，确保顺序和稳定性
       for (const group of textGroups) {
         await this.processTextGroup(
           group,
@@ -205,7 +201,8 @@ export class TextProcessor {
           // 子节点的文本同样需要检查是否在忽略的父元素下
           if (
             !node.textContent?.trim() ||
-            node.parentElement?.closest(this.ignoreSelector)
+            node.parentElement?.closest(this.ignoreSelector) ||
+            node.parentElement?.hasAttribute('data-wxt-text-processed')
           ) {
             return NodeFilter.FILTER_REJECT;
           }
@@ -250,8 +247,14 @@ export class TextProcessor {
     textReplacer: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
   ): Promise<void> {
-    // 关键修复：立即标记，防止重复处理
-    textGroup.container.setAttribute('data-wxt-processed', 'true');
+    // 预先标记正在处理，避免重复处理
+    const textGroupId = this.generateTextGroupId(textGroup);
+    if (this.isTextGroupProcessing(textGroupId)) {
+      console.log('跳过正在处理的文本组:', textGroupId);
+      return;
+    }
+
+    this.markTextGroupAsProcessing(textGroupId);
     let result: any = null;
 
     // 获取当前文本组所有不重复的直接父元素，以实现更小粒度的视觉反馈
@@ -273,8 +276,14 @@ export class TextProcessor {
           textReplacer.styleManager,
           originalWordDisplayMode,
         );
+        // 精确标记已处理的文本节点
+        this.markProcessedTextNodes(textGroup.nodes);
+      } else {
+        // 即使没有替换也要标记，避免重复处理空内容
+        this.markProcessedTextNodes(textGroup.nodes);
       }
-    } catch (_) {
+    } catch (error) {
+      console.error('处理文本组失败:', error);
       if (result && result.replacements && result.replacements.length > 0) {
         this.applyReplacementsInFallback(
           textGroup,
@@ -283,11 +292,80 @@ export class TextProcessor {
           originalWordDisplayMode,
         );
       }
+      // 即使在fallback模式下也要标记
+      this.markProcessedTextNodes(textGroup.nodes);
     } finally {
       // 确保从所有父元素上移除处理中样式
       parentElements.forEach((el) => el.classList.remove('wxt-processing'));
+      // 移除处理中标记
+      this.unmarkTextGroupAsProcessing(textGroupId);
     }
   }
+
+  /**
+   * 精确标记已处理的文本节点
+   */
+  private markProcessedTextNodes(nodes: Text[]): void {
+    const timestamp = Date.now().toString();
+    nodes.forEach((node) => {
+      if (node.parentElement) {
+        node.parentElement.setAttribute('data-wxt-text-processed', 'true');
+        node.parentElement.setAttribute('data-wxt-processed-time', timestamp);
+      }
+    });
+  }
+
+  /**
+ * 改进的元素跳过逻辑
+ */
+  private shouldSkipElement(element: Element): boolean {
+    // 检查是否在忽略列表中
+    if (element.closest(this.ignoreSelector)) {
+      return true;
+    }
+
+    // 检查是否已经被处理（仅检查文本级别的标记）
+    if (element.hasAttribute('data-wxt-text-processed')) {
+      return true;
+    }
+
+    // 检查是否隐藏
+    if (window.getComputedStyle(element).display === 'none') {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * 生成文本组唯一标识
+   */
+  private generateTextGroupId(textGroup: { nodes: Text[]; combinedText: string; container: Element }): string {
+    return `${textGroup.container.tagName}-${textGroup.combinedText.slice(0, 50).replace(/\s+/g, '_')}`;
+  }
+
+  /**
+   * 检查文本组是否正在处理中
+   */
+  private isTextGroupProcessing(textGroupId: string): boolean {
+    return this.processingTextGroups.has(textGroupId);
+  }
+
+  /**
+   * 标记文本组为处理中
+   */
+  private markTextGroupAsProcessing(textGroupId: string): void {
+    this.processingTextGroups.add(textGroupId);
+  }
+
+  /**
+   * 取消文本组处理中标记
+   */
+  private unmarkTextGroupAsProcessing(textGroupId: string): void {
+    this.processingTextGroups.delete(textGroupId);
+  }
+
+
 
   private applyReplacements(
     textGroup: { nodes: Text[]; combinedText: string; container: Element },

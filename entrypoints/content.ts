@@ -117,7 +117,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip
+        newSettings.enablePronunciationTooltip
       ) {
         window.location.reload();
         return;
@@ -183,18 +183,28 @@ function setupDomObserver(
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach((node) => nodesToProcess.add(node));
+        mutation.addedNodes.forEach((node) => {
+          // 只处理真正新增的内容
+          if (isContentAlreadyProcessed(node)) {
+            return;
+          }
+          nodesToProcess.add(node);
+        });
       } else if (
         mutation.type === 'characterData' &&
         mutation.target.parentElement
       ) {
-        nodesToProcess.add(mutation.target.parentElement);
+        const parentElement = mutation.target.parentElement;
+        if (!isContentAlreadyProcessed(parentElement)) {
+          nodesToProcess.add(parentElement);
+        }
       }
     });
 
     clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(async () => {
       if (nodesToProcess.size === 0) return;
+
 
       const topLevelNodes = new Set<Node>();
       nodesToProcess.forEach((node) => {
@@ -205,6 +215,9 @@ function setupDomObserver(
           topLevelNodes.add(node);
         }
       });
+
+      // 清理过时的标记
+      cleanupProcessedMarkers();
 
       observer.disconnect();
       for (const node of topLevelNodes) {
@@ -221,6 +234,59 @@ function setupDomObserver(
   });
 
   observer.observe(document.body, observerConfig);
+}
+
+/**
+ * 检查内容是否已被处理
+ */
+function isContentAlreadyProcessed(node: Node): boolean {
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const element = node as Element;
+
+    // 检查元素本身是否有处理标记
+    if (element.hasAttribute('data-wxt-text-processed')) {
+      return true;
+    }
+
+    // 检查是否包含翻译标记
+    if (element.querySelector('.wxt-translation-term, .wxt-original-word')) {
+      return true;
+    }
+
+    // 对于新增的内容，只有当90%以上的文本已被处理时才跳过
+    const processedElements = element.querySelectorAll('[data-wxt-text-processed]');
+    if (processedElements.length > 0) {
+      const textContent = element.textContent?.trim() || '';
+      const processedTextContent = Array.from(processedElements)
+        .map(el => el.textContent?.trim() || '')
+        .join(' ');
+
+      // 提高阈值，减少误判
+      const threshold = 0.9;
+      const isProcessed = textContent.length > 0 &&
+        processedTextContent.length / textContent.length > threshold;
+
+      return isProcessed;
+    }
+  }
+  return false;
+}
+
+/**
+ * 清理过时的处理标记
+ */
+function cleanupProcessedMarkers(): void {
+  const currentTime = Date.now();
+  const sixHoursAgo = currentTime - 6 * 60 * 60 * 1000; // 6小时前，延长有效期
+
+  const processedElements = document.querySelectorAll('[data-wxt-processed-time]');
+  processedElements.forEach((element) => {
+    const processedTime = element.getAttribute('data-wxt-processed-time');
+    if (processedTime && parseInt(processedTime) < sixHoursAgo) {
+      element.removeAttribute('data-wxt-text-processed');
+      element.removeAttribute('data-wxt-processed-time');
+    }
+  });
 }
 
 /**
