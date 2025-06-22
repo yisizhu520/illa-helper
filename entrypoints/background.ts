@@ -6,7 +6,6 @@ export default defineBackground(() => {
   browser.runtime.onInstalled.addListener((details) => {
     if (details.reason === 'install') {
       browser.storage.sync.set(DEFAULT_SETTINGS);
-      console.log('默认设置已存储。');
     }
   });
 
@@ -50,8 +49,7 @@ export default defineBackground(() => {
         }
         sendResponse(false);
       })();
-
-      return true; // 关键：表示我们将异步发送响应
+      return true;
     }
   });
 });

@@ -180,7 +180,9 @@ export class ApiService {
       let content;
       try {
         // 清理AI响应中的Markdown格式
-        const cleanedContent = this.cleanMarkdownFromResponse(data.choices[0].message.content);
+        const cleanedContent = this.cleanMarkdownFromResponse(
+          data.choices[0].message.content,
+        );
         content = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('解析智能模式API响应JSON失败:', parseError);
@@ -229,7 +231,9 @@ export class ApiService {
       let content;
       try {
         // 清理AI响应中的Markdown格式
-        const cleanedContent = this.cleanMarkdownFromResponse(data.choices[0].message.content);
+        const cleanedContent = this.cleanMarkdownFromResponse(
+          data.choices[0].message.content,
+        );
         content = JSON.parse(cleanedContent);
       } catch (parseError) {
         console.error('解析API响应JSON失败:', parseError);

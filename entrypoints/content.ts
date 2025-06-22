@@ -9,6 +9,7 @@ import {
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
+import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
 export default defineContentScript({
   // 匹配所有网站
   matches: ['<all_urls>'],
@@ -17,6 +18,13 @@ export default defineContentScript({
   async main() {
     const storageManager = new StorageManager();
     const settings = await storageManager.getUserSettings();
+
+    // 黑名单检查
+    const blacklistManager = new BlacklistManager();
+    if (await blacklistManager.isBlacklisted(window.location.href)) {
+      console.log('ILLA Helper: URL is blacklisted. Aborting.');
+      return;
+    }
 
     browser.runtime.sendMessage({
       type: 'validate-configuration',
@@ -137,7 +145,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip ||
+        newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;
