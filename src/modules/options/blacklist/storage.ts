@@ -1,7 +1,4 @@
-import {
-  BlacklistSettings,
-  DEFAULT_BLACKLIST_SETTINGS,
-} from './types';
+import { BlacklistSettings, DEFAULT_BLACKLIST_SETTINGS } from './types';
 
 const STORAGE_KEY = 'illa-helper-blacklist-settings';
 
