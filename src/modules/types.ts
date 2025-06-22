@@ -75,7 +75,7 @@ export interface FloatingBallConfig {
 
 // 默认悬浮球配置
 export const DEFAULT_FLOATING_BALL_CONFIG: FloatingBallConfig = {
-  enabled: false,
+  enabled: true,
   position: 50, // 中间位置
   opacity: 0.8, // 80% 透明度
 };
