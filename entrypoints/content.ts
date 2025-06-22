@@ -52,14 +52,22 @@ export default defineContentScript({
     updateConfiguration(settings, styleManager, textReplacer);
 
     // --- 初始化悬浮球 ---
-    floatingBallManager.init(() => {
+    floatingBallManager.init(async () => {
       // 悬浮球点击翻译回调
-      processPage(
-        textProcessor,
-        textReplacer,
-        settings.originalWordDisplayMode,
-        settings.maxLength,
-      );
+      // 验证API配置
+      const isConfigValid = await browser.runtime.sendMessage({
+        type: 'validate-configuration',
+        source: 'user_action',
+      });
+
+      if (isConfigValid) {
+        await processPage(
+          textProcessor,
+          textReplacer,
+          settings.originalWordDisplayMode,
+          settings.maxLength,
+        );
+      }
     });
 
     // --- 根据触发模式执行操作 ---

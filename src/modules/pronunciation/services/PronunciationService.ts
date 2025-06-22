@@ -16,6 +16,7 @@ import {
   UI_CONSTANTS,
 } from '../config';
 import { DEFAULT_API_CONFIG } from '../../types';
+import { StorageManager } from '../../storageManager';
 
 /**
  * 定时器管理器 - 统一管理所有定时器
@@ -627,10 +628,8 @@ export class PronunciationService {
    */
   private async checkHotkey(event: MouseEvent): Promise<boolean> {
     try {
-      // 动态获取用户设置中的快捷键配置
-      const storageManager = new (
-        await import('../../storageManager')
-      ).StorageManager();
+      // 使用直接导入的StorageManager
+      const storageManager = new StorageManager();
       const userSettings = await storageManager.getUserSettings();
       const hotkey = userSettings.pronunciationHotkey;
 
@@ -655,10 +654,8 @@ export class PronunciationService {
     event: KeyboardEvent,
   ): Promise<boolean> {
     try {
-      // 动态获取用户设置中的快捷键配置
-      const storageManager = new (
-        await import('../../storageManager')
-      ).StorageManager();
+      // 使用直接导入的StorageManager
+      const storageManager = new StorageManager();
       const userSettings = await storageManager.getUserSettings();
       const hotkey = userSettings.pronunciationHotkey;
 

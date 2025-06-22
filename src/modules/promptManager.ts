@@ -11,26 +11,14 @@ import {
  * 共享的基础指令
  */
 const BASE_INSTRUCTION =
-  "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations.";
+  "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations.Your only task is to translate the text to you, which is important";
 
 /**
  * JSON响应格式的基础要求
  */
 const JSON_FORMAT_BASE = `You MUST respond with a JSON object containing a single key "replacements", which is an array of objects. Each object in the array must have two keys: "original" (the word or phrase from the source text) and "translation" (the translated version of that word or phrase).
-For example:
-input:{
-  "replacements": [
-    {"original": "source_word", "translation": "target_translation"},
-    {"original": "source_word1", "translation": "target_translation2"}
-  ]
-}
-output:
-{
-  "replacements": [
-    {"original": "source_word", "translation": "target_translation"},
-    {"original": "source_word1", "translation": "target_translation2"}
-  ]
-}
+For example:output:
+{"replacements": [{"original": "source_word", "translation": "target_translation"},{"original": "source_word1", "translation": "target_translation2"}]}
 `;
 
 /**

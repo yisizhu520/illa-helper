@@ -308,16 +308,17 @@ export class AITranslationProvider implements IPhoneticProvider {
     }
 
     let cleaned = content.trim();
-
+    // 不校验这个变量 因为需要替换为空字符串 必须是双引号
+    const _ = "";
     // 移除Markdown代码块标记
-    cleaned = cleaned.replace(/^```(?:\w+)?\s*\n?/gi, '');
-    cleaned = cleaned.replace(/\n?\s*```\s*$/gi, '');
+    cleaned = cleaned.replace(/^```(?:\w+)?\s*\n?/gi, _);
+    cleaned = cleaned.replace(/\n?\s*```\s*$/gi, _);
 
     // 移除Markdown格式标记
     cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1'); // 粗体
     cleaned = cleaned.replace(/\*(.*?)\*/g, '$1'); // 斜体
     cleaned = cleaned.replace(/`(.*?)`/g, '$1'); // 行内代码
-    cleaned = cleaned.replace(/^#+\s*/gm, ''); // 标题
+    cleaned = cleaned.replace(/^#+\s*/gm, _); // 标题
 
     // 移除多余的空白字符
     cleaned = cleaned.replace(/\n\s*\n/g, '\n').trim();
