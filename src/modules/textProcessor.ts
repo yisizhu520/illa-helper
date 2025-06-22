@@ -282,7 +282,8 @@ export class TextProcessor {
         this.markProcessedTextNodes(textGroup.nodes);
       }
     } catch (error) {
-      console.error('处理文本组失败:', error);
+      // console.error('处理文本组失败:', error);
+      // TODO: 处理失败的情况
       if (result && result.replacements && result.replacements.length > 0) {
         this.applyReplacementsInFallback(
           textGroup,

@@ -110,7 +110,10 @@ export class ApiService {
         model: settings.apiConfig.model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: originalText },
+          {
+            role: 'user',
+            content: `Text that needs to be translated in {{text}}:{{ ${originalText} }}`,
+          },
         ],
         temperature: settings.apiConfig.temperature,
         response_format: { type: 'json_object' },
