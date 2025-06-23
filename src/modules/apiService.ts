@@ -112,7 +112,7 @@ export class ApiService {
           { role: 'system', content: systemPrompt },
           {
             role: 'user',
-            content: `Text that needs to be translated in {{text}}:{{ ${originalText} }}`,
+            content: `{{ ${originalText} }}`,
           },
         ],
         temperature: settings.apiConfig.temperature,

@@ -11,7 +11,7 @@ import {
  * 共享的基础指令
  */
 const BASE_INSTRUCTION =
-  "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations.Your only task is to translate the text to you, which is important";
+  "You are an expert in linguistics and a language teacher. Your task is to process a given text paragraph, identify words or phrases suitable for a user's learning level, and provide translations.Your only task is to translate the text in {{}}, which is important";
 
 /**
  * JSON响应格式的基础要求

@@ -1,4 +1,4 @@
-import { OriginalWordDisplayMode } from './types';
+import { OriginalWordDisplayMode, ApiConfig } from './types';
 import { PronunciationService } from './pronunciation/services/PronunciationService';
 import { DEFAULT_PRONUNCIATION_CONFIG } from './pronunciation/config';
 /**
@@ -63,7 +63,7 @@ export class TextProcessor {
   private pronunciationService: PronunciationService;
   private processingTextGroups: Set<string> = new Set();
 
-  constructor(enablePronunciationTooltip: boolean = true) {
+  constructor(enablePronunciationTooltip: boolean = true, apiConfig?: ApiConfig) {
     // 将IGNORE_TAGS转换为CSS选择器
     const ignoreTagsSelector = Array.from(IGNORE_TAGS).join(',').toLowerCase();
 
@@ -86,7 +86,7 @@ export class TextProcessor {
       },
     };
 
-    this.pronunciationService = new PronunciationService(pronunciationConfig);
+    this.pronunciationService = new PronunciationService(pronunciationConfig, apiConfig);
     this.injectGlowStyle();
   }
 
@@ -571,6 +571,21 @@ export class TextProcessor {
       }, 0);
     } catch (error) {
       console.error('添加发音功能失败:', error);
+    }
+  }
+
+  /**
+   * 更新API配置
+   * 支持运行时API配置更新，配置变更会立即生效
+   */
+  updateApiConfig(apiConfig: ApiConfig): void {
+    try {
+      if (this.pronunciationService) {
+        this.pronunciationService.updateApiConfig(apiConfig);
+        console.log('TextProcessor API配置已更新');
+      }
+    } catch (error) {
+      console.error('TextProcessor 更新API配置失败:', error);
     }
   }
 }

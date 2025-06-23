@@ -44,6 +44,7 @@ export default defineContentScript({
     const styleManager = new StyleManager();
     const textProcessor = new TextProcessor(
       settings.enablePronunciationTooltip,
+      settings.apiConfig,
     );
     const textReplacer = new TextReplacer(createReplacementConfig(settings));
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
@@ -168,6 +169,9 @@ function setupListeners(
 
       // 应用新配置
       updateConfiguration(settings, styleManager, textReplacer);
+
+      // 更新API配置
+      textProcessor.updateApiConfig(settings.apiConfig);
 
       // 更新悬浮球配置
       floatingBallManager.updateConfig(settings.floatingBall);

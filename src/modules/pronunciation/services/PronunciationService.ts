@@ -15,7 +15,7 @@ import {
   CSS_CLASSES,
   UI_CONSTANTS,
 } from '../config';
-import { DEFAULT_API_CONFIG } from '../../types';
+import { DEFAULT_API_CONFIG, ApiConfig } from '../../types';
 import { StorageManager } from '../../storageManager';
 
 /**
@@ -177,7 +177,7 @@ export class PronunciationService {
   /** 当前主悬浮框对应的元素 */
   private currentMainElement: HTMLElement | null = null;
 
-  constructor(config?: Partial<PronunciationConfig>) {
+  constructor(config?: Partial<PronunciationConfig>, apiConfig?: ApiConfig) {
     this.config = { ...DEFAULT_PRONUNCIATION_CONFIG, ...config };
     this.phoneticProvider = PhoneticProviderFactory.createProvider(
       this.config.provider,
@@ -186,8 +186,9 @@ export class PronunciationService {
       this.config.ttsConfig.provider,
       this.config.ttsConfig,
     );
-    // 创建AI翻译提供者，使用默认API配置
-    this.aiTranslationProvider = new AITranslationProvider(DEFAULT_API_CONFIG);
+    // 创建AI翻译提供者，优先使用传入的API配置，否则使用默认配置
+    const effectiveApiConfig = apiConfig || DEFAULT_API_CONFIG;
+    this.aiTranslationProvider = new AITranslationProvider(effectiveApiConfig);
     this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig);
 
     // 始终创建Web Speech作为备用TTS提供者
@@ -479,6 +480,20 @@ export class PronunciationService {
         pitch: config.ttsConfig.pitch,
         volume: config.ttsConfig.volume,
       });
+    }
+  }
+
+  /**
+   * 更新API配置
+   * 支持运行时API配置更新，配置变更会立即生效
+   */
+  updateApiConfig(apiConfig: ApiConfig): void {
+    try {
+      // 更新AI翻译提供者的配置
+      this.aiTranslationProvider.updateApiConfig(apiConfig);
+      console.log('API配置已更新');
+    } catch (error) {
+      console.error('更新API配置失败:', error);
     }
   }
 
