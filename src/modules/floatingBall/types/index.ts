@@ -10,11 +10,18 @@ export interface FloatingBallConfig {
 }
 
 // 悬浮球事件类型
-export type FloatingBallEventType = 'translate' | 'drag' | 'click';
+export type FloatingBallEventType = 'translate' | 'drag' | 'click' | 'menu';
+
+// 悬浮球操作类型
+export type FloatingBallActionType = 
+  | 'settings'     // 打开设置
+  | 'close'        // 关闭悬浮球
+  | 'toggle_menu'; // 切换菜单
 
 // 悬浮球状态
 export interface FloatingBallState {
   isDragging: boolean;
   isVisible: boolean;
+  isMenuExpanded: boolean; // 新增：菜单是否展开
   currentPosition: number;
 }

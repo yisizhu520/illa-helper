@@ -3,13 +3,23 @@
  * 负责在页面上创建和管理翻译悬浮球
  */
 
-import type { FloatingBallConfig, FloatingBallState } from '../types';
-import { FLOATING_BALL_STYLES, DRAG_CONFIG } from '../config';
+import type {
+  FloatingBallConfig,
+  FloatingBallState,
+  FloatingBallActionType,
+} from '../types';
+import {
+  FLOATING_BALL_STYLES,
+  DRAG_CONFIG,
+  MENU_STYLES,
+  MENU_ACTIONS,
+} from '../config';
 
 export class FloatingBallManager {
   private config: FloatingBallConfig;
   private state: FloatingBallState;
   private ballElement: HTMLElement | null = null;
+  private menuContainer: HTMLElement | null = null;
   private dragStartY = 0;
   private ballStartY = 0;
   private onTranslateCallback?: () => void;
@@ -25,12 +35,16 @@ export class FloatingBallManager {
   private lastClickTime = 0;
   private clickDebounceTimer: number | null = null;
   private isTouchDevice = false;
+  // 菜单悬停相关
+  private menuHoverTimer: number | null = null;
+  private menuItemsEventsBound = false; // 防止重复绑定菜单项事件
 
   constructor(config: FloatingBallConfig) {
     this.config = config;
     this.state = {
       isDragging: false,
       isVisible: false,
+      isMenuExpanded: false,
       currentPosition: config.position,
     };
 
@@ -129,10 +143,40 @@ export class FloatingBallManager {
     this.ballElement = document.createElement('div');
     this.ballElement.className = 'wxt-floating-ball';
     this.ballElement.innerHTML = this.createBallIcon();
-    this.ballElement.title = '点击翻译页面';
+    this.ballElement.title = '点击展开菜单';
 
     this.updateBallStyle();
+    this.createMenu();
     document.body.appendChild(this.ballElement);
+  }
+
+  /**
+   * 创建菜单容器
+   */
+  private createMenu(): void {
+    if (this.menuContainer) {
+      this.menuContainer.remove();
+    }
+
+    this.menuContainer = document.createElement('div');
+    this.menuContainer.className = 'wxt-floating-menu';
+    this.menuContainer.innerHTML = this.createMenuItems();
+
+    this.updateMenuStyle();
+    document.body.appendChild(this.menuContainer);
+  }
+
+  /**
+   * 创建菜单项
+   */
+  private createMenuItems(): string {
+    return MENU_ACTIONS.map(
+      (action, _) => `
+      <div class="wxt-menu-item" data-action="${action.id}" title="${action.label}" >
+        <span class="wxt-menu-icon" style="color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.2); font-weight: bold;">${action.icon}</span>
+      </div>
+    `,
+    ).join('');
   }
 
   /**
@@ -199,7 +243,6 @@ export class FloatingBallManager {
   private validateAndCorrectPosition(position: number): number {
     // 基本有效性检查
     if (!this.isValidPosition(position)) {
-      console.warn('检测到无效位置，重置为默认值:', position);
       return 50; // 默认中间位置
     }
 
@@ -216,10 +259,6 @@ export class FloatingBallManager {
       Math.max(DRAG_CONFIG.minPosition, minSafePercent),
       Math.min(Math.min(DRAG_CONFIG.maxPosition, maxSafePercent), position),
     );
-
-    if (safePosition !== position) {
-      console.log(`位置边界修正: ${position}% -> ${safePosition}%`);
-    }
 
     return safePosition;
   }
@@ -261,6 +300,83 @@ export class FloatingBallManager {
 
     // 校准位置
     this.calibratePosition();
+  }
+
+  /**
+   * 更新菜单样式
+   */
+  private updateMenuStyle(): void {
+    if (!this.menuContainer) return;
+
+    const ballRect = this.ballElement?.getBoundingClientRect();
+    if (!ballRect) return;
+
+    const { itemSize, itemSpacing, zIndex, transition } = MENU_STYLES;
+
+    // 菜单容器基础样式 - 定位到悬浮球正下方
+    const menuHeight = MENU_ACTIONS.length * (itemSize + itemSpacing);
+    const containerStyles = `
+      position: fixed;
+      right: ${FLOATING_BALL_STYLES.size / 2 - itemSize / 2 + 10}px;
+      top: ${this.config.position}%;
+      width: ${itemSize}px;
+      height: ${menuHeight}px;
+      transform: translateY(${FLOATING_BALL_STYLES.size / 2 + 15}px);
+      z-index: ${zIndex};
+      pointer-events: ${this.state.isMenuExpanded ? 'auto' : 'none'};
+      opacity: ${this.state.isMenuExpanded ? 1 : 0};
+      transition: ${transition};
+    `;
+
+    this.menuContainer.style.cssText = containerStyles;
+
+    // 更新菜单项位置
+    this.updateMenuItemPositions();
+  }
+
+  /**
+   * 更新菜单项位置
+   */
+  private updateMenuItemPositions(): void {
+    if (!this.menuContainer) return;
+
+    const items = this.menuContainer.querySelectorAll('.wxt-menu-item');
+    const { itemSize, itemSpacing, background, boxShadow, transition } =
+      MENU_STYLES;
+
+    items.forEach((item, index) => {
+      const element = item as HTMLElement;
+      // 垂直排列在悬浮球正下方
+      const x = 0; // 水平居中
+      const y = index * (itemSize + itemSpacing); // 垂直向下排列
+
+      const scale = this.state.isMenuExpanded ? 1 : 0;
+      const delay = this.state.isMenuExpanded
+        ? index * 50
+        : (items.length - index - 1) * 50;
+
+      element.style.cssText = `
+        position: absolute;
+        left: ${x}px;
+        top: ${y}px;
+        width: ${itemSize}px;
+        height: ${itemSize}px;
+        background: ${background};
+        backdrop-filter: ${MENU_STYLES.backdropFilter};
+        -webkit-backdrop-filter: ${MENU_STYLES.backdropFilter};
+        border: ${MENU_STYLES.border};
+        border-radius: 50%;
+        box-shadow: ${boxShadow};
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transform: scale(${scale});
+        transition: ${transition};
+        transition-delay: ${delay}ms;
+        font-size: 16px;
+      `;
+    });
   }
 
   /**
@@ -319,6 +435,33 @@ export class FloatingBallManager {
   }
 
   /**
+   * 设置菜单悬停事件
+   */
+  private setupMenuHoverEvents(): void {
+    if (!this.ballElement || !this.menuContainer) return;
+
+    // 悬浮球悬停时显示菜单
+    this.bindEventListener(this.ballElement, 'mouseenter', () => {
+      this.showMenuOnHover();
+    });
+
+    // 悬浮球离开时隐藏菜单（带延迟）
+    this.bindEventListener(this.ballElement, 'mouseleave', () => {
+      this.hideMenuOnLeave();
+    });
+
+    // 菜单容器悬停时保持显示
+    this.bindEventListener(this.menuContainer, 'mouseenter', () => {
+      this.showMenuOnHover();
+    });
+
+    // 菜单容器离开时隐藏菜单
+    this.bindEventListener(this.menuContainer, 'mouseleave', () => {
+      this.hideMenuOnLeave();
+    });
+  }
+
+  /**
    * 设置事件监听器
    */
   private setupEventListeners(): void {
@@ -326,6 +469,9 @@ export class FloatingBallManager {
 
     // 悬停效果
     this.setupHoverEffects();
+
+    // 设置菜单悬停事件
+    this.setupMenuHoverEvents();
 
     // 点击事件（加入双击处理和去抖动）
     this.bindEventListener(this.ballElement, 'click', (e) => {
@@ -408,7 +554,11 @@ export class FloatingBallManager {
         clearTimeout(this.clickDebounceTimer);
         this.clickDebounceTimer = null;
       }
-      console.log('检测到双击，忽略翻译操作');
+
+      if (this.menuHoverTimer) {
+        clearTimeout(this.menuHoverTimer);
+        this.menuHoverTimer = null;
+      }
       return;
     }
 
@@ -738,6 +888,198 @@ export class FloatingBallManager {
   }
 
   /**
+   * 鼠标悬停时显示菜单
+   */
+  private showMenuOnHover(): void {
+    // 清除隐藏定时器
+    if (this.menuHoverTimer) {
+      clearTimeout(this.menuHoverTimer);
+      this.menuHoverTimer = null;
+    }
+
+    // 立即显示菜单
+    if (!this.state.isMenuExpanded) {
+      this.state.isMenuExpanded = true;
+      this.updateMenuStyle();
+
+      // 只在第一次显示时绑定事件监听器
+      if (!this.menuItemsEventsBound) {
+        this.bindMenuItemListeners();
+        this.menuItemsEventsBound = true;
+      }
+    }
+  }
+
+  /**
+   * 鼠标离开时隐藏菜单（带延迟）
+   */
+  private hideMenuOnLeave(): void {
+    // 清除之前的定时器
+    if (this.menuHoverTimer) {
+      clearTimeout(this.menuHoverTimer);
+    }
+
+    // 延迟300ms隐藏菜单，给用户时间移动到菜单上
+    this.menuHoverTimer = window.setTimeout(() => {
+      if (this.state.isMenuExpanded) {
+        this.state.isMenuExpanded = false;
+        this.updateMenuStyle();
+      }
+      this.menuHoverTimer = null;
+    }, 300);
+  }
+
+  /**
+   * 切换菜单展开/收起状态
+   */
+  private toggleMenu(): void {
+    this.state.isMenuExpanded = !this.state.isMenuExpanded;
+    this.updateMenuStyle();
+
+    // 添加全局点击监听器以关闭菜单
+    if (this.state.isMenuExpanded) {
+      this.bindEventListener(
+        document,
+        'click',
+        this.handleDocumentClick.bind(this),
+        true,
+      );
+      
+      // 只在第一次显示时绑定事件监听器
+      if (!this.menuItemsEventsBound) {
+        this.bindMenuItemListeners();
+        this.menuItemsEventsBound = true;
+      }
+    }
+  }
+
+  /**
+   * 处理文档点击事件（用于关闭菜单）
+   */
+  private handleDocumentClick(e: MouseEvent): void {
+    if (!this.ballElement || !this.menuContainer) return;
+
+    const target = e.target as HTMLElement;
+
+    // 如果点击的是悬浮球或菜单内部，则不关闭菜单
+    if (
+      this.ballElement.contains(target) ||
+      this.menuContainer.contains(target)
+    ) {
+      return;
+    }
+
+    // 关闭菜单
+    if (this.state.isMenuExpanded) {
+      this.state.isMenuExpanded = false;
+      this.updateMenuStyle();
+    }
+  }
+
+  /**
+   * 处理菜单操作
+   */
+  private handleMenuAction(action: FloatingBallActionType): void {
+    // 清理悬停定时器
+    if (this.menuHoverTimer) {
+      clearTimeout(this.menuHoverTimer);
+      this.menuHoverTimer = null;
+    }
+
+    // 先关闭菜单
+    this.state.isMenuExpanded = false;
+    this.updateMenuStyle();
+
+    switch (action) {
+      case 'settings':
+        this.openSettings();
+        break;
+
+      case 'close':
+        this.closeBall();
+        break;
+
+      default:
+        console.warn('未知的菜单操作:', action);
+    }
+  }
+
+  /**
+   * 打开设置页面
+   */
+  private openSettings(): void {
+    try {
+      // 使用扩展 API 打开 popup
+      browser.runtime.sendMessage({ type: 'open-popup' });
+    } catch (error) {
+      console.error('打开设置失败:', error);
+    }
+  }
+
+  /**
+   * 关闭悬浮球
+   */
+  private closeBall(): void {
+    // 清理所有定时器
+    if (this.menuHoverTimer) {
+      clearTimeout(this.menuHoverTimer);
+      this.menuHoverTimer = null;
+    }
+    if (this.clickDebounceTimer) {
+      clearTimeout(this.clickDebounceTimer);
+      this.clickDebounceTimer = null;
+    }
+    
+    // 重置菜单状态
+    this.state.isMenuExpanded = false;
+    this.menuItemsEventsBound = false;
+    
+    // 隐藏元素
+    this.state.isVisible = false;
+    if (this.ballElement) {
+      this.ballElement.style.display = 'none';
+    }
+    if (this.menuContainer) {
+      this.menuContainer.style.display = 'none';
+    }
+  }
+
+  /**
+   * 绑定菜单项事件监听器
+   */
+  private bindMenuItemListeners(): void {
+    if (!this.menuContainer) return;
+
+    const menuItems = this.menuContainer.querySelectorAll('.wxt-menu-item');
+    menuItems.forEach((item) => {
+      const element = item as HTMLElement;
+      const action = element.dataset.action as FloatingBallActionType;
+
+      this.bindEventListener(element, 'click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleMenuAction(action);
+      });
+
+      // 添加悬停效果
+      this.bindEventListener(element, 'mouseenter', () => {
+        element.style.background = MENU_STYLES.hoverBackground;
+        element.style.transform = 'scale(1.1)';
+        element.style.boxShadow =
+          '0 12px 32px rgba(106, 136, 224, 0.3), 0 6px 16px rgba(0, 0, 0, 0.15)';
+        element.style.backdropFilter = 'blur(16px) saturate(1.8)';
+      });
+
+      this.bindEventListener(element, 'mouseleave', () => {
+        element.style.background = MENU_STYLES.background;
+        element.style.transform = 'scale(1)';
+        element.style.boxShadow = MENU_STYLES.boxShadow;
+        element.style.backdropFilter = MENU_STYLES.backdropFilter;
+      });
+    });
+  }
+
+  /**
    * 获取当前状态
    */
   getState(): FloatingBallState {
@@ -754,6 +1096,12 @@ export class FloatingBallManager {
       this.ballElement = null;
     }
 
+    // 移除菜单容器
+    if (this.menuContainer) {
+      this.menuContainer.remove();
+      this.menuContainer = null;
+    }
+
     // 清理所有事件监听器
     this.removeAllEventListeners();
 
@@ -768,6 +1116,11 @@ export class FloatingBallManager {
       this.clickDebounceTimer = null;
     }
 
+    if (this.menuHoverTimer) {
+      clearTimeout(this.menuHoverTimer);
+      this.menuHoverTimer = null;
+    }
+
     // 清理动画样式
     const animationStyle = document.getElementById(
       'wxt-floating-ball-animation',
@@ -780,6 +1133,7 @@ export class FloatingBallManager {
     this.state = {
       isDragging: false,
       isVisible: false,
+      isMenuExpanded: false,
       currentPosition: 50,
     };
 
@@ -787,6 +1141,7 @@ export class FloatingBallManager {
     this.dragStartY = 0;
     this.ballStartY = 0;
     this.lastClickTime = 0;
+    this.menuItemsEventsBound = false;
     this.onTranslateCallback = undefined;
   }
 }

@@ -34,6 +34,21 @@ export const FLOATING_BALL_STYLES = {
   hoverScale: 1.05,
 };
 
+// 菜单样式配置
+export const MENU_STYLES = {
+  itemSize: 30, // 菜单项大小 (px) - 稍微缩小
+  itemIconSize: 16, // 菜单项图标大小 (px)
+  expandRadius: 0, // 垂直布局不需要圆形半径
+  itemSpacing: 8, // 菜单项间距 (px) - 垂直间距
+  background: 'rgba(106, 136, 224, 0.15)', // 主题色半透明背景
+  hoverBackground: 'rgba(106, 136, 224, 0.25)', // 悬停时增加不透明度
+  border: '1px solid rgba(106, 136, 224, 0.2)', // 主题色半透明边框
+  boxShadow: '0 8px 24px rgba(106, 136, 224, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1)', // 双重阴影
+  backdropFilter: 'blur(12px) saturate(1.5)', // 增强模糊和饱和度
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+  zIndex: 9999,
+};
+
 // 拖拽配置
 export const DRAG_CONFIG = {
   threshold: 5, // 拖拽触发阈值 (px)
@@ -41,3 +56,19 @@ export const DRAG_CONFIG = {
   maxPosition: 95, // 最大位置 (%)
   animationDuration: 300, // 动画持续时间 (ms)
 };
+
+// 菜单操作配置
+export const MENU_ACTIONS = [
+  {
+    id: 'settings',
+    icon: '⚙️',
+    label: '设置',
+    color: '#6A88E0',
+  },
+  {
+    id: 'close',
+    icon: '✕',
+    label: '关闭',
+    color: '#EF4444',
+  },
+] as const;

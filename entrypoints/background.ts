@@ -15,6 +15,19 @@ export default defineBackground(() => {
       return;
     }
 
+    if (message.type === 'open-popup') {
+      // 打开扩展的popup界面
+      try {
+        browser.action.openPopup();
+      } catch (error) {
+        console.error('无法打开popup:', error);
+        // 备用方案：打开options页面
+        const optionsUrl = browser.runtime.getURL('/options.html');
+        browser.tabs.create({ url: optionsUrl });
+      }
+      return;
+    }
+
     if (message.type === 'validate-configuration') {
       (async () => {
         const settings = await browser.storage.sync.get(null);
