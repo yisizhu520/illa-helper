@@ -13,9 +13,9 @@ export interface FloatingBallConfig {
 export type FloatingBallEventType = 'translate' | 'drag' | 'click' | 'menu';
 
 // 悬浮球操作类型
-export type FloatingBallActionType = 
-  | 'settings'     // 打开设置
-  | 'close'        // 关闭悬浮球
+export type FloatingBallActionType =
+  | 'settings' // 打开设置
+  | 'close' // 关闭悬浮球
   | 'toggle_menu'; // 切换菜单
 
 // 悬浮球状态

@@ -944,7 +944,7 @@ export class FloatingBallManager {
         this.handleDocumentClick.bind(this),
         true,
       );
-      
+
       // 只在第一次显示时绑定事件监听器
       if (!this.menuItemsEventsBound) {
         this.bindMenuItemListeners();
@@ -1029,11 +1029,11 @@ export class FloatingBallManager {
       clearTimeout(this.clickDebounceTimer);
       this.clickDebounceTimer = null;
     }
-    
+
     // 重置菜单状态
     this.state.isMenuExpanded = false;
     this.menuItemsEventsBound = false;
-    
+
     // 隐藏元素
     this.state.isVisible = false;
     if (this.ballElement) {

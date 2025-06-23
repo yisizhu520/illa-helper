@@ -43,7 +43,8 @@ export const MENU_STYLES = {
   background: 'rgba(106, 136, 224, 0.15)', // 主题色半透明背景
   hoverBackground: 'rgba(106, 136, 224, 0.25)', // 悬停时增加不透明度
   border: '1px solid rgba(106, 136, 224, 0.2)', // 主题色半透明边框
-  boxShadow: '0 8px 24px rgba(106, 136, 224, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1)', // 双重阴影
+  boxShadow:
+    '0 8px 24px rgba(106, 136, 224, 0.2), 0 4px 8px rgba(0, 0, 0, 0.1)', // 双重阴影
   backdropFilter: 'blur(12px) saturate(1.5)', // 增强模糊和饱和度
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   zIndex: 9999,
