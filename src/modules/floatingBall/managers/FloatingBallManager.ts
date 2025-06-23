@@ -14,6 +14,17 @@ export class FloatingBallManager {
   private ballStartY = 0;
   private onTranslateCallback?: () => void;
   private savePositionTimer: number | null = null;
+  // 事件监听器引用管理
+  private eventListeners: Array<{
+    target: EventTarget;
+    type: string;
+    listener: EventListener;
+    options?: boolean | AddEventListenerOptions;
+  }> = [];
+  // 双击和触摸检测
+  private lastClickTime = 0;
+  private clickDebounceTimer: number | null = null;
+  private isTouchDevice = false;
 
   constructor(config: FloatingBallConfig) {
     this.config = config;
@@ -22,6 +33,51 @@ export class FloatingBallManager {
       isVisible: false,
       currentPosition: config.position,
     };
+
+    // 初始化触摸设备检测
+    this.isTouchDevice =
+      'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  }
+
+  /**
+   * 统一的事件监听器绑定方法
+   */
+  private bindEventListener<K extends keyof DocumentEventMap>(
+    target: EventTarget,
+    type: K,
+    listener: (this: Document, ev: DocumentEventMap[K]) => unknown,
+    options?: boolean | AddEventListenerOptions,
+  ): void;
+  private bindEventListener(
+    target: EventTarget,
+    type: string,
+    listener: EventListener,
+    options?: boolean | AddEventListenerOptions,
+  ): void;
+  private bindEventListener(
+    target: EventTarget,
+    type: string,
+    listener: EventListener | ((ev: Event) => unknown),
+    options?: boolean | AddEventListenerOptions,
+  ): void {
+    const wrappedListener = listener as EventListener;
+    target.addEventListener(type, wrappedListener, options);
+    this.eventListeners.push({
+      target,
+      type,
+      listener: wrappedListener,
+      options,
+    });
+  }
+
+  /**
+   * 清理所有事件监听器
+   */
+  private removeAllEventListeners(): void {
+    this.eventListeners.forEach(({ target, type, listener, options }) => {
+      target.removeEventListener(type, listener, options);
+    });
+    this.eventListeners = [];
   }
 
   /**
@@ -83,17 +139,11 @@ export class FloatingBallManager {
    * 创建简洁图标
    */
   private createBallIcon(): string {
-    const { iconSize } = FLOATING_BALL_STYLES;
+    const { iconSize, background } = FLOATING_BALL_STYLES;
     return `
-      <svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- 简洁双向箭头 -->
-        <path d="M16 8L20 12L16 16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M8 16L4 12L8 8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M20 12H4" stroke="white" stroke-width="2" stroke-linecap="round"/>
-
-        <!-- 简洁字符 -->
-        <text x="8" y="8" fill="white" font-size="7" font-weight="bold" font-family="Arial">A</text>
-        <text x="14" y="19" fill="white" font-size="7" font-weight="bold" font-family="Arial">文</text>
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${iconSize}" height="${iconSize}">
+        <rect width="${iconSize}" height="${iconSize}" fill="${background}" rx="4" ry="4" opacity="0.9"/>
+       <path d="M16 10h2l4.4 11h-2.155l-1.201-3h-4.09l-1.199 3h-2.154L16 10zm1 2.885L15.753 16h2.492L17 12.885zM3 4h10v2H9v7h4v2H9v4H7v-4H3v-2h4V6H3V4zM17 3a4 4 0 0 1 4 4v2h-2V7a2 2 0 0 0-2-2h-3V3h3zM5 15v2a2 2 0 0 0 2 2h3v2H7a4 4 0 0 1-4-4v-2h2z" fill="white"/>
       </svg>
     `;
   }
@@ -110,10 +160,10 @@ export class FloatingBallManager {
     style.textContent = `
       @keyframes wxt-floating-ball-pulse {
         0%, 100% {
-          transform: translateY(-50%) scale(1);
+          transform: translateY(-50%) scale(0.9);
         }
         50% {
-          transform: translateY(-50%) scale(1.02);
+          transform: translateY(-50%) scale(1);
         }
       }
     `;
@@ -121,10 +171,19 @@ export class FloatingBallManager {
   }
 
   /**
-   * 校准位置 - 确保位置准确性
+   * 校准位置 - 确保位置准确性和边界安全
    */
   private calibratePosition(): void {
     if (!this.ballElement) return;
+
+    // 验证并修正位置
+    const correctedPosition = this.validateAndCorrectPosition(
+      this.config.position,
+    );
+    if (correctedPosition !== this.config.position) {
+      this.config.position = correctedPosition;
+      this.state.currentPosition = correctedPosition;
+    }
 
     // 重新设置位置，确保精确对齐
     requestAnimationFrame(() => {
@@ -132,6 +191,37 @@ export class FloatingBallManager {
         this.ballElement.style.top = `${this.config.position}%`;
       }
     });
+  }
+
+  /**
+   * 验证并修正位置，确保在安全边界内
+   */
+  private validateAndCorrectPosition(position: number): number {
+    // 基本有效性检查
+    if (!this.isValidPosition(position)) {
+      console.warn('检测到无效位置，重置为默认值:', position);
+      return 50; // 默认中间位置
+    }
+
+    // 边界检测和修正
+    const windowHeight = window.innerHeight;
+    const ballSize = FLOATING_BALL_STYLES.size;
+
+    // 计算安全边界（百分比）
+    const minSafePercent = (ballSize / 2 / windowHeight) * 100;
+    const maxSafePercent = ((windowHeight - ballSize / 2) / windowHeight) * 100;
+
+    // 确保在安全边界内
+    const safePosition = Math.max(
+      Math.max(DRAG_CONFIG.minPosition, minSafePercent),
+      Math.min(Math.min(DRAG_CONFIG.maxPosition, maxSafePercent), position),
+    );
+
+    if (safePosition !== position) {
+      console.log(`位置边界修正: ${position}% -> ${safePosition}%`);
+    }
+
+    return safePosition;
   }
 
   /**
@@ -237,30 +327,103 @@ export class FloatingBallManager {
     // 悬停效果
     this.setupHoverEffects();
 
-    // 点击事件
-    this.ballElement.addEventListener('click', (e) => {
+    // 点击事件（加入双击处理和去抖动）
+    this.bindEventListener(this.ballElement, 'click', (e) => {
       if (!this.state.isDragging) {
         e.preventDefault();
         e.stopPropagation();
-        this.handleTranslate();
+        this.handleClickWithDebounce();
       }
     });
 
-    // 拖拽事件
-    this.ballElement.addEventListener(
-      'mousedown',
-      this.handleMouseDown.bind(this),
-    );
-    document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-    document.addEventListener('mouseup', this.handleMouseUp.bind(this));
+    // 根据设备类型选择性注册事件监听器，避免冲突
+    if (this.isTouchDevice) {
+      // 触摸设备：优先使用触摸事件
+      this.bindEventListener(
+        this.ballElement,
+        'touchstart',
+        this.handleTouchStart.bind(this),
+        { passive: false },
+      );
+      this.bindEventListener(
+        document,
+        'touchmove',
+        this.handleTouchMove.bind(this),
+        { passive: false },
+      );
+      this.bindEventListener(
+        document,
+        'touchend',
+        this.handleTouchEnd.bind(this),
+        { passive: false },
+      );
 
-    // 触摸事件支持
-    this.ballElement.addEventListener(
-      'touchstart',
-      this.handleTouchStart.bind(this),
-    );
-    document.addEventListener('touchmove', this.handleTouchMove.bind(this));
-    document.addEventListener('touchend', this.handleTouchEnd.bind(this));
+      // 同时注册鼠标事件作为后备（但加入设备检测）
+      this.bindEventListener(
+        this.ballElement,
+        'mousedown',
+        this.handleMouseDown.bind(this),
+      );
+      this.bindEventListener(
+        document,
+        'mousemove',
+        this.handleMouseMove.bind(this),
+      );
+      this.bindEventListener(
+        document,
+        'mouseup',
+        this.handleMouseUp.bind(this),
+      );
+    } else {
+      // 非触摸设备：只使用鼠标事件
+      this.bindEventListener(
+        this.ballElement,
+        'mousedown',
+        this.handleMouseDown.bind(this),
+      );
+      this.bindEventListener(
+        document,
+        'mousemove',
+        this.handleMouseMove.bind(this),
+      );
+      this.bindEventListener(
+        document,
+        'mouseup',
+        this.handleMouseUp.bind(this),
+      );
+    }
+  }
+
+  /**
+   * 带防抖动的点击处理
+   */
+  private handleClickWithDebounce(): void {
+    const currentTime = Date.now();
+    const timeDiff = currentTime - this.lastClickTime;
+
+    // 检测双击（300ms内的第二次点击）
+    if (timeDiff < 300) {
+      // 双击，取消之前的定时器，不执行翻译
+      if (this.clickDebounceTimer) {
+        clearTimeout(this.clickDebounceTimer);
+        this.clickDebounceTimer = null;
+      }
+      console.log('检测到双击，忽略翻译操作');
+      return;
+    }
+
+    this.lastClickTime = currentTime;
+
+    // 清除之前的定时器
+    if (this.clickDebounceTimer) {
+      clearTimeout(this.clickDebounceTimer);
+    }
+
+    // 设置新的定时器，100ms后执行翻译（防止快速点击）
+    this.clickDebounceTimer = window.setTimeout(() => {
+      this.handleTranslate();
+      this.clickDebounceTimer = null;
+    }, 100);
   }
 
   /**
@@ -283,10 +446,17 @@ export class FloatingBallManager {
   }
 
   /**
-   * 鼠标按下处理
+   * 鼠标按下处理（增强事件控制）
    */
   private handleMouseDown(e: MouseEvent): void {
+    // 防止在触摸设备上重复处理
+    if (this.isTouchDevice && e.target && 'ontouchstart' in e.target) {
+      return;
+    }
+
     e.preventDefault();
+    e.stopPropagation();
+
     this.state.isDragging = false;
     this.dragStartY = e.clientY;
 
@@ -303,11 +473,38 @@ export class FloatingBallManager {
   }
 
   /**
-   * 鼠标移动处理
+   * 鼠标移动处理（增强事件过滤，防止与文本选择冲突）
    */
   private handleMouseMove(e: MouseEvent): void {
-    // 如果鼠标没有按下，则不处理
-    if (!this.ballElement || e.buttons !== 1) return;
+    // 关键修复：只有在悬浮球被明确按下时才处理移动事件
+    if (
+      !this.ballElement ||
+      (!this.state.isDragging && this.dragStartY === 0)
+    ) {
+      return;
+    }
+
+    // 检查鼠标按钮状态（必须是左键按下）
+    if (e.buttons !== 1) {
+      return;
+    }
+
+    // 防止文本选择冲突：检查是否有活动的文本选择
+    const selection = window.getSelection();
+    if (
+      selection &&
+      selection.toString().length > 0 &&
+      !this.state.isDragging
+    ) {
+      // 如果存在文本选择且还未开始拖拽，则忽略此事件
+      return;
+    }
+
+    // 验证事件来源：确保与悬浮球的初始交互相关
+    if (this.dragStartY === 0) {
+      // 没有有效的拖拽起始点，忽略事件
+      return;
+    }
 
     // 计算移动距离，如果超过阈值则开始拖拽
     const deltaY = Math.abs(e.clientY - this.dragStartY);
@@ -318,21 +515,23 @@ export class FloatingBallManager {
     // 如果正在拖拽，则更新位置
     if (this.state.isDragging) {
       e.preventDefault();
+      e.stopPropagation();
 
-      // 计算新位置（像素值）
-      const moveY = e.clientY - this.dragStartY;
-      const newPixelY = this.ballStartY + moveY;
-
-      // 转换为百分比
+      // 修复坐标系问题：确保位置计算基于视口而非页面
+      const currentY = e.clientY; // clientY已经是相对于视口的坐标
       const windowHeight = window.innerHeight;
       const ballSize = FLOATING_BALL_STYLES.size;
 
-      // 确保球不会超出屏幕边界
+      // 计算新的球心位置（视口坐标系）
+      const moveY = currentY - this.dragStartY;
+      const newPixelY = this.ballStartY + moveY;
+
+      // 确保球不会超出可视区域边界
       const minPixelY = ballSize / 2;
       const maxPixelY = windowHeight - ballSize / 2;
       const clampedPixelY = Math.max(minPixelY, Math.min(maxPixelY, newPixelY));
 
-      // 转换为百分比（基于球心位置）
+      // 转换为百分比（基于球心位置，视口高度）
       const newPositionPercent = (clampedPixelY / windowHeight) * 100;
 
       // 再次限制在配置范围内
@@ -341,16 +540,158 @@ export class FloatingBallManager {
         Math.min(DRAG_CONFIG.maxPosition, newPositionPercent),
       );
 
-      this.config.position = finalPosition;
-      this.state.currentPosition = finalPosition;
-      this.ballElement.style.top = `${finalPosition}%`;
+      // 验证位置有效性
+      if (this.isValidPosition(finalPosition)) {
+        this.config.position = finalPosition;
+        this.state.currentPosition = finalPosition;
+        this.ballElement.style.top = `${finalPosition}%`;
+      }
     }
   }
 
   /**
-   * 鼠标释放处理
+   * 验证位置是否有效
    */
-  private handleMouseUp(): void {
+  private isValidPosition(position: number): boolean {
+    return (
+      typeof position === 'number' &&
+      !isNaN(position) &&
+      position >= 0 &&
+      position <= 100
+    );
+  }
+
+  /**
+   * 鼠标释放处理（优化状态管理，防止文本选择冲突）
+   */
+  private handleMouseUp(e: MouseEvent): void {
+    // 防止在触摸设备上重复处理
+    if (this.isTouchDevice && e.target && 'ontouchstart' in e.target) {
+      return;
+    }
+
+    // 只有在有有效拖拽起始点时才处理释放事件
+    if (this.dragStartY === 0) {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 恢复过渡动画
+    if (this.ballElement) {
+      this.ballElement.style.transition = FLOATING_BALL_STYLES.transition;
+    }
+
+    const wasDragging = this.state.isDragging;
+
+    if (wasDragging) {
+      // 最终校准位置
+      this.calibratePosition();
+
+      // 防抖保存位置到存储
+      this.debouncedSavePosition();
+    }
+
+    // 重置所有拖拽相关状态
+    this.state.isDragging = false;
+    this.dragStartY = 0; // 关键：重置拖拽起始点
+    this.ballStartY = 0;
+
+    // 如果刚完成拖拽，短暂延迟后允许点击事件
+    if (wasDragging) {
+      // 设置标记防止立即触发点击
+      this.lastClickTime = Date.now();
+    }
+  }
+
+  /**
+   * 触摸开始处理（独立实现，避免与鼠标事件冲突）
+   */
+  private handleTouchStart(e: TouchEvent): void {
+    // 防止触摸事件与鼠标事件同时触发
+    if (!this.isTouchDevice || e.touches.length !== 1) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const touch = e.touches[0];
+    this.state.isDragging = false;
+    this.dragStartY = touch.clientY;
+
+    // 记录当前实际位置（像素值）
+    if (this.ballElement) {
+      const rect = this.ballElement.getBoundingClientRect();
+      this.ballStartY = rect.top + rect.height / 2; // 球心的实际Y坐标
+    }
+
+    // 禁用过渡动画，防止拖拽时的干扰
+    if (this.ballElement) {
+      this.ballElement.style.transition = 'none';
+    }
+  }
+
+  /**
+   * 触摸移动处理（独立实现）
+   */
+  private handleTouchMove(e: TouchEvent): void {
+    if (!this.isTouchDevice || !this.ballElement || e.touches.length !== 1)
+      return;
+
+    const touch = e.touches[0];
+
+    // 计算移动距离，如果超过阈值则开始拖拽
+    const deltaY = Math.abs(touch.clientY - this.dragStartY);
+    if (deltaY > DRAG_CONFIG.threshold) {
+      this.state.isDragging = true;
+    }
+
+    // 如果正在拖拽，则更新位置
+    if (this.state.isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 使用与鼠标事件相同的位置计算逻辑
+      const currentY = touch.clientY;
+      const windowHeight = window.innerHeight;
+      const ballSize = FLOATING_BALL_STYLES.size;
+
+      // 计算新的球心位置（视口坐标系）
+      const moveY = currentY - this.dragStartY;
+      const newPixelY = this.ballStartY + moveY;
+
+      // 确保球不会超出可视区域边界
+      const minPixelY = ballSize / 2;
+      const maxPixelY = windowHeight - ballSize / 2;
+      const clampedPixelY = Math.max(minPixelY, Math.min(maxPixelY, newPixelY));
+
+      // 转换为百分比
+      const newPositionPercent = (clampedPixelY / windowHeight) * 100;
+
+      // 再次限制在配置范围内
+      const finalPosition = Math.max(
+        DRAG_CONFIG.minPosition,
+        Math.min(DRAG_CONFIG.maxPosition, newPositionPercent),
+      );
+
+      // 验证位置有效性
+      if (this.isValidPosition(finalPosition)) {
+        this.config.position = finalPosition;
+        this.state.currentPosition = finalPosition;
+        this.ballElement.style.top = `${finalPosition}%`;
+      }
+    }
+  }
+
+  /**
+   * 触摸结束处理（独立实现）
+   */
+  private handleTouchEnd(e: TouchEvent): void {
+    if (!this.isTouchDevice) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
     // 恢复过渡动画
     if (this.ballElement) {
       this.ballElement.style.transition = FLOATING_BALL_STYLES.transition;
@@ -364,45 +705,8 @@ export class FloatingBallManager {
       this.debouncedSavePosition();
     }
 
-    // 延迟重置拖拽状态，防止误触点击事件
-    setTimeout(() => {
-      this.state.isDragging = false;
-    }, 100);
-  }
-
-  /**
-   * 触摸开始处理
-   */
-  private handleTouchStart(e: TouchEvent): void {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      this.handleMouseDown({
-        clientY: touch.clientY,
-        preventDefault: () => e.preventDefault(),
-        buttons: 1,
-      } as MouseEvent);
-    }
-  }
-
-  /**
-   * 触摸移动处理
-   */
-  private handleTouchMove(e: TouchEvent): void {
-    if (e.touches.length === 1) {
-      const touch = e.touches[0];
-      this.handleMouseMove({
-        clientY: touch.clientY,
-        preventDefault: () => e.preventDefault(),
-        buttons: 1,
-      } as MouseEvent);
-    }
-  }
-
-  /**
-   * 触摸结束处理
-   */
-  private handleTouchEnd(): void {
-    this.handleMouseUp();
+    // 立即重置拖拽状态（触摸事件不需要延迟）
+    this.state.isDragging = false;
   }
 
   /**
@@ -441,18 +745,27 @@ export class FloatingBallManager {
   }
 
   /**
-   * 销毁悬浮球
+   * 销毁悬浮球（完整资源清理）
    */
   destroy(): void {
+    // 移除悬浮球元素
     if (this.ballElement) {
       this.ballElement.remove();
       this.ballElement = null;
     }
 
-    // 清理定时器
+    // 清理所有事件监听器
+    this.removeAllEventListeners();
+
+    // 清理所有定时器
     if (this.savePositionTimer) {
       clearTimeout(this.savePositionTimer);
       this.savePositionTimer = null;
+    }
+
+    if (this.clickDebounceTimer) {
+      clearTimeout(this.clickDebounceTimer);
+      this.clickDebounceTimer = null;
     }
 
     // 清理动画样式
@@ -463,7 +776,17 @@ export class FloatingBallManager {
       animationStyle.remove();
     }
 
-    this.state.isVisible = false;
-    this.state.isDragging = false;
+    // 重置状态
+    this.state = {
+      isDragging: false,
+      isVisible: false,
+      currentPosition: 50,
+    };
+
+    // 重置其他属性
+    this.dragStartY = 0;
+    this.ballStartY = 0;
+    this.lastClickTime = 0;
+    this.onTranslateCallback = undefined;
   }
 }

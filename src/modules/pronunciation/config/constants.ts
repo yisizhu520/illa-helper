@@ -18,9 +18,9 @@ export const UI_CONSTANTS = {
 
 // 定时器相关常量
 export const TIMER_CONSTANTS = {
-  SHOW_DELAY: 400, // 显示延迟（毫秒）
+  SHOW_DELAY: 300, // 显示延迟（毫秒）
   HIDE_DELAY: 600, // 隐藏延迟（毫秒）
-  WORD_SHOW_DELAY: 300, // 单词悬浮框显示延迟（毫秒）
+  WORD_SHOW_DELAY: 100, // 单词悬浮框显示延迟（毫秒）
   YOUDAO_TIMEOUT: 10000, // 有道TTS超时时间（毫秒）
 } as const;
 

@@ -13,7 +13,7 @@ export const DEFAULT_FLOATING_BALL_CONFIG: FloatingBallConfig = {
 
 // 悬浮球样式配置 - 自定义蓝色风格
 export const FLOATING_BALL_STYLES = {
-  size: 48, // 悬浮球大小 (px)
+  size: 34, // 悬浮球大小 (px)
   iconSize: 20, // 图标大小 (px)
   borderRadius: '50%', // 圆形
   zIndex: 10000, // 层级
@@ -22,8 +22,8 @@ export const FLOATING_BALL_STYLES = {
   background: '#6A88E0',
   // 悬停：更亮的蓝色
   hoverBackground: '#7B96E5',
-  // 激活：绿色
-  activeBackground: '#4CAF50',
+  // 激活：红色
+  activeBackground: '#AA466E',
   // 主要阴影
   boxShadow: '0 4px 12px rgba(106, 136, 224, 0.25)',
   // 悬停阴影

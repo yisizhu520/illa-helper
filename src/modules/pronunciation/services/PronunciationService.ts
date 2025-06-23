@@ -917,38 +917,6 @@ export class PronunciationService {
   }
 
   /**
-   * 强制清理所有现有的悬浮框
-   */
-  private forceCleanupAllTooltips(): void {
-    // 清理所有定时器
-    this.timerManager.clearAll();
-
-    // 遍历所有元素，强制移除悬浮框
-    for (const [_, elementData] of this.elementDataMap.entries()) {
-      if (elementData.tooltip) {
-        elementData.tooltip.remove();
-        elementData.tooltip = undefined;
-      }
-    }
-
-    // 清理当前主悬浮框引用
-    this.currentMainTooltip = null;
-    this.currentMainElement = null;
-
-    // 强制清理页面上所有悬浮框元素（包括可能的遗留元素）
-    const allTooltips = document.querySelectorAll(
-      '.wxt-pronunciation-tooltip, .wxt-word-tooltip',
-    );
-    allTooltips.forEach((tooltip) => {
-      try {
-        tooltip.remove();
-      } catch (_) {
-        // 忽略移除失败的情况
-      }
-    });
-  }
-
-  /**
    * 强制清理所有单词悬浮框
    */
   private forceCleanupWordTooltips(): void {
