@@ -369,7 +369,15 @@ export class ProcessingCoordinator {
 
       const translationSpan = document.createElement('span');
       translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
-      translationSpan.textContent = ` (${replacement.translation})`;
+
+      // 根据原文显示模式动态设置翻译文本格式
+      if (originalWordDisplayMode === OriginalWordDisplayMode.HIDDEN) {
+        // 隐藏模式：去掉括号，提升阅读体验
+        translationSpan.textContent = ` ${replacement.translation} `;
+      } else {
+        // 显示/学习模式：保持传统格式
+        translationSpan.textContent = ` (${replacement.translation}) `;
+      }
 
       // 应用显示模式
       switch (originalWordDisplayMode) {
@@ -482,6 +490,8 @@ export class ProcessingCoordinator {
     await this.processingQueue;
   }
 
+
+
   /**
    * 为单个段落的翻译内容添加发音功能
    * @param segment 内容段落
@@ -495,8 +505,8 @@ export class ProcessingCoordinator {
       // 查找该段落内的翻译元素
       const translationElements = segment.element.querySelectorAll
         ? segment.element.querySelectorAll(
-            '.wxt-translation-term:not([data-pronunciation-added])',
-          )
+          '.wxt-translation-term:not([data-pronunciation-added])',
+        )
         : [];
 
       for (const element of translationElements) {

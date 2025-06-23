@@ -122,7 +122,18 @@ export class StyleManager {
         filter: blur(0);
       }
 
-                  /* 发音功能样式 */
+      /* 学习模式原文样式 - 全面增强悬停支持 */
+      .wxt-original-word--learning {
+        filter: blur(5px);
+        cursor: pointer;
+        transition: filter 0.2s ease-in-out;
+      }
+
+      .wxt-original-word--learning:hover {
+        filter: blur(0) !important;
+      }
+
+      /* 发音功能样式 */
       .wxt-pronunciation-enabled {
         position: relative;
         transition: all 0.2s ease;

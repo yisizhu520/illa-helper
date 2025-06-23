@@ -29,3 +29,4 @@ web-ext.config.ts
 .output/*
 .output/
 .wxt/chrome-data
+.wxt/firefox-data

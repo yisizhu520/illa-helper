@@ -63,8 +63,9 @@ export class TextProcessor {
         cursor: pointer;
         transition: filter 0.2s ease-in-out;
       }
+
       .wxt-original-word--learning:hover {
-        filter: blur(0);
+        filter: blur(0) !important;
       }
       @keyframes wxt-processing-animation {
         0% {

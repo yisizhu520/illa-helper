@@ -5,11 +5,12 @@
 </div>
 <div align="center">
 
-![Version](https://img.shields.io/github/package-json/v/your-username/immersive-language-learning-assistant?color=blue)
+![Version](https://img.shields.io/github/package-json/v/xiao-zaiyi/illa-helper?color=blue)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)
-![Status](https://img.shields.io/badge/status-beta-orange)
+![Status](https://img.shields.io/badge/status-stable-green)
 ![Built with WXT](https://img.shields.io/badge/built%20with-WXT-blue)
+![Firefox Compatible](https://img.shields.io/badge/Firefox-compatible-orange)
 </div>
 
 > 一款基于"可理解输入"理论的浏览器扩展，帮助你在日常网页浏览中自然地学习语言。
@@ -31,7 +32,7 @@
 - **智能文本处理**: 使用大语言模型分析网页内容，智能选择适合用户水平的词汇进行翻译
 - **精确替换控制**: 可精确控制翻译比例（1%-100%），支持字符级精确计算
 - **上下文感知**: 考虑语境和用户水平，选择最合适的翻译词汇
-- **多语言支持**: 支持20+种语言的智能翻译（英语、日语、韩语、法语、德语、西班牙语、俄语、意大利语、葡萄牙语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、波兰语、捷克语、土耳其语、希腊语等）**理论是大模型能力相关**。
+- **多语言支持**: 支持20+种语言的智能翻译（英语、日语、韩语、法语、德语、西班牙语、俄语、意大利语、葡萄牙语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、波兰语、捷克语、土耳其语、希腊语等）**理论上依赖大模型能力**。
 
 ### 🔊 发音学习生态系统 ⭐
 - **交互式悬浮框**: 鼠标悬停翻译词汇即可查看音标、AI词义和朗读功能，智能定位避免边界溢出
@@ -81,7 +82,7 @@
 |-------|--------|----------|
 | Chrome | ✅ 完全支持 | 推荐环境，所有功能可用 |
 | Edge | ✅ 完全支持 | 基于Chromium，完整兼容 |
-| Firefox | ✅ 支持 | 核心功能正常，部分TTS限制 |
+| Firefox | ✅ 支持 | 需配置addon ID，详见[Firefox安装指南](#firefox-安装指南) |
 | Safari | ⚠️ 部分支持 | 需要额外配置，自行查询 |
 
 ## ⚡ 性能特性
@@ -122,15 +123,12 @@
   <p><i>🧠 智能多语言: 支持20+种语言的AI自动检测和翻译，涵盖中文、英语、日语、韩语等主流学习语言</i></p>
 </div>
 
-
-
-
 ## 🛠️ 安装与运行
 
 ### 1. 先决条件
 
 - [Node.js](https://nodejs.org/)（版本 18 或更高）
-- [npm](https://nodejs.org/)
+- [npm](https://nodejs.org/) 或其他包管理器
 
 ### 2. 安装
 
@@ -170,35 +168,79 @@
     ```
     > **注意**: `.env` 文件已被添加到 `.gitignore` 中，所以你的密钥不会被意外提交。
 
-### 4. 运行开发环境
+### 4. 构建扩展
 
-执行以下命令，WXT 将会启动开发服务器并为你打包扩展。
+根据目标浏览器执行相应的构建命令：
 
+#### Chrome/Edge构建
 ```bash
-npm run build 
+npm run build
 npm run zip
+```
+
+#### Firefox构建
+```bash
+npm run build:firefox
+npm run zip:firefox
 ```
 
 ### 5. 加载扩展
 
-1.  打开你的浏览器（Chrome、Edge、Firefox 等）。
-2.  进入扩展管理页面（通常是 `chrome://extensions` 或 `edge://extensions`）。
-3.  打开 **"开发者模式"**。
-4.  点击 **"加载已解压的扩展程序"**。
-5.  在弹出的文件选择窗口中，选择项目根目录下的 `.output/chrome-mv3/illa-helper-xx.zip`（或对应你浏览器的文件夹）。
-6.  完成！现在你应该能在浏览器工具栏看到扩展的图标了。
+#### Chrome/Edge安装
+1. 打开浏览器（Chrome、Edge等）
+2. 进入扩展管理页面（`chrome://extensions` 或 `edge://extensions`）
+3. 打开 **"开发者模式"**
+4. 点击 **"加载已解压的扩展程序"**
+5. 选择项目根目录下的 `.output/chrome-mv3` 文件夹
+6. 完成！现在你应该能在浏览器工具栏看到扩展的图标了
+
+#### Firefox安装指南 <a id="firefox-安装指南"></a>
+
+Firefox由于安全限制，需要特殊的安装步骤：
+
+**方法一：临时安装（推荐开发调试）**
+1. 在Firefox地址栏输入 `about:debugging#/runtime/this-firefox`
+2. 点击 **"临时加载附加组件..."**
+3. 选择 `.output/firefox-mv2/manifest.json` 文件
+4. 扩展将以临时方式加载，浏览器重启后需要重新加载
+
+**方法二：修改安全配置（永久安装）**
+1. 在Firefox地址栏输入 `about:config`
+2. 搜索 `xpinstall.signatures.required`
+3. 双击将值改为 `false`
+4. 现在可以通过 `about:addons` 安装未签名的扩展
+
+**Firefox Storage API配置说明**
+
+Firefox中的storage API需要明确的addon ID才能正常工作。本项目已在 `wxt.config.ts` 中配置了Firefox特定设置：
+
+```typescript
+browser_specific_settings: {
+  gecko: {
+    id: 'illa-helper@xiao-zaiyi',
+    strict_min_version: '88.0'
+  }
+}
+```
+
+这确保了在Firefox中可以正常使用存储功能保存用户设置。
 
 ## 📂 目录结构
 
 ```
 .
 ├── .output/              # WXT 打包输出目录
+│   ├── chrome-mv3/       # Chrome/Edge扩展文件
+│   └── firefox-mv2/      # Firefox扩展文件
 ├── entrypoints/          # 扩展入口点
 │   ├── background.ts     # 后台服务 (配置验证、通知管理)
 │   ├── content.ts        # 内容脚本 (核心翻译逻辑)
-│   └── popup/            # Vue 3 弹窗界面
-│       ├── App.vue       # 主界面组件
-│       └── index.html    # 弹窗页面
+│   ├── popup/            # Vue 3 弹窗界面
+│   │   ├── App.vue       # 主界面组件
+│   │   └── index.html    # 弹窗页面
+│   └── options/          # 设置页面（Vue 3）
+│       ├── App.vue       # 设置主界面
+│       └── components/   # 设置页面组件
 ├── src/modules/          # 核心功能模块
 │   ├── pronunciation/    # 🔊 发音系统模块（完整生态系统）
 │   │   ├── phonetic/     # 音标获取服务（Dictionary API）
@@ -209,6 +251,10 @@ npm run zip
 │   │   ├── utils/        # 工具函数库（DOM、定位、计时器）
 │   │   ├── config/       # 配置管理（常量、配置项）
 │   │   └── types/        # 类型定义（完整类型系统）
+│   ├── options/          # 设置管理模块
+│   │   └── blacklist/    # 网站黑名单功能
+│   ├── processing/       # 文本处理模块
+│   ├── floatingBall/     # 浮动球功能
 │   ├── apiService.ts     # AI翻译API服务
 │   ├── textProcessor.ts  # 智能文本处理器
 │   ├── textReplacer.ts   # 文本替换引擎
@@ -236,9 +282,9 @@ npm run zip
 - **API集成**: OpenAI兼容接口 + Dictionary API + 有道TTS
 - **架构模式**: Provider模式 + 模块化设计 + 事件驱动
 - **发音系统**: 工厂模式 + 多TTS服务 + 智能缓存
-- **存储管理**: 配置版本控制
+- **存储管理**: 配置版本控制 + 跨浏览器兼容
 
-> 📖 **查看详细文档**: [架构与功能详解](./ARCHITECTURE_AND_FEATURES.md) - 包含完整的技术架构、API参考和开发指南
+> 📖 **查看详细文档**: [架构与功能详解](./docs/ARCHITECTURE_AND_FEATURES.md) - 包含完整的技术架构、API参考和开发指南
 
 ## ❓ 常见问题
 
@@ -279,6 +325,68 @@ npm run zip
 
 Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple开发者文档](https://developer.apple.com/documentation/safariservices/safari_web_extensions/converting_a_web_extension_for_safari)。
 
+### Firefox相关问题解决
+
+#### "获取用户设置失败: Error: The storage API will not work with a temporary addon ID"
+
+这是Firefox的已知限制。解决方案：
+
+1. **使用最新版本**: 确保使用最新的构建版本，已包含Firefox特定配置
+2. **使用Firefox专用构建**: 运行 `npm run build:firefox && npm run zip:firefox`
+3. **临时安装**: 通过 `about:debugging` 页面安装，而不是直接安装.xpi文件
+
+#### "扩展此组件无法安装，因为它未通过验证"
+
+- **方法一**：通过在地址栏输入 `about:debugging#/runtime/this-firefox` 选择 `临时加载附加组件...` 可以从文件安装Firefox扩展
+- **方法二**：地址栏输入 `about:config` 搜索 `xpinstall.signatures.required` 设置项，双击改为 `false`
+
+<div align="center">
+  <img src="images/firefox-cn.png" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
+</div>
+
+### API相关问题
+
+#### "API配置错误"通知
+
+检查以下配置：
+- API Key格式是否正确（通常以`sk-`开头）
+- API Endpoint URL是否有效
+- 模型名称是否支持
+- 网络连接是否正常
+
+#### 翻译质量不理想
+
+可以尝试：
+- 调整用户水平设置
+- 修改翻译比例
+- 更换更强大的AI模型
+- 调整Temperature参数（建议0.1-0.3）
+
+## 🛠️ 故障排除
+
+### 常见问题诊断
+
+#### 1. 扩展加载失败
+- 检查Node.js版本（需要18+）
+- 确保依赖安装完整：`npm install`
+- 查看构建日志是否有错误
+
+#### 2. 翻译功能不工作
+- 验证API配置是否正确
+- 检查网络连接
+- 查看开发者控制台错误信息
+
+#### 3. 发音功能异常
+- 确保浏览器支持Web Speech API
+- 检查有道TTS服务状态
+- 验证Dictionary API可访问性
+
+#### 4. 设置无法保存
+- Firefox用户确认使用正确的安装方式
+- 检查扩展权限设置
+- 清除浏览器缓存后重试
+
+
 ## 🤝 贡献指南
 
 我们非常欢迎各种形式的贡献！无论是提交 Bug、提出新功能建议，还是直接贡献代码。
@@ -312,12 +420,32 @@ Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple�
 - **API兼容**: 保持与现有API接口的向后兼容性，支持配置版本迁移
 - **多语言支持**: 新增语言时需要在languageManager.ts注册并测试翻译效果
 - **发音功能**: 扩展TTS服务时需要实现ITTSProvider接口并注册到工厂
+- **浏览器兼容性**: 新功能需要在Chrome、Edge、Firefox中测试
 
-> 📖 **详细开发指南**: 查看 [架构与功能详解](./ARCHITECTURE_AND_FEATURES.md) 获取完整的开发环境配置、代码结构说明和最佳实践。
+> 📖 **详细开发指南**: 查看 [架构与功能详解](./docs/ARCHITECTURE_AND_FEATURES.md) 获取完整的开发环境配置、代码结构说明和最佳实践。
 
+## 🔗 相关链接
 
+- **项目主页**: [GitHub Repository](https://github.com/xiao-zaiyi/illa-helper)
+- **问题反馈**: [GitHub Issues](https://github.com/xiao-zaiyi/illa-helper/issues)
+- **版本发布**: [GitHub Releases](https://github.com/xiao-zaiyi/illa-helper/releases)
+- **技术文档**: [架构与功能详解](./docs/ARCHITECTURE_AND_FEATURES.md)
+- **WXT框架**: [WXT.dev](https://wxt.dev/)
+
+## 📧 联系我们
+
+- **作者**: Xiao-zaiyi
+- **GitHub**: [@xiao-zaiyi](https://github.com/xiao-zaiyi)
+- **项目讨论**: 通过GitHub Issues进行技术讨论
 
 ## 📜 版权许可
 
 本项目基于 [MIT License](./LICENSE) 开源。您可以自由使用、修改和分发此代码，包括用于商业目的。
+
+---
+
+<div align="center">
+  <p>⭐ 如果这个项目对您有帮助，请给我们一个Star！</p>
+  <p>🔄 欢迎Fork并贡献您的改进！</p>
+</div>
 
