@@ -60,7 +60,7 @@ export class DictionaryApiProvider implements IPhoneticProvider {
         if (response.status === 404) {
           return {
             success: false,
-            error: `未找到单词 "${word}" 的音标信息`,
+            error: `词库无该单词的音标`,
           };
         }
         throw new Error(

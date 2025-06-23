@@ -73,15 +73,14 @@ export class TooltipRenderer {
             <div class="wxt-word-main">短语</div>
             <div class="wxt-phrase-text">${phrase}</div>
           </div>
-          ${
-            this.uiConfig.showPlayButton
-              ? `
+          ${this.uiConfig.showPlayButton
+        ? `
             <button class="wxt-audio-btn" title="朗读">
               ${SVG_ICONS.SPEAKER}
             </button>
           `
-              : ''
-          }
+        : ''
+      }
         </div>
         <div class="wxt-tooltip-body">
           <div class="wxt-phrase-words">${interactiveWordList}</div>
@@ -99,30 +98,38 @@ export class TooltipRenderer {
     const phonetic = elementData.phonetic;
     const phoneticText = phonetic?.phonetics[0]?.text || '';
     const aiTranslation = phonetic?.aiTranslation;
+    const hasPhoneticError = phonetic?.error?.hasPhoneticError;
+    const phoneticErrorMessage = phonetic?.error?.phoneticErrorMessage;
+
+    // 音标显示逻辑：正常音标 > 错误提示 > 空
+    let phoneticDisplay = '';
+    if (phoneticText) {
+      phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>`;
+    } else if (hasPhoneticError) {
+      phoneticDisplay = `<div class="wxt-phonetic-row"><div class="wxt-phonetic-error">${phoneticErrorMessage}</div></div>`;
+    }
 
     return `
       <div class="wxt-tooltip-card">
         <div class="wxt-tooltip-header">
           <div class="wxt-word-info">
             <div class="wxt-word-main">${elementData.word}</div>
-            ${phoneticText ? `<div class="wxt-phonetic-row"><div class="wxt-phonetic-text">${phoneticText}</div></div>` : ''}
+            ${phoneticDisplay}
             <div class="wxt-meaning-container">
-              ${
-                aiTranslation
-                  ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
-                  : `<div class="wxt-meaning-loading">获取词义中...</div>`
-              }
+              ${aiTranslation
+        ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
+        : `<div class="wxt-meaning-loading">获取词义中...</div>`
+      }
             </div>
           </div>
-          ${
-            this.uiConfig.showPlayButton
-              ? `
+          ${this.uiConfig.showPlayButton
+        ? `
             <button class="wxt-audio-btn" title="朗读单词">
               ${SVG_ICONS.SPEAKER}
             </button>
           `
-              : ''
-          }
+        : ''
+      }
         </div>
         <div class="wxt-tooltip-arrow"></div>
       </div>
@@ -133,35 +140,40 @@ export class TooltipRenderer {
    * 创建嵌套单词悬浮框HTML（用于短语中的单词）
    * @param word 单词
    * @param phoneticText 音标文本
+   * @param hasError 是否有音标错误
+   * @param errorMessage 错误信息
    */
-  createNestedWordTooltipHTML(word: string, phoneticText?: string): string {
-    // 音标文本，如果没有则为空字符串
-    const phonetic = phoneticText || '';
+  createNestedWordTooltipHTML(word: string, phoneticText?: string, hasError?: boolean, errorMessage?: string): string {
+    // 音标显示逻辑：正常音标 > 错误提示 > 空
+    let phoneticDisplay = '';
+    if (phoneticText) {
+      phoneticDisplay = `<div class="wxt-phonetic-text">${phoneticText}</div>`;
+    } else if (hasError) {
+      phoneticDisplay = `<div class="wxt-phonetic-error">${errorMessage || '音标获取失败'}</div>`;
+    }
 
     return `
       <div class="wxt-word-tooltip-card">
         <div class="wxt-word-tooltip-header">
           <div class="wxt-word-info">
-            <div class="wxt-word-main">${word}</div>
-            <div class="wxt-phonetic-row">
-              <div class="wxt-phonetic-container">
-                ${phonetic ? `<div class="wxt-phonetic-text">${phonetic}</div>` : ''}
-                <div class="wxt-accent-buttons">
-                  <div class="wxt-accent-group">
-                    <span class="wxt-accent-label">英</span>
-                    <button class="wxt-accent-audio-btn" data-accent="uk" title="英式发音">
-                      ${SVG_ICONS.SPEAKER_SMALL}
-                    </button>
-                  </div>
-                  <div class="wxt-accent-group">
-                    <span class="wxt-accent-label">美</span>
-                    <button class="wxt-accent-audio-btn" data-accent="us" title="美式发音">
-                      ${SVG_ICONS.SPEAKER_SMALL}
-                    </button>
-                  </div>
+            <div class="wxt-word-title-row">
+              <div class="wxt-word-main">${word}</div>
+              <div class="wxt-accent-buttons">
+                <div class="wxt-accent-group">
+                  <span class="wxt-accent-label">英</span>
+                  <button class="wxt-accent-audio-btn" data-accent="uk" title="英式发音">
+                    ${SVG_ICONS.SPEAKER_SMALL}
+                  </button>
+                </div>
+                <div class="wxt-accent-group">
+                  <span class="wxt-accent-label">美</span>
+                  <button class="wxt-accent-audio-btn" data-accent="us" title="美式发音">
+                    ${SVG_ICONS.SPEAKER_SMALL}
+                  </button>
                 </div>
               </div>
             </div>
+            ${phoneticDisplay ? `<div class="wxt-phonetic-row">${phoneticDisplay}</div>` : ''}
             <div class="wxt-meaning-container">
               <div class="wxt-meaning-loading">获取词义中...</div>
             </div>

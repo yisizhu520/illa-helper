@@ -326,7 +326,7 @@ Yes. The extension provides precise translation control:
 
 Safari requires additional steps to package Web Extensions as Safari extensions. Please refer to [Apple's developer documentation](https://developer.apple.com/documentation/safariservices/safari_web_extensions/converting_a_web_extension_for_safari).
 
-### Firefox Issues Resolution
+### Firefox Issues Resolution 🚨
 
 #### "Failed to get user settings: Error: The storage API will not work with a temporary addon ID"
 

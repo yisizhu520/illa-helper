@@ -325,7 +325,7 @@ browser_specific_settings: {
 
 Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple开发者文档](https://developer.apple.com/documentation/safariservices/safari_web_extensions/converting_a_web_extension_for_safari)。
 
-### Firefox相关问题解决
+### Firefox相关问题解决 🚨
 
 #### "获取用户设置失败: Error: The storage API will not work with a temporary addon ID"
 

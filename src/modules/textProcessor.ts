@@ -67,6 +67,45 @@ export class TextProcessor {
       .wxt-original-word--learning:hover {
         filter: blur(0) !important;
       }
+
+      /* 增强a标签内学习模式的悬停支持 */
+      a .wxt-original-word--learning:hover,
+      a:hover .wxt-original-word--learning {
+        filter: blur(0) !important;
+      }
+
+      /* 音标错误提示样式 */
+      .wxt-phonetic-error {
+        font-family: 'SF Mono', 'Monaco', 'Consolas', 'Roboto Mono', monospace;
+        font-size: 13px;
+        color: #ff9999;
+        font-style: italic;
+        font-weight: 500;
+        background: linear-gradient(135deg, rgba(255, 153, 153, 0.1) 0%, rgba(255, 153, 153, 0.05) 100%);
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: inline-block;
+        border: 1px solid rgba(255, 153, 153, 0.3);
+        letter-spacing: 0.02em;
+        opacity: 0.8;
+      }
+
+      /* 嵌套单词悬浮框标题行布局 */
+      .wxt-word-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
+      .wxt-word-title-row .wxt-word-main {
+        flex: 1;
+      }
+
+      .wxt-word-title-row .wxt-accent-buttons {
+        flex-shrink: 0;
+      }
       @keyframes wxt-processing-animation {
         0% {
           background-color: rgba(106, 136, 224, 0.1);

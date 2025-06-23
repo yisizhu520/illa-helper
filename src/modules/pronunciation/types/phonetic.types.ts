@@ -15,6 +15,13 @@ export interface PhoneticInfo {
   meanings?: MeaningEntry[];
   /** AI翻译释义（可选） */
   aiTranslation?: AITranslationEntry;
+  /** 错误状态信息（可选） */
+  error?: {
+    /** 是否有音标获取错误 */
+    hasPhoneticError: boolean;
+    /** 音标错误信息 */
+    phoneticErrorMessage?: string;
+  };
 }
 
 /**

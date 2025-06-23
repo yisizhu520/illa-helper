@@ -745,9 +745,28 @@ export class PronunciationService {
             );
             if (phoneticResult.success && phoneticResult.data) {
               elementData.phonetic = phoneticResult.data;
+            } else {
+              // 音标获取失败时，创建包含错误信息的基础结构
+              elementData.phonetic = {
+                word: elementData.word,
+                phonetics: [],
+                error: {
+                  hasPhoneticError: true,
+                  phoneticErrorMessage: phoneticResult.error || '音标获取失败'
+                }
+              };
             }
           } catch (error) {
             console.error('获取音标失败:', error);
+            // 异常情况也创建错误状态的基础结构
+            elementData.phonetic = {
+              word: elementData.word,
+              phonetics: [],
+              error: {
+                hasPhoneticError: true,
+                phoneticErrorMessage: '音标获取异常'
+              }
+            };
           } finally {
             elementData.element.classList.remove(
               CSS_CLASSES.PRONUNCIATION_LOADING,
@@ -1070,21 +1089,35 @@ export class PronunciationService {
 
       // 获取单词的音标信息
       const result = await this.phoneticProvider.getPhonetic(word);
-      if (!result.success || !result.data) return;
 
-      // 创建单词悬浮框
+      // 创建单词悬浮框（音标获取失败也要显示）
       const wordTooltip = document.createElement('div');
       wordTooltip.className = 'wxt-word-tooltip';
 
-      const phonetic = result.data;
+      let phonetic = result.data;
+      let phoneticText = '';
 
-      // 获取第一个可用的音标作为显示用音标
-      const phoneticText = phonetic.phonetics?.[0]?.text || '';
+      if (result.success && phonetic) {
+        // 音标获取成功
+        phoneticText = phonetic.phonetics?.[0]?.text || '';
+      } else {
+        // 音标获取失败，创建包含错误信息的基础结构
+        phonetic = {
+          word: word,
+          phonetics: [],
+          error: {
+            hasPhoneticError: true,
+            phoneticErrorMessage: result.error || '音标获取失败'
+          }
+        };
+      }
 
       // 使用TooltipRenderer生成嵌套单词悬浮框HTML
       wordTooltip.innerHTML = this.tooltipRenderer.createNestedWordTooltipHTML(
         word,
         phoneticText,
+        phonetic?.error?.hasPhoneticError,
+        phonetic?.error?.phoneticErrorMessage,
       );
 
       // 添加朗读功能
