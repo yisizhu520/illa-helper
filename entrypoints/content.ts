@@ -22,7 +22,6 @@ export default defineContentScript({
     // 黑名单检查
     const blacklistManager = new BlacklistManager();
     if (await blacklistManager.isBlacklisted(window.location.href)) {
-      console.log('ILLA Helper: URL is blacklisted. Aborting.');
       return;
     }
 
@@ -146,7 +145,7 @@ function setupListeners(
   // 监听来自 popup 的消息
   browser.runtime.onMessage.addListener(async (message) => {
     if (message.type === 'settings_updated') {
-      console.log('设置已更新:', message.settings);
+      // 设置已更新
       const newSettings: UserSettings = message.settings;
 
       // 检查是否需要刷新页面的关键设置
@@ -176,7 +175,7 @@ function setupListeners(
       // 更新悬浮球配置
       floatingBallManager.updateConfig(settings.floatingBall);
     } else if (message.type === 'MANUAL_TRANSLATE') {
-      console.log('收到手动翻译请求');
+      // 收到手动翻译请求
       if (settings.triggerMode === TriggerMode.MANUAL) {
         const isConfigValid = await browser.runtime.sendMessage({
           type: 'validate-configuration',
@@ -207,6 +206,7 @@ function setupListeners(
 
 /**
  * 设置 DOM 观察器以处理动态内容
+ * 使用新的状态管理器进行更智能的重复处理检测
  */
 function setupDomObserver(
   textProcessor: TextProcessor,
@@ -223,25 +223,44 @@ function setupDomObserver(
   };
 
   const observer = new MutationObserver((mutations) => {
+    let hasValidChanges = false;
+
     mutations.forEach((mutation) => {
       if (mutation.type === 'childList') {
         mutation.addedNodes.forEach((node) => {
-          // 只处理真正新增的内容
-          if (isContentAlreadyProcessed(node)) {
+          // 跳过已知的处理结果元素
+          if (isProcessingResultNode(node)) {
             return;
           }
-          nodesToProcess.add(node);
+
+          // 对所有新添加的元素节点都进行处理尝试
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as Element;
+            const textContent = element.textContent?.trim();
+
+            // 只要有足够的文本内容就尝试处理
+            if (textContent && textContent.length > 15) {
+              nodesToProcess.add(node);
+              hasValidChanges = true;
+            }
+          }
         });
       } else if (
         mutation.type === 'characterData' &&
         mutation.target.parentElement
       ) {
         const parentElement = mutation.target.parentElement;
-        if (!isContentAlreadyProcessed(parentElement)) {
+        if (!isProcessingResultNode(parentElement)) {
           nodesToProcess.add(parentElement);
+          hasValidChanges = true;
         }
       }
     });
+
+    // 只有在有有效变化时才进行处理
+    if (!hasValidChanges) {
+      return;
+    }
 
     clearTimeout(debounceTimer);
     debounceTimer = window.setTimeout(async () => {
@@ -257,82 +276,62 @@ function setupDomObserver(
         }
       });
 
-      // 清理过时的标记
-      cleanupProcessedMarkers();
-
+      // 暂停观察器避免处理过程中的循环触发
       observer.disconnect();
-      for (const node of topLevelNodes) {
-        await textProcessor.processRoot(
-          node,
-          textReplacer,
-          originalWordDisplayMode,
-          maxLength,
-        );
+
+      try {
+        for (const node of topLevelNodes) {
+          await textProcessor.processRoot(
+            node,
+            textReplacer,
+            originalWordDisplayMode,
+            maxLength,
+          );
+        }
+      } catch (_) {
+        // 静默处理错误
       }
+
       nodesToProcess.clear();
       observer.observe(document.body, observerConfig);
-    }, 300);
+    }, 150); // 减少防抖时间，提高响应性
   });
 
   observer.observe(document.body, observerConfig);
 }
 
 /**
- * 检查内容是否已被处理
+ * 检查节点是否是处理结果节点（翻译、发音等功能元素）
  */
-function isContentAlreadyProcessed(node: Node): boolean {
+function isProcessingResultNode(node: Node): boolean {
   if (node.nodeType === Node.ELEMENT_NODE) {
     const element = node as Element;
 
-    // 检查元素本身是否有处理标记
-    if (element.hasAttribute('data-wxt-text-processed')) {
-      return true;
+    // 检查是否是翻译或发音相关的元素
+    const processingClasses = [
+      'wxt-translation-term',
+      'wxt-original-word',
+      'wxt-pronunciation-tooltip',
+      'wxt-phonetic-text',
+      'wxt-tts-button',
+      'wxt-processing',
+    ];
+
+    for (const className of processingClasses) {
+      if (element.classList.contains(className)) {
+        return true;
+      }
     }
 
-    // 检查是否包含翻译标记
-    if (element.querySelector('.wxt-translation-term, .wxt-original-word')) {
+    // 检查是否包含处理标记属性
+    if (
+      element.hasAttribute('data-wxt-word-processed') ||
+      element.hasAttribute('data-pronunciation-added')
+    ) {
       return true;
-    }
-
-    // 对于新增的内容，只有当90%以上的文本已被处理时才跳过
-    const processedElements = element.querySelectorAll(
-      '[data-wxt-text-processed]',
-    );
-    if (processedElements.length > 0) {
-      const textContent = element.textContent?.trim() || '';
-      const processedTextContent = Array.from(processedElements)
-        .map((el) => el.textContent?.trim() || '')
-        .join(' ');
-
-      // 提高阈值，减少误判
-      const threshold = 0.9;
-      const isProcessed =
-        textContent.length > 0 &&
-        processedTextContent.length / textContent.length > threshold;
-
-      return isProcessed;
     }
   }
   return false;
-}
-
-/**
- * 清理过时的处理标记
- */
-function cleanupProcessedMarkers(): void {
-  const currentTime = Date.now();
-  const sixHoursAgo = currentTime - 6 * 60 * 60 * 1000; // 6小时前，延长有效期
-
-  const processedElements = document.querySelectorAll(
-    '[data-wxt-processed-time]',
-  );
-  processedElements.forEach((element) => {
-    const processedTime = element.getAttribute('data-wxt-processed-time');
-    if (processedTime && parseInt(processedTime) < sixHoursAgo) {
-      element.removeAttribute('data-wxt-text-processed');
-      element.removeAttribute('data-wxt-processed-time');
-    }
-  });
 }
 
 /**
@@ -361,8 +360,7 @@ async function detectPageLanguage(): Promise<string> {
       return 'en-to-zh';
     }
     return 'zh-to-en';
-  } catch (error) {
-    console.error('语言检测失败:', error);
+  } catch (_) {
     return 'zh-to-en'; // 出错时默认
   }
 }

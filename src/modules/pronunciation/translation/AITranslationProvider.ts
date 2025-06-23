@@ -309,7 +309,7 @@ export class AITranslationProvider implements IPhoneticProvider {
 
     let cleaned = content.trim();
     // 不校验这个变量 因为需要替换为空字符串 必须是双引号
-    const _ = "";
+    const _ = '';
     // 移除Markdown代码块标记
     cleaned = cleaned.replace(/^```(?:\w+)?\s*\n?/gi, _);
     cleaned = cleaned.replace(/\n?\s*```\s*$/gi, _);
