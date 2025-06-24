@@ -18,6 +18,8 @@ import BasicSettings from './basic/BasicSettings.vue';
 import TranslationSettings from './translation/TranslationSettings.vue';
 import AdvancedSettings from './advanced/AdvancedSettings.vue';
 import AppearanceSettings from './appearance/AppearanceSettings.vue';
+import DataManagement from './data/DataManagement.vue';
+import About from './about/About.vue';
 
 interface Props {
   currentSection: string;
@@ -44,7 +46,8 @@ const componentMap: Record<string, any> = {
   hotkey: AppearanceSettings,
   advanced: AdvancedSettings,
   import: BlacklistManagement,
-  about: BlacklistManagement,
+  about: About,
+  data: DataManagement,
 };
 
 const currentComponent = computed(() => {

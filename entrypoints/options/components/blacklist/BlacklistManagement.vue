@@ -1,191 +1,158 @@
 <template>
   <div class="max-w-6xl mx-auto space-y-6">
     <!-- 页面标题和描述 -->
-    <div class="space-y-2">
-      <h2 class="text-2xl font-bold text-foreground">网站黑名单管理</h2>
-      <p class="text-muted-foreground">
-        管理不需要翻译功能的网站。支持使用通配符模式，如
-        <code
-          class="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-sm"
-        >
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2 class="text-2xl font-bold text-foreground">网站黑名单管理</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-6">
+
+        <div class="space-y-2">
+
+          <p class="text-muted-foreground">
+            管理不需要翻译功能的网站。支持使用通配符模式，如
+            <code class="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-sm">
           *://github.com/*
         </code>
-      </p>
-    </div>
+          </p>
+        </div>
 
-    <!-- 操作工具栏 -->
-    <div class="bg-card rounded-lg border border-border p-4">
-      <div
-        class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between"
-      >
-        <!-- 搜索框 -->
-        <div class="flex-1 max-w-md">
-          <div class="relative">
-            <Search
-              class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"
-            />
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索网站模式..."
-              class="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+        <!-- 操作工具栏 -->
+        <div class="bg-card rounded-lg border border-border p-4">
+          <div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <!-- 搜索框 -->
+            <div class="flex-1 max-w-md">
+              <div class="relative">
+                <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input v-model="searchQuery" type="text" placeholder="搜索网站模式..."
+                  class="w-full pl-10 pr-4 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+            </div>
+
+            <!-- 操作按钮组 -->
+            <div class="flex gap-2">
+              <button @click="showAddDialog = true"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring transition-colors">
+                <Plus class="w-4 h-4" />
+                添加网站
+              </button>
+
+              <button v-if="selectedPatterns.length > 0" @click="bulkDeletePatterns"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-ring transition-colors">
+                <Trash2 class="w-4 h-4" />
+                删除选中 ({{ selectedPatterns.length }})
+              </button>
+
+              <button @click="exportPatterns"
+                class="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors">
+                <Download class="w-4 h-4" />
+                导出
+              </button>
+
+              <button @click="importPatterns"
+                class="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors">
+                <Upload class="w-4 h-4" />
+                导入
+              </button>
+            </div>
           </div>
         </div>
 
-        <!-- 操作按钮组 -->
-        <div class="flex gap-2">
-          <button
-            @click="showAddDialog = true"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-          >
-            <Plus class="w-4 h-4" />
-            添加网站
-          </button>
-
-          <button
-            v-if="selectedPatterns.length > 0"
-            @click="bulkDeletePatterns"
-            class="inline-flex items-center gap-2 px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-          >
-            <Trash2 class="w-4 h-4" />
-            删除选中 ({{ selectedPatterns.length }})
-          </button>
-
-          <button
-            @click="exportPatterns"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-          >
-            <Download class="w-4 h-4" />
-            导出
-          </button>
-
-          <button
-            @click="importPatterns"
-            class="inline-flex items-center gap-2 px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
-          >
-            <Upload class="w-4 h-4" />
-            导入
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 黑名单表格 -->
-    <div class="bg-card rounded-lg border border-border overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full">
-          <thead class="bg-muted/50">
-            <tr>
-              <th class="w-12 p-4">
-                <input
-                  v-model="selectAll"
-                  @change="handleSelectAll"
-                  type="checkbox"
-                  class="rounded border-border focus:ring-ring"
-                />
-              </th>
-              <th class="text-left p-4 font-medium text-foreground">
-                网站模式
-              </th>
-              <th class="text-left p-4 font-medium text-foreground">状态</th>
-              <th class="text-left p-4 font-medium text-foreground">
-                添加时间
-              </th>
-              <th class="text-right p-4 font-medium text-foreground">操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="(pattern, index) in filteredPatterns"
-              :key="pattern.url"
-              class="border-t border-border hover:bg-muted/25 transition-colors"
-            >
-              <td class="p-4">
-                <input
-                  v-model="selectedPatterns"
-                  :value="pattern.url"
-                  type="checkbox"
-                  class="rounded border-border focus:ring-ring"
-                />
-              </td>
-              <td class="p-4">
-                <code class="px-2 py-1 bg-muted rounded text-sm font-mono">
+        <!-- 黑名单表格 -->
+        <div class="bg-card rounded-lg border border-border overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-muted/50">
+                <tr>
+                  <th class="w-12 p-4">
+                    <input v-model="selectAll" @change="handleSelectAll" type="checkbox"
+                      class="rounded border-border focus:ring-ring" />
+                  </th>
+                  <th class="text-left p-4 font-medium text-foreground">
+                    网站模式
+                  </th>
+                  <th class="text-left p-4 font-medium text-foreground">状态</th>
+                  <th class="text-left p-4 font-medium text-foreground">
+                    添加时间
+                  </th>
+                  <th class="text-right p-4 font-medium text-foreground">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(pattern, index) in filteredPatterns" :key="pattern.url"
+                  class="border-t border-border hover:bg-muted/25 transition-colors">
+                  <td class="p-4">
+                    <input v-model="selectedPatterns" :value="pattern.url" type="checkbox"
+                      class="rounded border-border focus:ring-ring" />
+                  </td>
+                  <td class="p-4">
+                    <code class="px-2 py-1 bg-muted rounded text-sm font-mono">
                   {{ pattern.url }}
                 </code>
-              </td>
-              <td class="p-4">
-                <span
-                  class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                >
-                  <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                  已启用
-                </span>
-              </td>
-              <td class="p-4 text-muted-foreground text-sm">
-                {{ formatDate(pattern.addedAt) }}
-              </td>
-              <td class="p-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <button
-                    @click="editPattern(pattern, index)"
-                    class="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
-                    title="编辑"
-                  >
-                    <Edit3 class="w-4 h-4" />
-                  </button>
-                  <button
-                    @click="removePattern(pattern.url)"
-                    class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                    title="删除"
-                  >
-                    <Trash2 class="w-4 h-4" />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+                  </td>
+                  <td class="p-4">
+                    <span
+                      class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                      已启用
+                    </span>
+                  </td>
+                  <td class="p-4 text-muted-foreground text-sm">
+                    {{ formatDate(pattern.addedAt) }}
+                  </td>
+                  <td class="p-4 text-right">
+                    <div class="flex items-center justify-end gap-2">
+                      <button @click="editPattern(pattern, index)"
+                        class="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                        title="编辑">
+                        <Edit3 class="w-4 h-4" />
+                      </button>
+                      <button @click="removePattern(pattern.url)"
+                        class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                        title="删除">
+                        <Trash2 class="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-      <!-- 空状态 -->
-      <div v-if="filteredPatterns.length === 0" class="text-center py-12">
-        <Shield class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-        <h3 class="text-lg font-medium text-foreground mb-2">
-          {{ searchQuery ? '未找到匹配的网站' : '黑名单为空' }}
-        </h3>
-        <p class="text-muted-foreground mb-4">
-          {{
-            searchQuery ? '试试其他搜索关键词' : '开始添加不需要翻译功能的网站'
-          }}
-        </p>
-        <button
-          v-if="!searchQuery"
-          @click="showAddDialog = true"
-          class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-        >
-          <Plus class="w-4 h-4" />
-          添加第一个网站
-        </button>
-      </div>
-    </div>
+          <!-- 空状态 -->
+          <div v-if="filteredPatterns.length === 0" class="text-center py-12">
+            <Shield class="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h3 class="text-lg font-medium text-foreground mb-2">
+              {{ searchQuery ? '未找到匹配的网站' : '黑名单为空' }}
+            </h3>
+            <p class="text-muted-foreground mb-4">
+              {{
+                searchQuery ? '试试其他搜索关键词' : '开始添加不需要翻译功能的网站'
+              }}
+            </p>
+            <button v-if="!searchQuery" @click="showAddDialog = true"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
+              <Plus class="w-4 h-4" />
+              添加第一个网站
+            </button>
+          </div>
+        </div>
 
-    <!-- 统计信息 -->
-    <div class="text-sm text-muted-foreground">
-      共 {{ patterns.length }} 个网站模式
-      <span v-if="searchQuery">
-        ，显示 {{ filteredPatterns.length }} 个匹配结果
-      </span>
-    </div>
+        <!-- 统计信息 -->
+        <div class="text-sm text-muted-foreground">
+          共 {{ patterns.length }} 个网站模式
+          <span v-if="searchQuery">
+            ，显示 {{ filteredPatterns.length }} 个匹配结果
+          </span>
+        </div>
 
-    <!-- 添加/编辑对话框 -->
-    <BlacklistDialog
-      v-if="showAddDialog"
-      :pattern="editingPattern"
-      :is-editing="!!editingPattern"
-      @save="handleSavePattern"
-      @cancel="handleCancelEdit"
-    />
+        <!-- 添加/编辑对话框 -->
+        <BlacklistDialog v-if="showAddDialog" :pattern="editingPattern" :is-editing="!!editingPattern"
+          @save="handleSavePattern" @cancel="handleCancelEdit" />
+      </CardContent>
+    </Card>
   </div>
 </template>
 
@@ -202,6 +169,7 @@ import {
 } from 'lucide-vue-next';
 import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
 import BlacklistDialog from './BlacklistDialog.vue';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BlacklistPattern {
   url: string;

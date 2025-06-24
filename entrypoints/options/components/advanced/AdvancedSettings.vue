@@ -1,80 +1,61 @@
 <template>
   <div class="space-y-6">
-    <div class="bg-card rounded-lg border border-border">
-      <div class="p-4 border-b border-border">
-        <h3 class="text-lg font-medium text-foreground">进阶设置</h3>
-      </div>
-      <div class="p-4 space-y-6">
-        <div>
-          <label class="block text-sm font-medium text-muted-foreground mb-2">
-            触发模式
-          </label>
-          <div class="flex items-center space-x-4">
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                v-model="settings.triggerMode"
-                value="automatic"
-                class="h-4 w-4 text-primary bg-background border-border rounded focus:ring-ring"
-              />
-              <span class="text-sm text-foreground">自动翻译</span>
-            </label>
-            <label class="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="radio"
-                v-model="settings.triggerMode"
-                value="manual"
-                class="h-4 w-4 text-primary bg-background border-border rounded focus:ring-ring"
-              />
-              <span class="text-sm text-foreground">手动触发</span>
-            </label>
-          </div>
-        </div>
-        <div>
-          <label
-            for="max-length"
-            class="block text-sm font-medium text-muted-foreground mb-2"
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h2 class="text-2xl font-bold text-foreground">高级设置</h2>
+        </CardTitle>
+      </CardHeader>
+      <CardContent class="space-y-6">
+        <div class="space-y-2">
+          <Label>触发模式</Label>
+          <RadioGroup
+            :model-value="settings.triggerMode"
+            @update:model-value="settings.triggerMode = $event as any"
+            class="flex items-center space-x-4 pt-2"
           >
-            最大处理长度
-          </label>
-          <input
+            <div class="flex items-center space-x-2">
+              <RadioGroupItem id="mode-auto" value="automatic" />
+              <Label for="mode-auto">自动翻译</Label>
+            </div>
+            <div class="flex items-center space-x-2">
+              <RadioGroupItem id="mode-manual" value="manual" />
+              <Label for="mode-manual">手动触发</Label>
+            </div>
+          </RadioGroup>
+        </div>
+        <div class="space-y-2">
+          <Label for="max-length">最大处理长度</Label>
+          <Input
             id="max-length"
             type="number"
-            v-model.number="settings.maxLength"
-            class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            :model-value="settings.maxLength"
+            @update:model-value="settings.maxLength = Number($event)"
             placeholder="例如: 400"
           />
         </div>
-        <div class="flex items-center justify-between">
-          <label
-            for="enable-pronunciation"
-            class="block text-sm font-medium text-muted-foreground"
-          >
-            启用发音工具提示
-          </label>
-          <input
+        <div class="border-t border-border pt-6 flex items-center justify-between">
+          <div class="space-y-1">
+            <Label for="enable-pronunciation">启用发音工具提示</Label>
+          </div>
+          <Switch
             id="enable-pronunciation"
-            type="checkbox"
-            v-model="settings.enablePronunciationTooltip"
-            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            :model-value="settings.enablePronunciationTooltip"
+            @update:model-value="settings.enablePronunciationTooltip = $event"
           />
         </div>
         <div class="flex items-center justify-between">
-          <label
-            for="enable-thinking"
-            class="block text-sm font-medium text-muted-foreground"
-          >
-            启用GPT思考模式
-          </label>
-          <input
+          <div class="space-y-1">
+            <Label for="enable-thinking">启用GPT思考模式</Label>
+          </div>
+          <Switch
             id="enable-thinking"
-            type="checkbox"
-            v-model="settings.apiConfig.enable_thinking"
-            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            :model-value="settings.apiConfig.enable_thinking"
+            @update:model-value="settings.apiConfig.enable_thinking = $event"
           />
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   </div>
 </template>
 
@@ -82,6 +63,11 @@
 import { ref, watch, onMounted } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
 import { UserSettings, DEFAULT_SETTINGS } from '@/src/modules/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Input } from '@/components/ui/input';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageManager = new StorageManager();
