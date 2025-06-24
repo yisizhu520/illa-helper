@@ -212,7 +212,6 @@ export class PronunciationService {
       if (!element || !word || this.elementDataMap.has(element)) {
         return false;
       }
-
       // 为元素添加唯一标识
       if (!element.getAttribute('data-wxt-id')) {
         element.setAttribute(

@@ -318,23 +318,47 @@ export class ApiService {
     const result: Replacement[] = [];
     let lastIndex = 0;
 
-    // 假设API按顺序返回替换项
+    // 按顺序处理替换项，支持重复词汇
     for (const rep of replacements) {
-      if (!rep.original || !rep.translation) continue;
+      if (!rep.original || !rep.translation) {
+        continue;
+      }
 
+      // 尝试在剩余文本中查找词汇
       const index = originalText.indexOf(rep.original, lastIndex);
       if (index !== -1) {
-        result.push({
-          ...rep,
-          position: {
-            start: index,
-            end: index + rep.original.length,
-          },
-          isNew: true,
-        });
-        lastIndex = index + rep.original.length;
+        // 验证找到的文本确实匹配
+        const foundText = originalText.substring(index, index + rep.original.length);
+        if (foundText === rep.original) {
+          result.push({
+            ...rep,
+            position: {
+              start: index,
+              end: index + rep.original.length,
+            },
+            isNew: true,
+          });
+          lastIndex = index + rep.original.length;
+        }
+      } else {
+        // 如果顺序查找失败，尝试全局查找（但要避免重复）
+        const globalIndex = originalText.indexOf(rep.original);
+        if (globalIndex !== -1 && !result.some(r => 
+          r.position.start <= globalIndex && r.position.end > globalIndex)) {
+          result.push({
+            ...rep,
+            position: {
+              start: globalIndex,
+              end: globalIndex + rep.original.length,
+            },
+            isNew: true,
+          });
+        }
       }
     }
+
+    // 按位置排序确保处理顺序正确
+    result.sort((a, b) => a.position.start - b.position.start);
 
     return result;
   }

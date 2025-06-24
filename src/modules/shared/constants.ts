@@ -36,6 +36,8 @@ export const IGNORE_TAGS = new Set([
 
 // CSS选择器格式的忽略元素（小写）
 export const IGNORE_SELECTORS = [
+  //把IGNORE_TAGS加入
+  ...IGNORE_TAGS,
   // 基础HTML元素
   'script',
   'style',

@@ -153,13 +153,6 @@ export class TextReplacer {
       const isIntelligentMode =
         settings.multilingualConfig?.intelligentMode ||
         settings.translationDirection === 'intelligent';
-
-      console.log(`${isIntelligentMode ? '智能' : '传统'}翻译完成:`, {
-        direction: settings.translationDirection,
-        targetLanguage: settings.multilingualConfig?.targetLanguage,
-        replacementsCount: apiResult.replacements.length,
-      });
-
       return apiResult;
     } catch (error) {
       console.error('翻译失败:', error);

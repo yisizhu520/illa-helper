@@ -147,7 +147,6 @@ export class TextProcessor {
 
       // 第二步：使用智能分段器将根节点分割为内容段落
       const segments = this.contentSegmenter.segmentContent(root);
-
       if (segments.length === 0) {
         return;
       }

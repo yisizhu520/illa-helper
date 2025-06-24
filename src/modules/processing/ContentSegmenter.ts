@@ -160,6 +160,7 @@ export class ContentSegmenter {
         id: `${container.tagName.toLowerCase()}-${fingerprint}`,
         textContent: fullText,
         element: container,
+        elements: [container],
         textNodes: textNodes,
         fingerprint: fingerprint,
         domPath: domPath,
@@ -183,26 +184,30 @@ export class ContentSegmenter {
   ): ContentSegment[] {
     const segments: ContentSegment[] = [];
     let currentNodes: Text[] = [];
-    let currentText = '';
     let segmentIndex = 0;
 
     for (const textNode of textNodes) {
       const nodeText = textNode.textContent || '';
+      
+      // 计算当前累积的文本长度（使用一致的方式）
+      const currentText = currentNodes.map((node) => node.textContent || '').join('');
 
       // 检查是否会超过最大长度
       if (
         currentText.length + nodeText.length > this.config.maxSegmentLength &&
         currentNodes.length > 0
       ) {
-        // 创建当前段落
+        // 创建当前段落（使用一致的文本构建方式）
+        const finalText = currentNodes.map((node) => node.textContent || '').join('');
         const fingerprint = globalProcessingState.generateContentFingerprint(
-          currentText,
+          finalText,
           `${domPath}[${segmentIndex}]`,
         );
         segments.push({
           id: `${container.tagName.toLowerCase()}-${fingerprint}-${segmentIndex}`,
-          textContent: currentText,
+          textContent: finalText,
           element: container,
+          elements: [container],
           textNodes: [...currentNodes],
           fingerprint: fingerprint,
           domPath: `${domPath}[${segmentIndex}]`,
@@ -210,24 +215,24 @@ export class ContentSegmenter {
 
         // 重置累积器
         currentNodes = [];
-        currentText = '';
         segmentIndex++;
       }
 
       currentNodes.push(textNode);
-      currentText += nodeText;
     }
 
-    // 处理最后一个段落
+    // 处理最后一个段落（使用一致的文本构建方式）
     if (currentNodes.length > 0) {
+      const finalText = currentNodes.map((node) => node.textContent || '').join('');
       const fingerprint = globalProcessingState.generateContentFingerprint(
-        currentText,
+        finalText,
         `${domPath}[${segmentIndex}]`,
       );
       segments.push({
         id: `${container.tagName.toLowerCase()}-${fingerprint}-${segmentIndex}`,
-        textContent: currentText,
+        textContent: finalText,
         element: container,
+        elements: [container],
         textNodes: currentNodes,
         fingerprint: fingerprint,
         domPath: `${domPath}[${segmentIndex}]`,
@@ -281,12 +286,14 @@ export class ContentSegmenter {
    * 创建合并段落
    */
   private createMergedSegment(segments: ContentSegment[]): ContentSegment {
-    const combinedText = segments.map((seg) => seg.textContent).join(' ');
+    const combinedText = segments.map((seg) => seg.textContent).join('');
     const combinedNodes = segments.reduce(
       (acc, seg) => acc.concat(seg.textNodes),
       [] as Text[],
     );
     const primaryElement = segments[0].element;
+    // 收集所有相关的DOM元素
+    const allElements = segments.map(seg => seg.element);
     const combinedDomPath = segments.map((seg) => seg.domPath).join('|');
 
     const fingerprint = globalProcessingState.generateContentFingerprint(
@@ -298,6 +305,7 @@ export class ContentSegmenter {
       id: `merged-${fingerprint}`,
       textContent: combinedText,
       element: primaryElement,
+      elements: allElements,
       textNodes: combinedNodes,
       fingerprint: fingerprint,
       domPath: combinedDomPath,

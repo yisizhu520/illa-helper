@@ -228,8 +228,10 @@ export class ProcessingCoordinator {
     originalWordDisplayMode: OriginalWordDisplayMode,
   ): Promise<SegmentProcessingResult> {
     try {
-      // 添加处理中的视觉反馈
-      this.addProcessingFeedback(segment.element);
+      // 为所有相关元素添加处理中的视觉反馈
+      segment.elements.forEach(element => {
+        this.addProcessingFeedback(element);
+      });
 
       // 调用文本替换器进行处理
       const result = await textReplacer.replaceText(segment.textContent);
@@ -276,8 +278,10 @@ export class ProcessingCoordinator {
         error: error instanceof Error ? error.message : String(error),
       };
     } finally {
-      // 移除处理中的视觉反馈
-      this.removeProcessingFeedback(segment.element);
+      // 为所有相关元素移除处理中的视觉反馈
+      segment.elements.forEach(element => {
+        this.removeProcessingFeedback(element);
+      });
     }
   }
 
@@ -290,11 +294,41 @@ export class ProcessingCoordinator {
     styleManager: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
   ): void {
-    // 使用现有的替换逻辑，但是基于段落的文本节点
-    for (let i = replacements.length - 1; i >= 0; i--) {
-      const replacement = replacements[i];
-      if (!replacement.position) continue;
+    // 重新构建文本内容以确保一致性
+    const reconstructedText = segment.textNodes.map((node) => node.textContent || '').join('');
 
+    // 预验证：检查所有替换项的位置是否准确
+    const validReplacements = replacements.filter((replacement) => {
+      if (!replacement.position) {
+        return false;
+      }
+
+      // 验证位置与实际文本内容的匹配（使用重构的文本）
+      const { start, end } = replacement.position;
+      const expectedText = replacement.original;
+      const actualText = reconstructedText.substring(start, end);
+
+      if (expectedText !== actualText) {
+        // 尝试重新定位
+        const correctIndex = reconstructedText.indexOf(expectedText);
+        if (correctIndex !== -1) {
+          replacement.position = {
+            start: correctIndex,
+            end: correctIndex + expectedText.length,
+          };
+          return true;
+        }
+        return false;
+      }
+      return true;
+    });
+
+    // 对验证通过的替换项按位置倒序处理（避免位置偏移影响）
+    const sortedReplacements = validReplacements.sort(
+      (a, b) => b.position.start - a.position.start,
+    );
+
+    for (const replacement of sortedReplacements) {
       const range = this.findRangeInTextNodes(
         segment.textNodes,
         replacement.position.start,
@@ -326,6 +360,14 @@ export class ProcessingCoordinator {
     let startOffset = 0;
     let endOffset = 0;
 
+    // 构建完整文本内容用于验证
+    const fullText = textNodes.map((node) => node.textContent || '').join('');
+
+    // 验证位置边界
+    if (start < 0 || end > fullText.length || start >= end) {
+      return null;
+    }
+
     for (const node of textNodes) {
       const nodeLength = node.textContent?.length || 0;
 
@@ -347,6 +389,15 @@ export class ProcessingCoordinator {
       const range = document.createRange();
       range.setStart(startNode, startOffset);
       range.setEnd(endNode, endOffset);
+
+      // 验证范围内容与预期是否匹配
+      const extractedText = range.toString();
+      const expectedText = fullText.substring(start, end);
+
+      if (extractedText !== expectedText) {
+        return null;
+      }
+
       return range;
     }
 
@@ -398,7 +449,7 @@ export class ProcessingCoordinator {
 
       // 标记为已处理
       originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
-    } catch (_) {
+    } catch (error) {
       // 静默处理错误
     }
   }
@@ -490,8 +541,6 @@ export class ProcessingCoordinator {
     await this.processingQueue;
   }
 
-
-
   /**
    * 为单个段落的翻译内容添加发音功能
    * @param segment 内容段落
@@ -502,14 +551,19 @@ export class ProcessingCoordinator {
     if (!this.pronunciationService) return;
 
     try {
-      // 查找该段落内的翻译元素
-      const translationElements = segment.element.querySelectorAll
-        ? segment.element.querySelectorAll(
-          '.wxt-translation-term:not([data-pronunciation-added])',
-        )
-        : [];
+      // 在所有相关元素中查找翻译元素
+      const allTranslationElements: Element[] = [];
+      
+      for (const element of segment.elements) {
+        const translationElements = element.querySelectorAll
+          ? element.querySelectorAll(
+              '.wxt-translation-term:not([data-pronunciation-added])',
+            )
+          : [];
+        allTranslationElements.push(...Array.from(translationElements));
+      }
 
-      for (const element of translationElements) {
+      for (const element of allTranslationElements) {
         const translationText = element.textContent;
         if (translationText) {
           // 提取纯英文内容（去除括号）

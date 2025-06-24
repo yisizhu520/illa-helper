@@ -24,6 +24,8 @@ export interface ContentSegment {
   textContent: string;
   /** 对应的DOM元素 */
   element: Element;
+  /** 所有相关的DOM元素（用于合并段落） */
+  elements: Element[];
   /** 文本节点列表 */
   textNodes: Text[];
   /** 内容指纹 */
