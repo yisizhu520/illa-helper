@@ -16,7 +16,6 @@ import { computed } from 'vue';
 import BlacklistManagement from './blacklist/BlacklistManagement.vue';
 import BasicSettings from './basic/BasicSettings.vue';
 import TranslationSettings from './translation/TranslationSettings.vue';
-import AdvancedSettings from './advanced/AdvancedSettings.vue';
 import AppearanceSettings from './appearance/AppearanceSettings.vue';
 import DataManagement from './data/DataManagement.vue';
 import About from './about/About.vue';
@@ -35,17 +34,8 @@ const emit = defineEmits<{
 const componentMap: Record<string, any> = {
   basic: BasicSettings,
   translation: TranslationSettings,
-  ai: BlacklistManagement,
-  pronunciation: BlacklistManagement,
   blacklist: BlacklistManagement,
-  subtitle: BlacklistManagement,
-  image: BlacklistManagement,
-  input: BlacklistManagement,
-  speech: BlacklistManagement,
   floating: AppearanceSettings,
-  hotkey: AppearanceSettings,
-  advanced: AdvancedSettings,
-  import: BlacklistManagement,
   about: About,
   data: DataManagement,
 };

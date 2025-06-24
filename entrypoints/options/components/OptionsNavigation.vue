@@ -17,28 +17,16 @@
     <nav class="flex-1 px-4 py-6 overflow-y-auto">
       <div class="space-y-6">
         <!-- 基础功能组 -->
-        <NavigationGroup
-          title="基础功能"
-          :items="basicFeatures"
-          :current-section="currentSection"
-          @section-change="handleSectionChange"
-        />
+        <NavigationGroup title="基础功能" :items="basicFeatures" :current-section="currentSection"
+          @section-change="handleSectionChange" />
 
         <!-- 高级功能组 -->
-        <NavigationGroup
-          title="高级功能"
-          :items="advancedFeatures"
-          :current-section="currentSection"
-          @section-change="handleSectionChange"
-        />
+        <NavigationGroup title="高级功能" :items="advancedFeatures" :current-section="currentSection"
+          @section-change="handleSectionChange" />
 
         <!-- 管理工具组 -->
-        <NavigationGroup
-          title="管理工具"
-          :items="managementTools"
-          :current-section="currentSection"
-          @section-change="handleSectionChange"
-        />
+        <NavigationGroup title="管理工具" :items="managementTools" :current-section="currentSection"
+          @section-change="handleSectionChange" />
       </div>
     </nav>
   </div>
@@ -81,20 +69,21 @@ const basicFeatures: NavigationItem[] = [
     description: '基础配置和用户偏好',
   },
   {
-    key: 'translation',
-    label: '翻译服务',
-    icon: Languages,
-    description: 'API配置和翻译策略',
+    key: 'floating',
+    label: '悬浮球',
+    icon: Circle,
+    description: '悬浮工具球配置',
   },
 ];
 
 // 高级功能组
 const advancedFeatures: NavigationItem[] = [
+
   {
-    key: 'floating',
-    label: '悬浮球',
-    icon: Circle,
-    description: '悬浮工具球配置',
+    key: 'translation',
+    label: '翻译服务',
+    icon: Languages,
+    description: 'API配置和翻译策略',
   },
 ];
 
@@ -107,7 +96,7 @@ const managementTools: NavigationItem[] = [
     description: '网站黑名单管理',
   },
   {
-    key: 'import',
+    key: 'data',
     label: '导入/导出',
     icon: Download,
     description: '配置备份和恢复',
