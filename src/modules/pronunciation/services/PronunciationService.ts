@@ -177,6 +177,15 @@ export class PronunciationService {
   /** 当前主悬浮框对应的元素 */
   private currentMainElement: HTMLElement | null = null;
 
+  /** StorageManager实例，用于获取用户设置 */
+  private storageManager: StorageManager;
+
+  /** 跟踪Ctrl键是否被按下 */
+  private isCtrlPressed = false;
+
+  /** 当前鼠标悬停的元素数据 */
+  private currentlyHoveredData: PronunciationElementData | null = null;
+
   constructor(config?: Partial<PronunciationConfig>, apiConfig?: ApiConfig) {
     this.config = { ...DEFAULT_PRONUNCIATION_CONFIG, ...config };
     this.phoneticProvider = PhoneticProviderFactory.createProvider(
@@ -190,6 +199,7 @@ export class PronunciationService {
     const effectiveApiConfig = apiConfig || DEFAULT_API_CONFIG;
     this.aiTranslationProvider = new AITranslationProvider(effectiveApiConfig);
     this.tooltipRenderer = new TooltipRenderer(this.config.uiConfig);
+    this.storageManager = new StorageManager();
 
     // 始终创建Web Speech作为备用TTS提供者
     this.fallbackTTSProvider = TTSProviderFactory.createProvider('web-speech', {
@@ -198,6 +208,16 @@ export class PronunciationService {
       pitch: this.config.ttsConfig.pitch,
       volume: this.config.ttsConfig.volume,
     });
+
+    // 绑定方法上下文
+    this.handleDocumentKeyDown = this.handleDocumentKeyDown.bind(this);
+    this.handleDocumentKeyUp = this.handleDocumentKeyUp.bind(this);
+    this.handleWindowBlur = this.handleWindowBlur.bind(this);
+
+    // 设置全局事件监听器
+    document.addEventListener('keydown', this.handleDocumentKeyDown);
+    document.addEventListener('keyup', this.handleDocumentKeyUp);
+    window.addEventListener('blur', this.handleWindowBlur);
   }
 
   /**
@@ -584,10 +604,12 @@ export class PronunciationService {
     element: HTMLElement,
     elementData: PronunciationElementData,
   ): void {
-    const mouseEnterHandler = async (event: MouseEvent) => {
+    const mouseEnterHandler = async () => {
       elementData.isMouseOver = true;
+      this.currentlyHoveredData = elementData;
+
       // 检查快捷键要求
-      if (!(await this.checkHotkey(event))) {
+      if (!(await this.checkHotkey())) {
         return;
       }
       await this.handleMouseEnter(elementData);
@@ -595,30 +617,19 @@ export class PronunciationService {
 
     const mouseLeaveHandler = () => {
       elementData.isMouseOver = false;
-      this.handleMouseLeave(elementData);
-    };
-
-    // 键盘按下处理 - 支持先鼠标悬停后按快捷键的情况
-    const keyDownHandler = async (event: KeyboardEvent) => {
-      // 只有鼠标在元素上且按下了正确的快捷键时才触发
-      if (
-        elementData.isMouseOver &&
-        (await this.checkHotkeyFromKeyboard(event))
-      ) {
-        event.preventDefault(); // 防止默认行为
-        await this.handleMouseEnter(elementData);
+      if (this.currentlyHoveredData?.element === element) {
+        this.currentlyHoveredData = null;
       }
+      this.handleMouseLeave(elementData);
     };
 
     element.addEventListener('mouseenter', mouseEnterHandler);
     element.addEventListener('mouseleave', mouseLeaveHandler);
-    document.addEventListener('keydown', keyDownHandler);
 
     // 存储处理器引用以便后续移除
     (element as any).__wxtHandlers = {
       mouseEnterHandler,
       mouseLeaveHandler,
-      keyDownHandler,
     };
   }
 
@@ -630,9 +641,6 @@ export class PronunciationService {
     if (handlers) {
       element.removeEventListener('mouseenter', handlers.mouseEnterHandler);
       element.removeEventListener('mouseleave', handlers.mouseLeaveHandler);
-      if (handlers.keyDownHandler) {
-        document.removeEventListener('keydown', handlers.keyDownHandler);
-      }
       delete (element as any).__wxtHandlers;
     }
   }
@@ -640,11 +648,10 @@ export class PronunciationService {
   /**
    * 检查快捷键是否满足要求
    */
-  private async checkHotkey(event: MouseEvent): Promise<boolean> {
+  private async checkHotkey(): Promise<boolean> {
     try {
       // 使用直接导入的StorageManager
-      const storageManager = new StorageManager();
-      const userSettings = await storageManager.getUserSettings();
+      const userSettings = await this.storageManager.getUserSettings();
       const hotkey = userSettings.pronunciationHotkey;
 
       // 如果没有配置或未启用快捷键，直接允许
@@ -652,34 +659,8 @@ export class PronunciationService {
         return true;
       }
 
-      // 检查Ctrl键是否按下
-      return event.ctrlKey;
-    } catch (error) {
-      console.error('获取快捷键配置失败:', error);
-      // 出错时默认允许
-      return true;
-    }
-  }
-
-  /**
-   * 检查快捷键是否满足要求（键盘事件）
-   */
-  private async checkHotkeyFromKeyboard(
-    event: KeyboardEvent,
-  ): Promise<boolean> {
-    try {
-      // 使用直接导入的StorageManager
-      const storageManager = new StorageManager();
-      const userSettings = await storageManager.getUserSettings();
-      const hotkey = userSettings.pronunciationHotkey;
-
-      // 如果没有配置或未启用快捷键，直接允许
-      if (!hotkey || !hotkey.enabled) {
-        return true;
-      }
-
-      // 检查Ctrl键是否按下
-      return event.ctrlKey;
+      // 检查内部维护的Ctrl键状态
+      return this.isCtrlPressed;
     } catch (error) {
       console.error('获取快捷键配置失败:', error);
       // 出错时默认允许
@@ -1247,6 +1228,45 @@ export class PronunciationService {
   }
 
   /**
+   * 全局键盘按下事件处理器
+   */
+  private async handleDocumentKeyDown(event: KeyboardEvent): Promise<void> {
+    // 仅当Ctrl键被按下且之前未被按下时触发
+    if (event.key === 'Control' && !this.isCtrlPressed) {
+      this.isCtrlPressed = true;
+
+      // 检查热键是否启用
+      const userSettings = await this.storageManager.getUserSettings();
+      const hotkey = userSettings.pronunciationHotkey;
+      if (!hotkey || !hotkey.enabled) {
+        return;
+      }
+
+      // 如果鼠标正悬停在某个元素上，触发显示
+      if (this.currentlyHoveredData) {
+        event.preventDefault();
+        await this.handleMouseEnter(this.currentlyHoveredData);
+      }
+    }
+  }
+
+  /**
+   * 全局键盘松开事件处理器
+   */
+  private handleDocumentKeyUp(event: KeyboardEvent): void {
+    if (event.key === 'Control') {
+      this.isCtrlPressed = false;
+    }
+  }
+
+  /**
+   * 窗口失焦事件处理器
+   */
+  private handleWindowBlur(): void {
+    this.isCtrlPressed = false;
+  }
+
+  /**
    * 清理所有资源
    */
   destroy(): void {
@@ -1270,5 +1290,10 @@ export class PronunciationService {
 
     // 清理数据
     this.elementDataMap.clear();
+
+    // 移除全局事件监听器
+    document.removeEventListener('keydown', this.handleDocumentKeyDown);
+    document.removeEventListener('keyup', this.handleDocumentKeyUp);
+    window.removeEventListener('blur', this.handleWindowBlur);
   }
 }
