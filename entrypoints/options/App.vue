@@ -71,18 +71,16 @@ const sectionTitles: Record<string, string> = {
   advanced: '进阶设置',
 };
 
-onMounted(() => {
-  // 检查系统主题偏好
-  isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches;
+onMounted(async () => {
+  // 优先从存储中加载主题设置
+  const storedTheme = await browser.storage.local.get('theme');
+  if (storedTheme.theme) {
+    isDark.value = storedTheme.theme === 'dark';
+  } else {
+    // 如果存储中没有，则根据系统偏好设置
+    isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
   applyTheme();
-
-  // 监听系统主题变化
-  window
-    .matchMedia('(prefers-color-scheme: dark)')
-    .addEventListener('change', (e) => {
-      isDark.value = e.matches;
-      applyTheme();
-    });
 });
 
 const handleSectionChange = (section: string) => {
@@ -100,9 +98,11 @@ const getSectionTitle = (section: string): string => {
   return sectionTitles[section] || '设置';
 };
 
-const toggleTheme = () => {
+const toggleTheme = async () => {
   isDark.value = !isDark.value;
   applyTheme();
+  // 将主题偏好保存到存储中
+  await browser.storage.local.set({ theme: isDark.value ? 'dark' : 'light' });
 };
 
 const applyTheme = () => {

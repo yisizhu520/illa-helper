@@ -2,10 +2,27 @@
   <div class="space-y-6">
     <div class="bg-card rounded-lg border border-border">
       <div class="p-4 border-b border-border">
-        <h3 class="text-lg font-medium text-foreground">翻译内容设置</h3>
+        <h3 class="text-lg font-medium text-foreground">基本设置</h3>
       </div>
       <div class="p-4 space-y-6">
-        <div>
+        <div class="flex items-center justify-between">
+          <label
+            for="extension-enabled"
+            class="block text-sm font-medium text-foreground"
+          >
+            启用扩展总开关
+            <p class="text-xs text-muted-foreground">
+              关闭后，所有翻译功能将停止工作。
+            </p>
+          </label>
+          <input
+            id="extension-enabled"
+            type="checkbox"
+            v-model="settings.isEnabled"
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+        </div>
+        <div class="border-t border-border pt-6">
           <label class="block text-sm font-medium text-muted-foreground mb-2">
             翻译位置
           </label>
@@ -45,6 +62,26 @@
               class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
             />
           </div>
+        </div>
+        <div>
+          <label
+            for="translation-style"
+            class="block text-sm font-medium text-muted-foreground mb-2"
+          >
+            翻译样式
+          </label>
+          <select
+            id="translation-style"
+            v-model="settings.translationStyle"
+            class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="default">默认</option>
+            <option value="subtle">柔和</option>
+            <option value="bold">粗体</option>
+            <option value="italic">斜体</option>
+            <option value="underlined">下划线</option>
+            <option value="highlighted">高亮</option>
+          </select>
         </div>
       </div>
     </div>
@@ -121,14 +158,3 @@ watch(
   { deep: true },
 );
 </script>
-
-<style scoped>
-.box-card {
-  border: 1px solid var(--el-border-color-lighter);
-  background-color: var(--el-bg-color);
-}
-
-.card-header {
-  font-weight: bold;
-}
-</style>
