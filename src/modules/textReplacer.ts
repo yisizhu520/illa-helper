@@ -149,10 +149,6 @@ export class TextReplacer {
       // 清理过期缓存
       this.cleanupCache();
 
-      // 判断模式用于日志
-      const isIntelligentMode =
-        settings.multilingualConfig?.intelligentMode ||
-        settings.translationDirection === 'intelligent';
       return apiResult;
     } catch (error) {
       console.error('翻译失败:', error);

@@ -188,9 +188,11 @@ export class ContentSegmenter {
 
     for (const textNode of textNodes) {
       const nodeText = textNode.textContent || '';
-      
+
       // 计算当前累积的文本长度（使用一致的方式）
-      const currentText = currentNodes.map((node) => node.textContent || '').join('');
+      const currentText = currentNodes
+        .map((node) => node.textContent || '')
+        .join('');
 
       // 检查是否会超过最大长度
       if (
@@ -198,7 +200,9 @@ export class ContentSegmenter {
         currentNodes.length > 0
       ) {
         // 创建当前段落（使用一致的文本构建方式）
-        const finalText = currentNodes.map((node) => node.textContent || '').join('');
+        const finalText = currentNodes
+          .map((node) => node.textContent || '')
+          .join('');
         const fingerprint = globalProcessingState.generateContentFingerprint(
           finalText,
           `${domPath}[${segmentIndex}]`,
@@ -223,7 +227,9 @@ export class ContentSegmenter {
 
     // 处理最后一个段落（使用一致的文本构建方式）
     if (currentNodes.length > 0) {
-      const finalText = currentNodes.map((node) => node.textContent || '').join('');
+      const finalText = currentNodes
+        .map((node) => node.textContent || '')
+        .join('');
       const fingerprint = globalProcessingState.generateContentFingerprint(
         finalText,
         `${domPath}[${segmentIndex}]`,
@@ -293,7 +299,7 @@ export class ContentSegmenter {
     );
     const primaryElement = segments[0].element;
     // 收集所有相关的DOM元素
-    const allElements = segments.map(seg => seg.element);
+    const allElements = segments.map((seg) => seg.element);
     const combinedDomPath = segments.map((seg) => seg.domPath).join('|');
 
     const fingerprint = globalProcessingState.generateContentFingerprint(

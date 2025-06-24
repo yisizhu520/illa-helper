@@ -1,4 +1,8 @@
-import { OriginalWordDisplayMode, ApiConfig } from './types';
+import {
+  OriginalWordDisplayMode,
+  ApiConfig,
+  TranslationPosition,
+} from './types';
 import { PronunciationService } from './pronunciation/services/PronunciationService';
 import { DEFAULT_PRONUNCIATION_CONFIG } from './pronunciation/config';
 import { ContentSegmenter } from './processing/ContentSegmenter';
@@ -135,6 +139,8 @@ export class TextProcessor {
     textReplacer: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
     maxLength: number = 400,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
   ): Promise<void> {
     try {
       // 第一步：更新内容分段器配置
@@ -157,6 +163,8 @@ export class TextProcessor {
         segments,
         textReplacer,
         originalWordDisplayMode,
+        translationPosition,
+        showParentheses,
       );
     } catch (_) {
       // 静默处理错误

@@ -5,6 +5,7 @@ import {
   TriggerMode,
   ReplacementConfig,
   OriginalWordDisplayMode,
+  TranslationPosition,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
@@ -66,6 +67,8 @@ export default defineContentScript({
           textReplacer,
           settings.originalWordDisplayMode,
           settings.maxLength,
+          settings.translationPosition,
+          settings.showParentheses,
         );
       }
     });
@@ -77,6 +80,8 @@ export default defineContentScript({
         textReplacer,
         settings.originalWordDisplayMode,
         settings.maxLength,
+        settings.translationPosition,
+        settings.showParentheses,
       );
     }
 
@@ -122,13 +127,17 @@ async function processPage(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
   originalWordDisplayMode: OriginalWordDisplayMode,
-  maxLength?: number,
+  maxLength: number | undefined,
+  translationPosition: TranslationPosition,
+  showParentheses: boolean,
 ) {
   await textProcessor.processRoot(
     document.body,
     textReplacer,
     originalWordDisplayMode,
     maxLength,
+    translationPosition,
+    showParentheses,
   );
 }
 
@@ -187,6 +196,8 @@ function setupListeners(
             textReplacer,
             settings.originalWordDisplayMode,
             settings.maxLength,
+            settings.translationPosition,
+            settings.showParentheses,
           );
         }
       }
@@ -200,6 +211,8 @@ function setupListeners(
       textReplacer,
       settings.originalWordDisplayMode,
       settings.maxLength,
+      settings.translationPosition,
+      settings.showParentheses,
     );
   }
 }
@@ -212,7 +225,9 @@ function setupDomObserver(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
   originalWordDisplayMode: OriginalWordDisplayMode,
-  maxLength?: number,
+  maxLength: number | undefined,
+  translationPosition: TranslationPosition,
+  showParentheses: boolean,
 ) {
   let debounceTimer: number;
   const nodesToProcess = new Set<Node>();
@@ -286,6 +301,8 @@ function setupDomObserver(
             textReplacer,
             originalWordDisplayMode,
             maxLength,
+            translationPosition,
+            showParentheses,
           );
         }
       } catch (_) {
@@ -294,7 +311,7 @@ function setupDomObserver(
 
       nodesToProcess.clear();
       observer.observe(document.body, observerConfig);
-    }, 150); // 减少防抖时间，提高响应性
+    }, 150);
   });
 
   observer.observe(document.body, observerConfig);

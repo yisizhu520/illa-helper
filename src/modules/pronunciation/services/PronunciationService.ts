@@ -732,8 +732,8 @@ export class PronunciationService {
                 phonetics: [],
                 error: {
                   hasPhoneticError: true,
-                  phoneticErrorMessage: phoneticResult.error || '音标获取失败'
-                }
+                  phoneticErrorMessage: phoneticResult.error || '音标获取失败',
+                },
               };
             }
           } catch (error) {
@@ -744,8 +744,8 @@ export class PronunciationService {
               phonetics: [],
               error: {
                 hasPhoneticError: true,
-                phoneticErrorMessage: '音标获取异常'
-              }
+                phoneticErrorMessage: '音标获取异常',
+              },
             };
           } finally {
             elementData.element.classList.remove(
@@ -1087,8 +1087,8 @@ export class PronunciationService {
           phonetics: [],
           error: {
             hasPhoneticError: true,
-            phoneticErrorMessage: result.error || '音标获取失败'
-          }
+            phoneticErrorMessage: result.error || '音标获取失败',
+          },
         };
       }
 

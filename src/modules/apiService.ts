@@ -328,7 +328,10 @@ export class ApiService {
       const index = originalText.indexOf(rep.original, lastIndex);
       if (index !== -1) {
         // 验证找到的文本确实匹配
-        const foundText = originalText.substring(index, index + rep.original.length);
+        const foundText = originalText.substring(
+          index,
+          index + rep.original.length,
+        );
         if (foundText === rep.original) {
           result.push({
             ...rep,
@@ -343,8 +346,13 @@ export class ApiService {
       } else {
         // 如果顺序查找失败，尝试全局查找（但要避免重复）
         const globalIndex = originalText.indexOf(rep.original);
-        if (globalIndex !== -1 && !result.some(r => 
-          r.position.start <= globalIndex && r.position.end > globalIndex)) {
+        if (
+          globalIndex !== -1 &&
+          !result.some(
+            (r) =>
+              r.position.start <= globalIndex && r.position.end > globalIndex,
+          )
+        ) {
           result.push({
             ...rep,
             position: {

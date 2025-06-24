@@ -17,9 +17,9 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: 'illa-helper@xiao1932794922.gmail.com',
-        strict_min_version: '88.0'
-      }
-    }
+        strict_min_version: '88.0',
+      },
+    },
   },
   imports: {
     eslintrc: {

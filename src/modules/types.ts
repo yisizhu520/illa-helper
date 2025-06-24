@@ -118,6 +118,11 @@ export enum OriginalWordDisplayMode {
   HIDDEN,
 }
 
+export enum TranslationPosition {
+  BEFORE = 'before',
+  AFTER = 'after',
+}
+
 export interface UserSettings {
   userLevel: UserLevel;
   replacementRate: number;
@@ -136,6 +141,10 @@ export interface UserSettings {
   pronunciationHotkey: TooltipHotkey;
   // 新增：悬浮球设置
   floatingBall: FloatingBallConfig;
+  // 新增：翻译位置设置
+  translationPosition: TranslationPosition;
+  // 新增：是否显示括号
+  showParentheses: boolean;
 }
 
 // 简化：默认多语言配置
@@ -164,4 +173,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   multilingualConfig: DEFAULT_MULTILINGUAL_CONFIG,
   pronunciationHotkey: DEFAULT_TOOLTIP_HOTKEY,
   floatingBall: DEFAULT_FLOATING_BALL_CONFIG,
+  translationPosition: TranslationPosition.AFTER,
+  showParentheses: true,
 };

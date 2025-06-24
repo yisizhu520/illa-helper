@@ -73,14 +73,15 @@ export class TooltipRenderer {
             <div class="wxt-word-main">短语</div>
             <div class="wxt-phrase-text">${phrase}</div>
           </div>
-          ${this.uiConfig.showPlayButton
-        ? `
+          ${
+            this.uiConfig.showPlayButton
+              ? `
             <button class="wxt-audio-btn" title="朗读">
               ${SVG_ICONS.SPEAKER}
             </button>
           `
-        : ''
-      }
+              : ''
+          }
         </div>
         <div class="wxt-tooltip-body">
           <div class="wxt-phrase-words">${interactiveWordList}</div>
@@ -116,20 +117,22 @@ export class TooltipRenderer {
             <div class="wxt-word-main">${elementData.word}</div>
             ${phoneticDisplay}
             <div class="wxt-meaning-container">
-              ${aiTranslation
-        ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
-        : `<div class="wxt-meaning-loading">获取词义中...</div>`
-      }
+              ${
+                aiTranslation
+                  ? `<div class="wxt-meaning-text">${aiTranslation.explain}</div>`
+                  : `<div class="wxt-meaning-loading">获取词义中...</div>`
+              }
             </div>
           </div>
-          ${this.uiConfig.showPlayButton
-        ? `
+          ${
+            this.uiConfig.showPlayButton
+              ? `
             <button class="wxt-audio-btn" title="朗读单词">
               ${SVG_ICONS.SPEAKER}
             </button>
           `
-        : ''
-      }
+              : ''
+          }
         </div>
         <div class="wxt-tooltip-arrow"></div>
       </div>
@@ -143,7 +146,12 @@ export class TooltipRenderer {
    * @param hasError 是否有音标错误
    * @param errorMessage 错误信息
    */
-  createNestedWordTooltipHTML(word: string, phoneticText?: string, hasError?: boolean, errorMessage?: string): string {
+  createNestedWordTooltipHTML(
+    word: string,
+    phoneticText?: string,
+    hasError?: boolean,
+    errorMessage?: string,
+  ): string {
     // 音标显示逻辑：正常音标 > 错误提示 > 空
     let phoneticDisplay = '';
     if (phoneticText) {

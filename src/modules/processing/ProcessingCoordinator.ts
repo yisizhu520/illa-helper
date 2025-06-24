@@ -7,7 +7,7 @@ import {
   ContentSegment,
   globalProcessingState,
 } from './ProcessingStateManager';
-import { OriginalWordDisplayMode } from '../types';
+import { OriginalWordDisplayMode, TranslationPosition } from '../types';
 
 /**
  * 处理结果接口
@@ -73,6 +73,8 @@ export class ProcessingCoordinator {
     segments: ContentSegment[],
     textReplacer: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
   ): Promise<ProcessingResult> {
     const startTime = Date.now();
 
@@ -82,6 +84,8 @@ export class ProcessingCoordinator {
         segments,
         textReplacer,
         originalWordDisplayMode,
+        translationPosition,
+        showParentheses,
         startTime,
       );
     }));
@@ -94,6 +98,8 @@ export class ProcessingCoordinator {
     segments: ContentSegment[],
     textReplacer: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
     startTime: number,
   ): Promise<ProcessingResult> {
     let processedCount = 0;
@@ -136,6 +142,8 @@ export class ProcessingCoordinator {
             segment,
             textReplacer,
             originalWordDisplayMode,
+            translationPosition,
+            showParentheses,
           ),
         );
         const batchResults = await Promise.allSettled(batchPromises);
@@ -226,10 +234,12 @@ export class ProcessingCoordinator {
     segment: ContentSegment,
     textReplacer: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
   ): Promise<SegmentProcessingResult> {
     try {
       // 为所有相关元素添加处理中的视觉反馈
-      segment.elements.forEach(element => {
+      segment.elements.forEach((element) => {
         this.addProcessingFeedback(element);
       });
 
@@ -243,6 +253,8 @@ export class ProcessingCoordinator {
           result.replacements,
           textReplacer.styleManager,
           originalWordDisplayMode,
+          translationPosition,
+          showParentheses,
         );
 
         // 立即为该段落的翻译内容添加发音功能
@@ -279,7 +291,7 @@ export class ProcessingCoordinator {
       };
     } finally {
       // 为所有相关元素移除处理中的视觉反馈
-      segment.elements.forEach(element => {
+      segment.elements.forEach((element) => {
         this.removeProcessingFeedback(element);
       });
     }
@@ -293,9 +305,13 @@ export class ProcessingCoordinator {
     replacements: any[],
     styleManager: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
   ): void {
     // 重新构建文本内容以确保一致性
-    const reconstructedText = segment.textNodes.map((node) => node.textContent || '').join('');
+    const reconstructedText = segment.textNodes
+      .map((node) => node.textContent || '')
+      .join('');
 
     // 预验证：检查所有替换项的位置是否准确
     const validReplacements = replacements.filter((replacement) => {
@@ -341,6 +357,8 @@ export class ProcessingCoordinator {
           replacement,
           styleManager,
           originalWordDisplayMode,
+          translationPosition,
+          showParentheses,
         );
       }
     }
@@ -412,6 +430,8 @@ export class ProcessingCoordinator {
     replacement: any,
     styleManager: any,
     originalWordDisplayMode: OriginalWordDisplayMode,
+    translationPosition: TranslationPosition,
+    showParentheses: boolean,
   ): void {
     try {
       const originalWordWrapper = document.createElement('span');
@@ -421,13 +441,11 @@ export class ProcessingCoordinator {
       const translationSpan = document.createElement('span');
       translationSpan.className = `wxt-translation-term ${styleManager.getCurrentStyleClass()}`;
 
-      // 根据原文显示模式动态设置翻译文本格式
-      if (originalWordDisplayMode === OriginalWordDisplayMode.HIDDEN) {
-        // 隐藏模式：去掉括号，提升阅读体验
-        translationSpan.textContent = ` ${replacement.translation} `;
-      } else {
-        // 显示/学习模式：保持传统格式
+      // 根据新设置决定是否添加括号
+      if (showParentheses) {
         translationSpan.textContent = ` (${replacement.translation}) `;
+      } else {
+        translationSpan.textContent = ` ${replacement.translation} `;
       }
 
       // 应用显示模式
@@ -442,14 +460,18 @@ export class ProcessingCoordinator {
 
       // 插入替换元素
       range.surroundContents(originalWordWrapper);
-      originalWordWrapper.after(translationSpan);
+      if (translationPosition === TranslationPosition.BEFORE) {
+        originalWordWrapper.before(translationSpan);
+      } else {
+        originalWordWrapper.after(translationSpan);
+      }
 
       // 添加视觉效果
       this.addGlowEffect(translationSpan);
 
       // 标记为已处理
       originalWordWrapper.setAttribute('data-wxt-word-processed', 'true');
-    } catch (error) {
+    } catch (_) {
       // 静默处理错误
     }
   }
@@ -553,7 +575,7 @@ export class ProcessingCoordinator {
     try {
       // 在所有相关元素中查找翻译元素
       const allTranslationElements: Element[] = [];
-      
+
       for (const element of segment.elements) {
         const translationElements = element.querySelectorAll
           ? element.querySelectorAll(

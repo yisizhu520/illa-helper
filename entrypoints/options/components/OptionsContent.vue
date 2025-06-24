@@ -16,6 +16,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import BlacklistManagement from './blacklist/BlacklistManagement.vue';
+import BasicSettings from './BasicSettings.vue';
 
 interface Props {
   currentSection: string;
@@ -29,7 +30,7 @@ const emit = defineEmits<{
 
 // 组件映射
 const componentMap: Record<string, any> = {
-  basic: BlacklistManagement,
+  basic: BasicSettings,
   translation: BlacklistManagement,
   ai: BlacklistManagement,
   pronunciation: BlacklistManagement,
