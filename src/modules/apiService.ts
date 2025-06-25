@@ -58,8 +58,13 @@ export class ApiService {
   ): Promise<FullTextAnalysisResponse> {
     const originalText = text || '';
 
+    // 获取当前活跃的API配置
+    const activeConfig = settings.apiConfigs.find(
+      config => config.id === settings.activeApiConfigId
+    );
+
     // 验证输入
-    if (!originalText.trim() || !settings.apiConfig.apiKey) {
+    if (!originalText.trim() || !activeConfig?.config.apiKey) {
       return {
         original: originalText,
         processed: originalText,
@@ -67,7 +72,7 @@ export class ApiService {
       };
     }
 
-    if (!settings.apiConfig.apiKey) {
+    if (!activeConfig.config.apiKey) {
       console.error('API 密钥未设置');
     }
     try {
@@ -108,7 +113,7 @@ export class ApiService {
       }
 
       const requestBody = {
-        model: settings.apiConfig.model,
+        model: activeConfig.config.model,
         messages: [
           { role: 'system', content: systemPrompt },
           {
@@ -116,16 +121,16 @@ export class ApiService {
             content: `{{ ${originalText} }}`,
           },
         ],
-        temperature: settings.apiConfig.temperature,
+        temperature: activeConfig.config.temperature,
         response_format: { type: 'json_object' },
-        enable_thinking: settings.apiConfig.enable_thinking,
+        enable_thinking: activeConfig.config.enable_thinking,
       };
 
-      const response = await fetch(settings.apiConfig.apiEndpoint, {
+      const response = await fetch(activeConfig.config.apiEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${settings.apiConfig.apiKey}`,
+          Authorization: `Bearer ${activeConfig.config.apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });

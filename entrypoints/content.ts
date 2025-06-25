@@ -42,9 +42,13 @@ export default defineContentScript({
 
     // --- 初始化模块 ---
     const styleManager = new StyleManager();
+    // 获取当前活跃的API配置
+    const activeConfig = settings.apiConfigs.find(
+      config => config.id === settings.activeApiConfigId
+    );
     const textProcessor = new TextProcessor(
       settings.enablePronunciationTooltip,
-      settings.apiConfig,
+      activeConfig?.config,
     );
     const textReplacer = new TextReplacer(createReplacementConfig(settings));
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
@@ -97,11 +101,23 @@ export default defineContentScript({
 });
 
 function createReplacementConfig(settings: UserSettings): ReplacementConfig {
+  // 获取当前活跃的API配置
+  const activeConfig = settings.apiConfigs.find(
+    config => config.id === settings.activeApiConfigId
+  );
+
   return {
     userLevel: settings.userLevel,
     replacementRate: settings.replacementRate,
     useGptApi: settings.useGptApi,
-    apiConfig: settings.apiConfig,
+    apiConfig: activeConfig?.config || {
+      apiKey: '',
+      apiEndpoint: '',
+      model: '',
+      temperature: 0.7,
+      enable_thinking: false,
+      phraseEnabled: true,
+    },
     inlineTranslation: true,
     translationStyle: settings.translationStyle,
     translationDirection: settings.translationDirection,
@@ -153,7 +169,7 @@ function setupListeners(
 ) {
   // 监听来自 popup 的消息
   browser.runtime.onMessage.addListener(async (message) => {
-    if (message.type === 'settings_updated') {
+    if (message.type === 'settings_updated' || message.type === 'api_config_updated') {
       // 设置已更新
       const newSettings: UserSettings = message.settings;
 
@@ -162,7 +178,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-          newSettings.enablePronunciationTooltip ||
+        newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;
@@ -179,7 +195,12 @@ function setupListeners(
       updateConfiguration(settings, styleManager, textReplacer);
 
       // 更新API配置
-      textProcessor.updateApiConfig(settings.apiConfig);
+      const newActiveConfig = newSettings.apiConfigs.find(
+        config => config.id === newSettings.activeApiConfigId
+      );
+      if (newActiveConfig) {
+        textProcessor.updateApiConfig(newActiveConfig.config);
+      }
 
       // 更新悬浮球配置
       floatingBallManager.updateConfig(settings.floatingBall);

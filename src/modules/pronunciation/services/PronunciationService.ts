@@ -506,11 +506,16 @@ export class PronunciationService {
    * 更新API配置
    * 支持运行时API配置更新，配置变更会立即生效
    */
-  updateApiConfig(apiConfig: ApiConfig): void {
+  async updateApiConfig(): Promise<void> {
     try {
-      // 更新AI翻译提供者的配置
-      this.aiTranslationProvider.updateApiConfig(apiConfig);
-      console.log('API配置已更新');
+      // 从存储获取当前活跃的API配置
+      const activeConfig = await this.storageManager.getActiveApiConfig();
+      if (activeConfig) {
+        this.aiTranslationProvider.updateApiConfig(activeConfig);
+        console.log('API配置已更新');
+      } else {
+        console.warn('未找到活跃的API配置');
+      }
     } catch (error) {
       console.error('更新API配置失败:', error);
     }

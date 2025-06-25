@@ -36,6 +36,17 @@ export interface ApiConfig {
   phraseEnabled?: boolean;
 }
 
+// 新增：API配置项接口，包含配置的元数据
+export interface ApiConfigItem {
+  id: string;
+  name: string;
+  provider: string; // 服务提供商：openai、deepseek、silicon-flow等
+  config: ApiConfig;
+  isDefault?: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface ReplacementConfig {
   userLevel: UserLevel;
   replacementRate: number;
@@ -140,7 +151,9 @@ export interface UserSettings {
   replacementRate: number;
   isEnabled: boolean;
   useGptApi: boolean;
-  apiConfig: ApiConfig;
+  // 修改：支持多API配置
+  apiConfigs: ApiConfigItem[];
+  activeApiConfigId: string;
   translationStyle: TranslationStyle;
   triggerMode: TriggerMode;
   maxLength?: number;
@@ -170,12 +183,56 @@ export const DEFAULT_TOOLTIP_HOTKEY: TooltipHotkey = {
   enabled: true,
 };
 
+// 新增：AI服务提供商预设配置模板
+export const AI_PROVIDER_PRESETS = {
+  openai: {
+    name: 'OpenAI',
+    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    models: ['gpt-4', 'gpt-3.5-turbo', 'gpt-4-turbo'],
+    defaultModel: 'gpt-3.5-turbo',
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    apiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
+    models: ['deepseek-chat', 'deepseek-coder'],
+    defaultModel: 'deepseek-chat',
+  },
+  'silicon-flow': {
+    name: '硅基流动',
+    apiEndpoint: 'https://api.siliconflow.cn/v1/chat/completions',
+    models: ['Qwen/Qwen2.5-72B-Instruct', 'meta-llama/Meta-Llama-3.1-70B-Instruct'],
+    defaultModel: 'Qwen/Qwen2.5-72B-Instruct',
+  },
+  moonshot: {
+    name: '月之暗面',
+    apiEndpoint: 'https://api.moonshot.cn/v1/chat/completions',
+    models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
+    defaultModel: 'moonshot-v1-8k',
+  },
+} as const;
+
+// 新增：创建默认API配置项
+function createDefaultApiConfigItem(): ApiConfigItem {
+  const now = Date.now();
+  return {
+    id: 'default-config',
+    name: '默认配置',
+    provider: 'openai',
+    config: DEFAULT_API_CONFIG,
+    isDefault: true,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export const DEFAULT_SETTINGS: UserSettings = {
   userLevel: UserLevel.BEGINNER,
   replacementRate: 0.2,
   isEnabled: true,
   useGptApi: true,
-  apiConfig: DEFAULT_API_CONFIG,
+  // 修改：使用多配置结构
+  apiConfigs: [createDefaultApiConfigItem()],
+  activeApiConfigId: 'default-config',
   translationStyle: TranslationStyle.DEFAULT,
   triggerMode: TriggerMode.MANUAL,
   maxLength: 400,

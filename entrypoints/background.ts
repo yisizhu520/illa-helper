@@ -3,9 +3,18 @@ import { DEFAULT_SETTINGS } from '@/src/modules/types';
 
 export default defineBackground(() => {
   // 在扩展首次安装时，设置默认值
-  browser.runtime.onInstalled.addListener((details) => {
+  browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === 'install') {
-      browser.storage.sync.set(DEFAULT_SETTINGS);
+      try {
+        // 使用StorageManager保存默认设置，确保使用序列化格式
+        const { StorageManager } = await import('@/src/modules/storageManager');
+        const storageManager = new StorageManager();
+        await storageManager.saveUserSettings(DEFAULT_SETTINGS);
+      } catch (error) {
+        console.error('保存默认设置失败:', error);
+        // 回退到旧的保存方式
+        browser.storage.sync.set(DEFAULT_SETTINGS);
+      }
     }
   });
 
@@ -29,11 +38,25 @@ export default defineBackground(() => {
 
     if (message.type === 'validate-configuration') {
       (async () => {
-        const settings = await browser.storage.sync.get(null);
-        const isConfigValid = !!settings?.apiConfig?.apiKey;
+        try {
+          // 使用StorageManager获取设置
+          const { StorageManager } = await import('@/src/modules/storageManager');
+          const storageManager = new StorageManager();
+          const settings = await storageManager.getUserSettings();
 
-        if (isConfigValid) {
-          sendResponse(true);
+          // 检查多配置系统中的活跃配置
+          const activeConfig = settings.apiConfigs?.find(
+            config => config.id === settings.activeApiConfigId
+          );
+          const isConfigValid = !!activeConfig?.config?.apiKey;
+
+          if (isConfigValid) {
+            sendResponse(true);
+            return;
+          }
+        } catch (error) {
+          console.error('配置验证失败:', error);
+          sendResponse(false);
           return;
         }
 

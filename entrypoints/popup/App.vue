@@ -120,6 +120,7 @@ const openAdvancedSettings = () => {
 const showApiSettings = ref(false);
 const toggleApiSettings = () =>
   (showApiSettings.value = !showApiSettings.value);
+
 const intelligentModeEnabled = computed(
   () => settings.value.translationDirection === 'intelligent',
 );
@@ -151,6 +152,30 @@ const onTargetLanguageChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
   if (settings.value.multilingualConfig) {
     settings.value.multilingualConfig.targetLanguage = target.value;
+  }
+};
+
+// 多配置支持
+const activeConfig = computed(() => {
+  return settings.value.apiConfigs?.find(config => config.id === settings.value.activeApiConfigId);
+});
+
+const handleActiveConfigChange = async () => {
+  try {
+    const storageManager = new StorageManager();
+    await storageManager.setActiveApiConfig(settings.value.activeApiConfigId);
+
+    // 重新加载完整设置以确保同步
+    const updatedSettings = await storageManager.getUserSettings();
+    Object.assign(settings.value, updatedSettings);
+
+    // 通知content script配置已更新
+    await notifySettingsChanged(settings.value);
+
+    showSavedMessage('活跃配置已切换');
+  } catch (error) {
+    console.error('切换活跃配置失败:', error);
+    showSavedMessage('切换配置失败');
   }
 };
 
@@ -351,28 +376,41 @@ const extensionVersion = ref('N/A');
 
           <div class="api-content" v-if="showApiSettings">
             <div>
+              <!-- 配置选择下拉框 -->
               <div class="sub-setting-group">
-                <label>API 端点</label>
-                <input type="text" v-model="settings.apiConfig.apiEndpoint"
-                  placeholder="例如: https://xxxxx/v1/chat/completions" />
-              </div>
-              <div class="sub-setting-group">
-                <label>API 密钥</label>
-                <input type="password" v-model="settings.apiConfig.apiKey" placeholder="输入您的 API 密钥" />
+                <label>当前配置</label>
+                <select v-model="settings.activeApiConfigId" @change="handleActiveConfigChange">
+                  <option v-for="config in settings.apiConfigs" :key="config.id" :value="config.id">
+                    {{ config.name }} ({{ config.provider }})
+                  </option>
+                </select>
               </div>
 
-              <div class="sub-setting-group">
-                <label>模型</label>
-                <input type="text" v-model.number="settings.apiConfig.model"
-                  placeholder="例如: doubao-1-5-lite-32k-250115" />
-              </div>
-              <div class="sub-setting-group">
-                <label>温度: {{ settings.apiConfig.temperature }}</label>
-                <input type="range" v-model.number="settings.apiConfig.temperature" min="0" max="1" step="0.1" />
+              <!-- 当前配置信息显示 -->
+              <div v-if="activeConfig" class="current-config-info">
+                <div class="config-info-item">
+                  <span class="info-label">配置名称:</span>
+                  <span class="info-value">{{ activeConfig.name }}</span>
+                </div>
+                <div class="config-info-item">
+                  <span class="info-label">服务商:</span>
+                  <span class="info-value">{{ activeConfig.provider }}</span>
+                </div>
+                <div class="config-info-item">
+                  <span class="info-label">模型:</span>
+                  <span class="info-value">{{ activeConfig.config.model }}</span>
+                </div>
+                <div class="config-info-item">
+                  <span class="info-label">状态:</span>
+                  <span class="info-value" :class="activeConfig.config.apiKey ? 'status-ok' : 'status-error'">
+                    {{ activeConfig.config.apiKey ? '已配置' : '未配置API密钥' }}
+                  </span>
+                </div>
               </div>
 
               <p class="setting-note">
-                注意: API 密钥仅保存在本地，不会发送到其他地方
+                注意: API 密钥仅保存在本地，不会发送到其他地方。<br>
+                如需管理配置，请打开设置中心。
               </p>
             </div>
           </div>
@@ -787,20 +825,71 @@ header {
 }
 
 .sub-setting-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   margin-bottom: 12px;
 }
 
-.sub-setting-group:last-of-type {
+.sub-setting-group label {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--text-color);
+}
+
+.sub-setting-group select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 11px;
+  background: var(--input-bg-color);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.sub-setting-group select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(106, 136, 224, 0.2);
+}
+
+.current-config-info {
+  background: var(--input-bg-color);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 10px;
+  margin: 12px 0;
+}
+
+.config-info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.config-info-item:last-child {
   margin-bottom: 0;
 }
 
-.sub-setting-group label {
-  font-size: 13px;
-  font-weight: 500;
+.info-label {
+  font-size: 12px;
   color: var(--label-color);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 12px;
+  color: var(--text-color);
+}
+
+.status-ok {
+  color: var(--success-color) !important;
+}
+
+.status-error {
+  color: #f44336 !important;
 }
 
 .save-message-container {

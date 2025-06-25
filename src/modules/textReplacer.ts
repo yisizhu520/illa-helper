@@ -92,19 +92,15 @@ export class TextReplacer {
         };
       }
 
-      // 构建完整的用户设置对象
+      // 构建完整的用户设置对象，使用真实的多配置系统数据
       const settingsForApi: UserSettings = {
-        ...DEFAULT_SETTINGS,
+        ...settings, // 使用真实的用户设置作为基础
         userLevel: this.config.userLevel,
         replacementRate: this.config.replacementRate,
         useGptApi: this.config.useGptApi,
         translationStyle: this.config.translationStyle,
         translationDirection: this.config.translationDirection,
-        apiConfig: {
-          ...this.config.apiConfig,
-        },
-        // 直接使用从StorageManager获取的真实用户设置
-        multilingualConfig: settings.multilingualConfig,
+        // 保持多配置系统的配置不变，不要覆盖
       };
 
       // 统一处理所有翻译模式
