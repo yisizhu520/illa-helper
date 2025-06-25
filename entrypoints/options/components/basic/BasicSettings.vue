@@ -47,11 +47,12 @@
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">默认</SelectItem>
-              <SelectItem value="subtle">柔和</SelectItem>
+              <SelectItem value="subtle">微妙</SelectItem>
               <SelectItem value="bold">粗体</SelectItem>
               <SelectItem value="italic">斜体</SelectItem>
               <SelectItem value="underlined">下划线</SelectItem>
               <SelectItem value="highlighted">高亮</SelectItem>
+              <SelectItem value="learning">学习模式</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -61,7 +62,7 @@
           <div class="flex items-center text-sm text-foreground">
             <span>这是一个示例文本，其中包含</span>
             <template v-if="settings.translationPosition === 'before'">
-              <span class="text-primary font-semibold mx-1">
+              <span :class="[currentStyleClass, 'mx-1']">
                 {{ previewTranslation }}
               </span>
               <span class="px-2 py-0.5 bg-background border rounded-md text-sm mx-1">
@@ -72,7 +73,7 @@
               <span class="px-2 py-0.5 bg-background border rounded-md text-sm mx-1">
                 原文
               </span>
-              <span class="text-primary font-semibold mx-1">
+              <span :class="[currentStyleClass, 'mx-1']">
                 {{ previewTranslation }}
               </span>
             </template>
@@ -81,7 +82,6 @@
         </div>
       </CardContent>
     </Card>
-
 
     <Card>
       <CardHeader>
@@ -131,6 +131,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, computed } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
+import { StyleManager } from '@/src/modules/styleManager';
 import {
   UserSettings,
   DEFAULT_SETTINGS,
@@ -152,6 +153,7 @@ import { Input } from '@/components/ui/input';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageManager = new StorageManager();
+const styleManager = new StyleManager();
 
 const emit = defineEmits<{
   saveMessage: [message: string];
@@ -166,6 +168,13 @@ const previewTranslation = computed(() => {
     return '(翻译)';
   }
   return '翻译';
+});
+
+const currentStyleClass = computed(() => {
+  if (settings.value.translationStyle === TranslationStyle.LEARNING) {
+    return 'wxt-translation-term--learning';
+  }
+  return `wxt-style-${settings.value.translationStyle}`;
 });
 
 watch(
