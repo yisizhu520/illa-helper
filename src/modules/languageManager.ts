@@ -95,7 +95,7 @@ export function getTargetLanguageDisplayName(languageCode: string): string {
  */
 export function getTranslationDirectionOptions() {
   const options = [
-    { value: 'intelligent', label: '🧠 智能多语言模式' },
+    { value: 'intelligent', label: '🧠智能模式' },
     { value: 'zh-to-en', label: '中译英文' },
     { value: 'en-to-zh', label: '英译中文' },
   ];

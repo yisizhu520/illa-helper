@@ -42,6 +42,15 @@ onMounted(async () => {
   nextTick(() => {
     isInitializing = false;
   });
+
+  try {
+    const manifest = browser.runtime.getManifest();
+    extensionVersion.value = manifest.version;
+  } catch (error) {
+    console.error("无法获取扩展版本号:", error);
+    // 在非扩展环境或开发服务器中，这可能会失败。可以设置一个默认值。
+    extensionVersion.value = 'DEV';
+  }
 });
 
 // 设置更新状态管理
@@ -168,6 +177,8 @@ const originalWordDisplayOptions = [
   { value: OriginalWordDisplayMode.HIDDEN, label: '不显示' },
   { value: OriginalWordDisplayMode.LEARNING, label: '学习模式' },
 ];
+const extensionVersion = ref('N/A');
+
 </script>
 
 <template>
@@ -175,22 +186,24 @@ const originalWordDisplayOptions = [
     <header>
       <div class="header-content">
         <div class="logo">
-          <img src="/assets/vue.svg" alt="logo" style="width: 24px; height: 24px" />
+          <img src="/assets/vue.svg" alt="logo" style="width: 40px; height: 40px" />
         </div>
         <div class="title-container">
           <h1>浸入式学语言助手</h1>
-          <p>在浏览中轻松学外语</p>
         </div>
       </div>
-      <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn" title="翻译">
-        翻译
-      </button>
+      <div class="header-actions">
+        <button v-if="settings.triggerMode === 'manual'" @click="manualTranslate" class="manual-translate-btn"
+          title="翻译">
+          翻译
+        </button>
+      </div>
     </header>
 
     <div class="settings">
       <div class="main-layout">
         <div class="settings-card">
-          <div class="basic-settings-grid">
+          <div class="adaptive-settings-grid">
             <div class="setting-group">
               <label>翻译模式</label>
               <select v-model="settings.translationDirection">
@@ -200,33 +213,29 @@ const originalWordDisplayOptions = [
               </select>
             </div>
 
-            <div class="setting-group">
-              <label>设置中心</label>
-              <button @click="openAdvancedSettings" class="advanced-settings-btn" title="打开设置中心">
-                设置中心
-              </button>
-            </div>
-
-            <div v-if="intelligentModeEnabled && settings.multilingualConfig" class="setting-group">
-              <label>目标语言</label>
-              <select :value="settings.multilingualConfig.targetLanguage" @change="onTargetLanguageChange">
-                <option value="" disabled>请选择目标语言</option>
-                <optgroup label="常用语言">
-                  <option v-for="option in targetLanguageOptions.filter(
-                    (opt) => opt.isPopular,
-                  )" :key="option.code" :value="option.code">
-                    {{ option.nativeName }}
-                  </option>
-                </optgroup>
-                <optgroup label="其他语言">
-                  <option v-for="option in targetLanguageOptions.filter(
-                    (opt) => !opt.isPopular,
-                  )" :key="option.code" :value="option.code">
-                    {{ option.nativeName }}
-                  </option>
-                </optgroup>
-              </select>
-            </div>
+            <Transition name="slide-down" mode="out-in">
+              <div v-if="intelligentModeEnabled && settings.multilingualConfig"
+                class="setting-group target-language-group">
+                <label>目标语言</label>
+                <select :value="settings.multilingualConfig.targetLanguage" @change="onTargetLanguageChange">
+                  <option value="" disabled>请选择目标语言</option>
+                  <optgroup label="常用语言">
+                    <option v-for="option in targetLanguageOptions.filter(
+                      (opt) => opt.isPopular,
+                    )" :key="option.code" :value="option.code">
+                      {{ option.nativeName }}
+                    </option>
+                  </optgroup>
+                  <optgroup label="其他语言">
+                    <option v-for="option in targetLanguageOptions.filter(
+                      (opt) => !opt.isPopular,
+                    )" :key="option.code" :value="option.code">
+                      {{ option.nativeName }}
+                    </option>
+                  </optgroup>
+                </select>
+              </div>
+            </Transition>
 
             <div class="setting-group">
               <label>语言水平</label>
@@ -263,6 +272,22 @@ const originalWordDisplayOptions = [
                 </option>
               </select>
             </div>
+
+            <div class="setting-group full-width">
+              <label>
+                替换比例: {{ Math.round(settings.replacementRate * 100) }}%
+              </label>
+              <input type="range" v-model.number="settings.replacementRate" min="0.01" max="1" step="0.01" />
+            </div>
+
+            <div class="setting-group full-width">
+              <label>段落最大长度: {{ settings.maxLength }}</label>
+              <input type="range" v-model.number="settings.maxLength" min="10" max="2000" step="10" />
+              <p class="setting-note" style="margin-top: 2px">
+                段落越短AI响应越快。
+              </p>
+            </div>
+
             <div class="topping-settings-card">
               <div class="setting-group">
                 <label>悬浮框</label>
@@ -278,13 +303,11 @@ const originalWordDisplayOptions = [
               <!-- 快捷键设置 -->
               <div v-if="settings.enablePronunciationTooltip" class="setting-group">
                 <label>Ctrl+鼠标悬停</label>
-                <div class="toggle-container">
-                  <input type="checkbox" v-model="settings.pronunciationHotkey.enabled" id="hotkey-enabled-toggle"
-                    class="toggle-input" />
-                  <label for="hotkey-enabled-toggle" class="toggle-label">
-                    <span class="toggle-slider"></span>
-                  </label>
-                </div>
+                <input type="checkbox" v-model="settings.pronunciationHotkey.enabled" id="hotkey-enabled-toggle"
+                  class="toggle-input" />
+                <label for="hotkey-enabled-toggle" class="toggle-label">
+                  <span class="toggle-slider"></span>
+                </label>
               </div>
             </div>
 
@@ -302,31 +325,17 @@ const originalWordDisplayOptions = [
               </div>
 
               <!-- 悬浮球详细设置 -->
-              <div v-if="settings.floatingBall.enabled" class="floating-ball-settings">
+              <div v-if="settings.floatingBall.enabled">
                 <div class="setting-group">
                   <label>
                     透明度:
                     {{ Math.round(settings.floatingBall.opacity * 100) }}%
                   </label>
-                  <input type="range" v-model.number="settings.floatingBall.opacity" min="0.3" max="1" step="0.1" />
+                  <input type="range" v-model.number="settings.floatingBall.opacity" min="0.1" max="1" step="0.05" />
                 </div>
               </div>
             </div>
 
-            <div class="setting-group full-width">
-              <label>
-                替换比例: {{ Math.round(settings.replacementRate * 100) }}%
-              </label>
-              <input type="range" v-model.number="settings.replacementRate" min="0.01" max="1" step="0.01" />
-            </div>
-
-            <div class="setting-group full-width">
-              <label>段落最大长度: {{ settings.maxLength }}</label>
-              <input type="range" v-model.number="settings.maxLength" min="10" max="2000" step="10" />
-              <p class="setting-note" style="margin-top: 0">
-                建议值: 80-100。较短的段落能更快获得AI响应。
-              </p>
-            </div>
           </div>
         </div>
 
@@ -345,7 +354,7 @@ const originalWordDisplayOptions = [
               <div class="sub-setting-group">
                 <label>API 端点</label>
                 <input type="text" v-model="settings.apiConfig.apiEndpoint"
-                  placeholder="例如: https://xxxxx/completions" />
+                  placeholder="例如: https://xxxxx/v1/chat/completions" />
               </div>
               <div class="sub-setting-group">
                 <label>API 密钥</label>
@@ -375,11 +384,23 @@ const originalWordDisplayOptions = [
     </div>
 
     <footer>
-      <p>💖 基于"i+1"理论，让学习自然发生</p>
+      <div class="footer-row floating-footer">
+        <div class="footer-row-left flex flex-col items-center">
+          <p>💖 基于"i+1"理论，让学习自然发生<span class="text-gray-500 ml-2">v{{ extensionVersion }}</span> </p>
+        </div>
+        <button class="footer-settings-btn" @click="openAdvancedSettings" title="设置中心">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" stroke-width="2" />
+            <path
+              d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"
+              stroke="currentColor" stroke-width="2" />
+          </svg>
+          <span class="footer-settings-text">设置</span>
+        </button>
+      </div>
     </footer>
   </div>
 </template>
-
 <style scoped>
 :root {
   color-scheme: light dark;
@@ -405,6 +426,8 @@ const originalWordDisplayOptions = [
   background-color: var(--bg-color);
   color: var(--text-color);
   position: relative;
+  padding-bottom: 56px;
+  /* 预留footer高度，避免内容被遮挡 */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -457,7 +480,7 @@ header {
 
 .title-container h1 {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -472,28 +495,33 @@ header {
   position: relative;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .settings-btn {
-  position: absolute;
-  top: -2px;
-  right: 0;
-  background: #e9655b;
-  color: white;
+  background: var(--border-color);
+  color: var(--label-color);
   border: none;
-  border-radius: 8px;
-  padding: 2px;
+  border-radius: 6px;
+  padding: 6px;
   cursor: pointer;
   transition:
     background-color 0.2s,
-    transform 0.1s;
+    transform 0.1s,
+    color 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .settings-btn:hover {
-  background: #df4444;
+  background: var(--primary-color);
+  color: white;
   transform: translateY(-1px);
 }
 
@@ -561,12 +589,22 @@ header {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.basic-settings-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.adaptive-settings-grid {
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
+}
+
+.adaptive-settings-grid .setting-group {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 140px;
+}
+
+.adaptive-settings-grid .setting-group.target-language-group {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 140px;
 }
 
 .setting-group.full-width {
@@ -583,13 +621,13 @@ header {
   background-color: var(--card-bg-color);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 8px;
+  padding: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .toggle-container {
@@ -778,16 +816,118 @@ header {
   font-weight: 500;
 }
 
-footer {
-  text-align: center;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color);
-}
+
 
 footer p {
   margin: 0;
   font-size: 12px;
   color: var(--label-color);
+}
+
+/* 目标语言选择器动画 */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.slide-down-enter-from {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-10px);
+}
+
+.slide-down-enter-to {
+  opacity: 1;
+  max-height: 200px;
+  transform: translateY(0);
+}
+
+.slide-down-leave-from {
+  opacity: 1;
+  max-height: 200px;
+  transform: translateY(0);
+}
+
+.slide-down-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-10px);
+}
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.footer-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--border-color);
+  color: var(--label-color);
+  border: none;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.footer-settings-btn:hover {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.footer-settings-text {
+  margin-left: 2px;
+}
+
+.floating-footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background: rgba(240, 244, 248, 0.85);
+  border-top: 1px solid var(--border-color);
+  z-index: 100;
+  box-sizing: border-box;
+  padding: 14px 14px 10px 14px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 5px 5px 0 0;
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.06);
+  backdrop-filter: blur(8px);
+  overflow: visible;
+}
+
+.floating-footer::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(240, 244, 248, 0.7) 0%, rgba(240, 244, 248, 0) 100%);
+  border-radius: 8px 8px 0 0;
+  z-index: -1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .floating-footer {
+    background: rgba(30, 30, 30, 0.85);
+    border-top: 1px solid #333;
+    box-shadow: 0 -2px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .floating-footer::before {
+    background: linear-gradient(to bottom, rgba(30, 30, 30, 0.7) 0%, rgba(30, 30, 30, 0) 100%);
+  }
 }
 </style>
