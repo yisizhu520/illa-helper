@@ -154,6 +154,7 @@ const styleOptions = [
   { value: TranslationStyle.ITALIC, label: '斜体' },
   { value: TranslationStyle.UNDERLINED, label: '下划线' },
   { value: TranslationStyle.HIGHLIGHTED, label: '高亮' },
+  { value: TranslationStyle.DOTTED, label: '点画线' },
   { value: TranslationStyle.LEARNING, label: '学习模式' },
 ];
 

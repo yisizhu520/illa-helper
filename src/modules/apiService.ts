@@ -118,6 +118,7 @@ export class ApiService {
         ],
         temperature: settings.apiConfig.temperature,
         response_format: { type: 'json_object' },
+        enable_thinking: settings.apiConfig.enable_thinking,
       };
 
       const response = await fetch(settings.apiConfig.apiEndpoint, {

@@ -125,6 +125,7 @@ export class AITranslationProvider implements IPhoneticProvider {
         ],
         temperature: this.apiConfig.temperature || 0.3, // 降低温度以获得更稳定的翻译结果
         max_tokens: 100, // 限制回复长度，避免过长的响应
+        enable_thinking: this.apiConfig.enable_thinking,
       };
 
       // 调用AI API
@@ -223,6 +224,7 @@ export class AITranslationProvider implements IPhoneticProvider {
         model: this.apiConfig.model,
         messages: [{ role: 'user', content: 'test' }],
         max_tokens: 1,
+        enable_thinking: this.apiConfig.enable_thinking,
       };
 
       const testResponse = await fetch(this.apiConfig.apiEndpoint, {
@@ -297,8 +299,6 @@ export class AITranslationProvider implements IPhoneticProvider {
       };
     }
   }
-
-
 
   /**
    * 从缓存获取数据

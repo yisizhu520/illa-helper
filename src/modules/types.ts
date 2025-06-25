@@ -115,6 +115,7 @@ export enum TranslationStyle {
   ITALIC = 'italic',
   UNDERLINED = 'underlined',
   HIGHLIGHTED = 'highlighted',
+  DOTTED = 'dotted',
   LEARNING = 'learning',
 }
 

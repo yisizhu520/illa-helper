@@ -591,8 +591,11 @@ export class ProcessingCoordinator {
           // 提取纯英文内容（去除括号）
           const cleanText = translationText.replace(/[()]/g, '').trim();
 
-          // 检查是否为英文文本
-          if (/^[a-zA-Z\s\-']+$/.test(cleanText) && cleanText.length > 0) {
+          // 检查是否为英文文本（支持常见标点符号和数字）
+          if (
+            /^[a-zA-Z0-9\s\-',.!?;:()%]+$/.test(cleanText) &&
+            cleanText.length > 0
+          ) {
             await this.pronunciationService.addPronunciationToElement(
               element as HTMLElement,
               cleanText,

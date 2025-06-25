@@ -60,8 +60,9 @@ export class StyleManager {
       }
 
       .wxt-original-word {
-        border-bottom: 1.5px dotted var(--wxt-primary-color);
-        padding-bottom: 1px;
+        background: linear-gradient(to right, var(--wxt-primary-color) 0%, var(--wxt-primary-color) 50%, transparent 50%, transparent 100%) repeat-x left bottom;
+        background-size: 8px 2px;
+        padding-bottom: 2px;
       }
 
       .wxt-english {
@@ -110,6 +111,19 @@ export class StyleManager {
         padding: 0 2px;
         border-radius: 2px;
       }
+
+      /* 点画线样式 */
+      .wxt-style-dotted {
+        background: linear-gradient(to right, #57bcb8 0%, #59c1bf 50%, transparent 50%, transparent 100%) repeat-x left bottom;
+        background-size: 8px 2px;
+        padding-bottom: 2px;
+      }
+
+      .wxt-style-dotted:hover {
+        border-color: var(--wxt-primary-color);
+      }
+
+
 
       /* 学习模式样式 */
       .wxt-translation-term--learning {

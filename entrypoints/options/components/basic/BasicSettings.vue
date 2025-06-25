@@ -52,6 +52,7 @@
               <SelectItem value="italic">斜体</SelectItem>
               <SelectItem value="underlined">下划线</SelectItem>
               <SelectItem value="highlighted">高亮</SelectItem>
+              <SelectItem value="dotted">点画线</SelectItem>
               <SelectItem value="learning">学习模式</SelectItem>
             </SelectContent>
           </Select>
