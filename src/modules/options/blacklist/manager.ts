@@ -50,7 +50,7 @@ export class BlacklistManager {
         return settings;
       }
       return DEFAULT_SETTINGS;
-    } catch (error) {
+    } catch (_) {
       return DEFAULT_SETTINGS;
     }
   }

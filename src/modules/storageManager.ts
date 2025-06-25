@@ -59,7 +59,7 @@ export class StorageManager {
       const serializedData = JSON.stringify(settings);
 
       await browser.storage.sync.set({
-        [StorageManager.STORAGE_KEY]: serializedData
+        [StorageManager.STORAGE_KEY]: serializedData,
       });
     } catch (error) {
       console.error('保存用户设置失败:', error);
@@ -74,7 +74,7 @@ export class StorageManager {
     try {
       const settings = await this.getUserSettings();
       const activeConfig = settings.apiConfigs.find(
-        config => config.id === settings.activeApiConfigId
+        (config) => config.id === settings.activeApiConfigId,
       );
       return activeConfig?.config || null;
     } catch (error) {
@@ -89,7 +89,9 @@ export class StorageManager {
   async setActiveApiConfig(configId: string): Promise<boolean> {
     try {
       const settings = await this.getUserSettings();
-      const configExists = settings.apiConfigs.some(config => config.id === configId);
+      const configExists = settings.apiConfigs.some(
+        (config) => config.id === configId,
+      );
 
       if (!configExists) {
         console.error(`API配置 ${configId} 不存在`);
@@ -108,7 +110,11 @@ export class StorageManager {
   /**
    * 添加新的API配置
    */
-  async addApiConfig(name: string, provider: string, config: ApiConfig): Promise<string> {
+  async addApiConfig(
+    name: string,
+    provider: string,
+    config: ApiConfig,
+  ): Promise<string> {
     try {
       const settings = await this.getUserSettings();
       const now = Date.now();
@@ -134,10 +140,16 @@ export class StorageManager {
   /**
    * 更新API配置
    */
-  async updateApiConfig(configId: string, name: string, config: ApiConfig): Promise<boolean> {
+  async updateApiConfig(
+    configId: string,
+    name: string,
+    config: ApiConfig,
+  ): Promise<boolean> {
     try {
       const settings = await this.getUserSettings();
-      const configIndex = settings.apiConfigs.findIndex(c => c.id === configId);
+      const configIndex = settings.apiConfigs.findIndex(
+        (c) => c.id === configId,
+      );
 
       if (configIndex === -1) {
         console.error(`API配置 ${configId} 不存在`);
@@ -167,7 +179,7 @@ export class StorageManager {
       const settings = await this.getUserSettings();
 
       // 不允许删除默认配置
-      const configToDelete = settings.apiConfigs.find(c => c.id === configId);
+      const configToDelete = settings.apiConfigs.find((c) => c.id === configId);
       if (configToDelete?.isDefault) {
         console.error('不能删除默认配置');
         return false;
@@ -175,13 +187,15 @@ export class StorageManager {
 
       // 如果删除的是当前活跃配置，切换到第一个配置
       if (settings.activeApiConfigId === configId) {
-        const firstConfig = settings.apiConfigs.find(c => c.id !== configId);
+        const firstConfig = settings.apiConfigs.find((c) => c.id !== configId);
         if (firstConfig) {
           settings.activeApiConfigId = firstConfig.id;
         }
       }
 
-      settings.apiConfigs = settings.apiConfigs.filter(c => c.id !== configId);
+      settings.apiConfigs = settings.apiConfigs.filter(
+        (c) => c.id !== configId,
+      );
       await this.saveUserSettings(settings);
       return true;
     } catch (error) {
@@ -211,13 +225,20 @@ export class StorageManager {
     const fixedSettings = { ...settings };
 
     // 验证API配置列表
-    if (!Array.isArray(fixedSettings.apiConfigs) || fixedSettings.apiConfigs.length === 0) {
+    if (
+      !Array.isArray(fixedSettings.apiConfigs) ||
+      fixedSettings.apiConfigs.length === 0
+    ) {
       fixedSettings.apiConfigs = [...DEFAULT_SETTINGS.apiConfigs];
       fixedSettings.activeApiConfigId = DEFAULT_SETTINGS.activeApiConfigId;
     }
 
     // 验证活跃配置ID是否存在
-    if (!fixedSettings.apiConfigs.some(config => config.id === fixedSettings.activeApiConfigId)) {
+    if (
+      !fixedSettings.apiConfigs.some(
+        (config) => config.id === fixedSettings.activeApiConfigId,
+      )
+    ) {
       fixedSettings.activeApiConfigId = fixedSettings.apiConfigs[0].id;
     }
 
@@ -225,7 +246,9 @@ export class StorageManager {
     if (!fixedSettings.multilingualConfig) {
       fixedSettings.multilingualConfig = DEFAULT_SETTINGS.multilingualConfig;
     } else {
-      if (typeof fixedSettings.multilingualConfig.intelligentMode !== 'boolean') {
+      if (
+        typeof fixedSettings.multilingualConfig.intelligentMode !== 'boolean'
+      ) {
         fixedSettings.multilingualConfig.intelligentMode =
           DEFAULT_SETTINGS.multilingualConfig.intelligentMode;
       }
@@ -245,7 +268,9 @@ export class StorageManager {
 
     // 验证发音快捷键配置
     if (!fixedSettings.pronunciationHotkey) {
-      fixedSettings.pronunciationHotkey = { ...DEFAULT_SETTINGS.pronunciationHotkey };
+      fixedSettings.pronunciationHotkey = {
+        ...DEFAULT_SETTINGS.pronunciationHotkey,
+      };
     } else {
       if (typeof fixedSettings.pronunciationHotkey.enabled !== 'boolean') {
         fixedSettings.pronunciationHotkey.enabled = true;

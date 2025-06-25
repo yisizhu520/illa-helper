@@ -4,8 +4,16 @@
     <div class="p-6">
       <div class="max-w-4xl mx-auto">
         <Transition name="fade" mode="out-in">
-          <div :id="currentSection" class="anchor-section">
-            <component :is="currentComponent" :key="currentSection" @save-message="handleSaveMessage" />
+          <div
+            v-if="currentSection"
+            :id="currentSection"
+            class="anchor-section"
+          >
+            <component
+              :is="currentComponent"
+              :key="currentSection"
+              @save-message="handleSaveMessage"
+            />
           </div>
         </Transition>
       </div>

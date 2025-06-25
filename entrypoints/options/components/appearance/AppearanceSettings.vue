@@ -13,20 +13,41 @@
               <div class="space-y-1">
                 <Label for="floating-ball-enabled">启用悬浮球</Label>
               </div>
-              <Switch id="floating-ball-enabled" :model-value="settings.floatingBall.enabled"
-                @update:model-value="settings.floatingBall.enabled = $event" />
+              <Switch
+                id="floating-ball-enabled"
+                :model-value="settings.floatingBall.enabled"
+                @update:model-value="settings.floatingBall.enabled = $event"
+              />
             </div>
             <div class="space-y-2">
-              <Label for="floating-ball-position">位置 ({{ settings.floatingBall.position }}%)</Label>
-              <Slider id="floating-ball-position" :model-value="[settings.floatingBall.position]" @update:model-value="
-                settings.floatingBall.position = ($event || [50])[0]
-                " :min="0" :max="100" :step="1" />
+              <Label for="floating-ball-position">
+                位置 ({{ settings.floatingBall.position }}%)
+              </Label>
+              <Slider
+                id="floating-ball-position"
+                :model-value="[settings.floatingBall.position]"
+                @update:model-value="
+                  settings.floatingBall.position = ($event || [50])[0]
+                "
+                :min="0"
+                :max="100"
+                :step="1"
+              />
             </div>
             <div class="space-y-2">
-              <Label for="floating-ball-opacity">透明度 ({{ settings.floatingBall.opacity }})</Label>
-              <Slider id="floating-ball-opacity" :model-value="[settings.floatingBall.opacity]" @update:model-value="
-                settings.floatingBall.opacity = ($event || [1])[0]
-                " :min="0.1" :max="1" :step="0.1" />
+              <Label for="floating-ball-opacity">
+                透明度 ({{ settings.floatingBall.opacity }})
+              </Label>
+              <Slider
+                id="floating-ball-opacity"
+                :model-value="[settings.floatingBall.opacity]"
+                @update:model-value="
+                  settings.floatingBall.opacity = ($event || [1])[0]
+                "
+                :min="0.1"
+                :max="1"
+                :step="0.1"
+              />
             </div>
           </div>
         </div>

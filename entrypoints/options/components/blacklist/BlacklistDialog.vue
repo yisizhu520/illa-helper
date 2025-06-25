@@ -1,14 +1,22 @@
 <template>
   <!-- 遮罩层 -->
-  <div class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div
+    class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+  >
     <!-- 对话框 -->
-    <div class="bg-card border border-border rounded-lg shadow-lg w-full max-w-md" @click.stop>
+    <div
+      class="bg-card border border-border rounded-lg shadow-lg w-full max-w-md"
+      @click.stop
+    >
       <!-- 标题栏 -->
       <div class="flex items-center justify-between p-6 border-b border-border">
         <h3 class="text-lg font-semibold text-foreground">
           {{ isEditing ? '编辑网站模式' : '添加网站模式' }}
         </h3>
-        <button @click="handleCancel" class="text-muted-foreground hover:text-foreground transition-colors">
+        <button
+          @click="handleCancel"
+          class="text-muted-foreground hover:text-foreground transition-colors"
+        >
           <X class="w-5 h-5" />
         </button>
       </div>
@@ -21,9 +29,15 @@
             网站模式
             <span class="text-destructive">*</span>
           </label>
-          <input v-model="formData.url" @keyup.enter="handleSave" type="text" placeholder="例如: *://github.com/*"
+          <input
+            v-model="formData.url"
+            @keyup.enter="handleSave"
+            type="text"
+            placeholder="例如: *://github.com/*"
             class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            :class="{ 'border-destructive': urlError }" ref="urlInput" />
+            :class="{ 'border-destructive': urlError }"
+            ref="urlInput"
+          />
           <div v-if="urlError" class="text-sm text-destructive">
             {{ urlError }}
           </div>
@@ -56,8 +70,12 @@
         <div class="space-y-2">
           <label class="text-sm font-medium text-foreground">常用模板：</label>
           <div class="grid grid-cols-2 gap-2">
-            <button v-for="preset in presets" :key="preset.pattern" @click="applyPreset(preset.pattern)"
-              class="text-left p-2 border border-border rounded text-xs hover:bg-accent hover:text-accent-foreground transition-colors">
+            <button
+              v-for="preset in presets"
+              :key="preset.pattern"
+              @click="applyPreset(preset.pattern)"
+              class="text-left p-2 border border-border rounded text-xs hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
               <div class="font-medium">{{ preset.name }}</div>
               <div class="text-muted-foreground font-mono">
                 {{ preset.pattern }}
@@ -68,13 +86,20 @@
       </div>
 
       <!-- 操作按钮 -->
-      <div class="flex items-center justify-end gap-2 p-6 border-t border-border">
-        <button @click="handleCancel"
-          class="px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground transition-colors">
+      <div
+        class="flex items-center justify-end gap-2 p-6 border-t border-border"
+      >
+        <button
+          @click="handleCancel"
+          class="px-4 py-2 border border-border rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
           取消
         </button>
-        <button @click="handleSave" :disabled="!isFormValid"
-          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+        <button
+          @click="handleSave"
+          :disabled="!isFormValid"
+          class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
           {{ isEditing ? '更新' : '添加' }}
         </button>
       </div>

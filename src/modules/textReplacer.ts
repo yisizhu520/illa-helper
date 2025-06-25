@@ -11,7 +11,6 @@ import {
   ReplacementConfig,
   FullTextAnalysisResponse,
   TranslationStyle,
-  DEFAULT_SETTINGS,
 } from './types';
 
 // 替换结果接口

@@ -60,7 +60,7 @@ export class ApiService {
 
     // 获取当前活跃的API配置
     const activeConfig = settings.apiConfigs.find(
-      config => config.id === settings.activeApiConfigId
+      (config) => config.id === settings.activeApiConfigId,
     );
 
     // 验证输入
@@ -282,7 +282,6 @@ export class ApiService {
       };
     }
   }
-
 
   /**
    * 为替换项添加位置信息

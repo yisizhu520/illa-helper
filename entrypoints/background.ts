@@ -10,6 +10,7 @@ export default defineBackground(() => {
         const { StorageManager } = await import('@/src/modules/storageManager');
         const storageManager = new StorageManager();
         await storageManager.saveUserSettings(DEFAULT_SETTINGS);
+        console.log("DEFAULT_SETTINGS", DEFAULT_SETTINGS);
       } catch (error) {
         console.error('保存默认设置失败:', error);
         // 回退到旧的保存方式
@@ -40,13 +41,15 @@ export default defineBackground(() => {
       (async () => {
         try {
           // 使用StorageManager获取设置
-          const { StorageManager } = await import('@/src/modules/storageManager');
+          const { StorageManager } = await import(
+            '@/src/modules/storageManager'
+          );
           const storageManager = new StorageManager();
           const settings = await storageManager.getUserSettings();
 
           // 检查多配置系统中的活跃配置
           const activeConfig = settings.apiConfigs?.find(
-            config => config.id === settings.activeApiConfigId
+            (config) => config.id === settings.activeApiConfigId,
           );
           const isConfigValid = !!activeConfig?.config?.apiKey;
 

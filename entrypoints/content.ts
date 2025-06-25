@@ -44,7 +44,7 @@ export default defineContentScript({
     const styleManager = new StyleManager();
     // 获取当前活跃的API配置
     const activeConfig = settings.apiConfigs.find(
-      config => config.id === settings.activeApiConfigId
+      (config) => config.id === settings.activeApiConfigId,
     );
     const textProcessor = new TextProcessor(
       settings.enablePronunciationTooltip,
@@ -103,7 +103,7 @@ export default defineContentScript({
 function createReplacementConfig(settings: UserSettings): ReplacementConfig {
   // 获取当前活跃的API配置
   const activeConfig = settings.apiConfigs.find(
-    config => config.id === settings.activeApiConfigId
+    (config) => config.id === settings.activeApiConfigId,
   );
 
   return {
@@ -169,7 +169,10 @@ function setupListeners(
 ) {
   // 监听来自 popup 的消息
   browser.runtime.onMessage.addListener(async (message) => {
-    if (message.type === 'settings_updated' || message.type === 'api_config_updated') {
+    if (
+      message.type === 'settings_updated' ||
+      message.type === 'api_config_updated'
+    ) {
       // 设置已更新
       const newSettings: UserSettings = message.settings;
 
@@ -178,7 +181,7 @@ function setupListeners(
         settings.triggerMode !== newSettings.triggerMode ||
         settings.isEnabled !== newSettings.isEnabled ||
         settings.enablePronunciationTooltip !==
-        newSettings.enablePronunciationTooltip ||
+          newSettings.enablePronunciationTooltip ||
         settings.translationDirection !== newSettings.translationDirection ||
         settings.userLevel !== newSettings.userLevel ||
         settings.useGptApi !== newSettings.useGptApi;
@@ -196,7 +199,7 @@ function setupListeners(
 
       // 更新API配置
       const newActiveConfig = newSettings.apiConfigs.find(
-        config => config.id === newSettings.activeApiConfigId
+        (config) => config.id === newSettings.activeApiConfigId,
       );
       if (newActiveConfig) {
         textProcessor.updateApiConfig(newActiveConfig.config);

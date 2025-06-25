@@ -52,8 +52,7 @@ export default defineConfig([
       ],
       '@typescript-eslint/no-explicit-any': 'off',
       'no-undef': 'off',
-      "endOfLine": "auto"
-
+      'vue/multi-word-component-names': 'off',
     },
   },
   {

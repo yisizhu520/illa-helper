@@ -3,12 +3,17 @@
     <!-- 主容器 -->
     <div class="flex h-screen">
       <!-- 左侧导航栏 -->
-      <OptionsNavigation :current-section="currentSection" @section-change="handleSectionChange" />
+      <OptionsNavigation
+        :current-section="currentSection"
+        @section-change="handleSectionChange"
+      />
 
       <!-- 右侧内容区域 -->
       <div class="flex-1 flex flex-col">
         <!-- 顶部状态栏 -->
-        <div class="h-16 bg-card border-b border-border flex items-center justify-between px-6">
+        <div
+          class="h-16 bg-card border-b border-border flex items-center justify-between px-6"
+        >
           <div class="flex items-center space-x-4">
             <h1 class="text-xl font-semibold">
               {{ getSectionTitle(currentSection) }}
@@ -20,15 +25,21 @@
               {{ saveMessage }}
             </div>
             <!-- 主题切换按钮 -->
-            <button @click="toggleTheme"
-              class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors" title="切换主题">
+            <button
+              @click="toggleTheme"
+              class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+              title="切换主题"
+            >
               <component :is="isDark ? Sun : Moon" class="w-4 h-4" />
             </button>
           </div>
         </div>
 
         <!-- 主内容区域 -->
-        <OptionsContent :current-section="currentSection" @save-message="handleSaveMessage" />
+        <OptionsContent
+          :current-section="currentSection"
+          @save-message="handleSaveMessage"
+        />
       </div>
     </div>
   </div>
@@ -103,7 +114,7 @@ const handleSectionChange = (section: string) => {
     if (element) {
       element.scrollIntoView({
         behavior: 'smooth',
-        block: 'start'
+        block: 'start',
       });
     }
   }, 100);

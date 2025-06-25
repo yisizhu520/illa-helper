@@ -10,12 +10,19 @@
       <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label>当前活跃配置</Label>
-          <Select v-model="settings.activeApiConfigId" @update:model-value="handleActiveConfigChange">
+          <Select
+            v-model="settings.activeApiConfigId"
+            @update:model-value="handleActiveConfigChange"
+          >
             <SelectTrigger>
               <SelectValue placeholder="选择API配置" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="config in settings.apiConfigs" :key="config.id" :value="config.id">
+              <SelectItem
+                v-for="config in settings.apiConfigs"
+                :key="config.id"
+                :value="config.id"
+              >
                 {{ config.name }} ({{ config.provider }})
               </SelectItem>
             </SelectContent>
@@ -25,11 +32,27 @@
         <!-- 当前配置状态 -->
         <div v-if="activeConfig" class="p-3 bg-muted rounded-lg">
           <div class="text-sm space-y-1">
-            <div><strong>服务商：</strong>{{ activeConfig.provider }}</div>
-            <div><strong>模型：</strong>{{ activeConfig.config.model }}</div>
-            <div><strong>端点：</strong class="truncate">{{ activeConfig.config.apiEndpoint }}</div>
-            <div><strong>状态：</strong>
-              <span :class="activeConfig.config.apiKey ? 'text-green-600' : 'text-destructive'">
+            <div>
+              <strong>服务商：</strong>
+              {{ activeConfig.provider }}
+            </div>
+            <div>
+              <strong>模型：</strong>
+              {{ activeConfig.config.model }}
+            </div>
+            <div class="truncate">
+              <strong>端点：</strong>
+              {{ activeConfig.config.apiEndpoint }}
+            </div>
+            <div>
+              <strong>状态：</strong>
+              <span
+                :class="
+                  activeConfig.config.apiKey
+                    ? 'text-green-600'
+                    : 'text-destructive'
+                "
+              >
                 {{ activeConfig.config.apiKey ? '已配置' : '未配置API密钥' }}
               </span>
             </div>
@@ -44,16 +67,21 @@
         <CardTitle>
           <div class="flex items-center justify-between">
             <h2 class="text-2xl font-bold text-foreground">管理配置</h2>
-            <Button @click="showAddDialog = true">
-              添加配置
-            </Button>
+            <Button @click="showAddDialog = true">添加配置</Button>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-4">
         <div class="space-y-3">
-          <div v-for="config in settings.apiConfigs" :key="config.id" class="border rounded-lg p-4"
-            :class="{ 'border-primary bg-primary/5': config.id === settings.activeApiConfigId }">
+          <div
+            v-for="config in settings.apiConfigs"
+            :key="config.id"
+            class="border rounded-lg p-4"
+            :class="{
+              'border-primary bg-primary/5':
+                config.id === settings.activeApiConfigId,
+            }"
+          >
             <div class="flex items-center justify-between">
               <div>
                 <h3 class="font-medium">{{ config.name }}</h3>
@@ -65,7 +93,12 @@
                 <Button @click="editConfig(config)" variant="outline" size="sm">
                   编辑
                 </Button>
-                <Button v-if="!config.isDefault" @click="deleteConfig(config.id)" variant="destructive" size="sm">
+                <Button
+                  v-if="!config.isDefault"
+                  @click="deleteConfig(config.id)"
+                  variant="destructive"
+                  size="sm"
+                >
                   删除
                 </Button>
               </div>
@@ -76,9 +109,15 @@
     </Card>
 
     <!-- 配置对话框 -->
-    <div v-if="showAddDialog || editingConfig" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click="cancelEdit">
-      <Card class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto" @click.stop>
+    <div
+      v-if="showAddDialog || editingConfig"
+      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click="cancelEdit"
+    >
+      <Card
+        class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto"
+        @click.stop
+      >
         <CardHeader>
           <CardTitle>
             {{ editingConfig ? '编辑配置' : '添加新配置' }}
@@ -92,30 +131,46 @@
 
           <div class="space-y-2">
             <Label>服务提供商</Label>
-            <Input v-model="configForm.provider" placeholder="如: openai, deepseek, silicon-flow" />
+            <Input
+              v-model="configForm.provider"
+              placeholder="如: openai, deepseek, silicon-flow"
+            />
           </div>
 
           <div class="space-y-2">
             <Label>API端点</Label>
-            <Input v-model="configForm.config.apiEndpoint" placeholder="https:/xxxxx/v1/chat/completions" />
+            <Input
+              v-model="configForm.config.apiEndpoint"
+              placeholder="https:/xxxxx/v1/chat/completions"
+            />
           </div>
 
           <div class="space-y-2">
             <Label>API密钥</Label>
-            <Input type="password" v-model="configForm.config.apiKey" placeholder="输入API密钥" />
+            <Input
+              type="password"
+              v-model="configForm.config.apiKey"
+              placeholder="输入API密钥"
+            />
           </div>
-
-
 
           <div class="space-y-2">
             <Label>模型名称</Label>
-            <Input v-model="configForm.config.model" placeholder="gpt-4o-mini" />
+            <Input
+              v-model="configForm.config.model"
+              placeholder="gpt-4o-mini"
+            />
           </div>
 
           <div class="space-y-2">
             <Label>温度参数 ({{ configForm.config.temperature }})</Label>
-            <Slider :model-value="[configForm.config.temperature]" @update:model-value="updateTemperature" :min="0"
-              :max="2" :step="0.1" />
+            <Slider
+              :model-value="[configForm.config.temperature]"
+              @update:model-value="updateTemperature"
+              :min="0"
+              :max="2"
+              :step="0.1"
+            />
           </div>
 
           <div class="flex items-center justify-between">
@@ -125,7 +180,9 @@
         </CardContent>
         <CardFooter class="flex justify-end space-x-2">
           <Button @click="cancelEdit" variant="outline">取消</Button>
-          <Button @click="saveConfig">{{ editingConfig ? '保存' : '添加' }}</Button>
+          <Button @click="saveConfig">
+            {{ editingConfig ? '保存' : '添加' }}
+          </Button>
         </CardFooter>
       </Card>
     </div>
@@ -135,14 +192,31 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
-import { UserSettings, DEFAULT_SETTINGS, ApiConfigItem, ApiConfig } from '@/src/modules/types';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import {
+  UserSettings,
+  DEFAULT_SETTINGS,
+  ApiConfigItem,
+  ApiConfig,
+} from '@/src/modules/types';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 const storageManager = new StorageManager();
@@ -175,9 +249,10 @@ const emit = defineEmits<{
 
 // 计算属性
 const activeConfig = computed(() => {
-  return settings.value.apiConfigs.find(config => config.id === settings.value.activeApiConfigId);
+  return settings.value.apiConfigs.find(
+    (config) => config.id === settings.value.activeApiConfigId,
+  );
 });
-
 
 const handleActiveConfigChange = async () => {
   try {
@@ -231,14 +306,14 @@ const saveConfig = async () => {
       await storageManager.updateApiConfig(
         editingConfig.value.id,
         configForm.value.name,
-        configForm.value.config
+        configForm.value.config,
       );
       emit('saveMessage', '配置已更新');
     } else {
       await storageManager.addApiConfig(
         configForm.value.name,
         configForm.value.provider || 'custom',
-        configForm.value.config
+        configForm.value.config,
       );
       emit('saveMessage', '配置已添加');
     }

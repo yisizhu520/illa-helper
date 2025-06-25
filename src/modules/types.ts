@@ -183,34 +183,6 @@ export const DEFAULT_TOOLTIP_HOTKEY: TooltipHotkey = {
   enabled: true,
 };
 
-// 新增：AI服务提供商预设配置模板
-export const AI_PROVIDER_PRESETS = {
-  openai: {
-    name: 'OpenAI',
-    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
-    models: ['gpt-4', 'gpt-3.5-turbo', 'gpt-4-turbo'],
-    defaultModel: 'gpt-3.5-turbo',
-  },
-  deepseek: {
-    name: 'DeepSeek',
-    apiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
-    models: ['deepseek-chat', 'deepseek-coder'],
-    defaultModel: 'deepseek-chat',
-  },
-  'silicon-flow': {
-    name: '硅基流动',
-    apiEndpoint: 'https://api.siliconflow.cn/v1/chat/completions',
-    models: ['Qwen/Qwen2.5-72B-Instruct', 'meta-llama/Meta-Llama-3.1-70B-Instruct'],
-    defaultModel: 'Qwen/Qwen2.5-72B-Instruct',
-  },
-  moonshot: {
-    name: '月之暗面',
-    apiEndpoint: 'https://api.moonshot.cn/v1/chat/completions',
-    models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'],
-    defaultModel: 'moonshot-v1-8k',
-  },
-} as const;
-
 // 新增：创建默认API配置项
 function createDefaultApiConfigItem(): ApiConfigItem {
   const now = Date.now();

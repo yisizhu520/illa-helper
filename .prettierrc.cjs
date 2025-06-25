@@ -15,6 +15,6 @@ module.exports = {
   proseWrap: 'preserve',
   htmlWhitespaceSensitivity: 'ignore',
   vueIndentScriptAndStyle: false,
-  endOfLine: 'lf',
+  endOfLine: 'auto',
   embeddedLanguageFormatting: 'auto',
 };
