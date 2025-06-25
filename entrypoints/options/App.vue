@@ -3,17 +3,12 @@
     <!-- 主容器 -->
     <div class="flex h-screen">
       <!-- 左侧导航栏 -->
-      <OptionsNavigation
-        :current-section="currentSection"
-        @section-change="handleSectionChange"
-      />
+      <OptionsNavigation :current-section="currentSection" @section-change="handleSectionChange" />
 
       <!-- 右侧内容区域 -->
       <div class="flex-1 flex flex-col">
         <!-- 顶部状态栏 -->
-        <div
-          class="h-16 bg-card border-b border-border flex items-center justify-between px-6"
-        >
+        <div class="h-16 bg-card border-b border-border flex items-center justify-between px-6">
           <div class="flex items-center space-x-4">
             <h1 class="text-xl font-semibold">
               {{ getSectionTitle(currentSection) }}
@@ -25,28 +20,22 @@
               {{ saveMessage }}
             </div>
             <!-- 主题切换按钮 -->
-            <button
-              @click="toggleTheme"
-              class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
-              title="切换主题"
-            >
+            <button @click="toggleTheme"
+              class="p-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors" title="切换主题">
               <component :is="isDark ? Sun : Moon" class="w-4 h-4" />
             </button>
           </div>
         </div>
 
         <!-- 主内容区域 -->
-        <OptionsContent
-          :current-section="currentSection"
-          @save-message="handleSaveMessage"
-        />
+        <OptionsContent :current-section="currentSection" @save-message="handleSaveMessage" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { Sun, Moon } from 'lucide-vue-next';
 import OptionsNavigation from './components/OptionsNavigation.vue';
 import OptionsContent from './components/OptionsContent.vue';
@@ -64,11 +53,10 @@ const isDark = ref(false);
 const sectionTitles: Record<string, string> = {
   basic: '基本设置',
   translation: '翻译服务',
-  input: '输入框翻译',
   blacklist: '黑名单',
-  hotkey: '快捷键',
   floating: '悬浮球',
-  advanced: '进阶设置',
+  data: '导入/导出',
+  about: '关于',
 };
 
 onMounted(async () => {
@@ -81,10 +69,44 @@ onMounted(async () => {
     isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches;
   }
   applyTheme();
+
+  // 检查URL中的锚点参数
+  const hash = window.location.hash.substring(1);
+  if (hash && sectionTitles[hash]) {
+    currentSection.value = hash;
+  }
+
+  // 监听浏览器前进后退按钮
+  window.addEventListener('hashchange', handleHashChange);
 });
+
+// 监听currentSection变化，更新URL锚点
+watch(currentSection, (newSection) => {
+  if (window.location.hash.substring(1) !== newSection) {
+    window.history.pushState(null, '', `#${newSection}`);
+  }
+});
+
+const handleHashChange = () => {
+  const hash = window.location.hash.substring(1);
+  if (hash && sectionTitles[hash]) {
+    currentSection.value = hash;
+  }
+};
 
 const handleSectionChange = (section: string) => {
   currentSection.value = section;
+
+  // 短暂延迟后滚动到对应的锚点位置，确保内容已渲染
+  setTimeout(() => {
+    const element = document.getElementById(section);
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, 100);
 };
 
 const handleSaveMessage = (message: string) => {

@@ -4,7 +4,9 @@
     <div class="p-6">
       <div class="max-w-4xl mx-auto">
         <Transition name="fade" mode="out-in">
-          <component :is="currentComponent" :key="currentSection" @save-message="handleSaveMessage" />
+          <div :id="currentSection" class="anchor-section">
+            <component :is="currentComponent" :key="currentSection" @save-message="handleSaveMessage" />
+          </div>
         </Transition>
       </div>
     </div>
@@ -58,5 +60,10 @@ const handleSaveMessage = (message: string) => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.anchor-section {
+  scroll-margin-top: 80px;
+  /* 考虑顶部导航栏高度 */
 }
 </style>

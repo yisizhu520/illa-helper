@@ -96,18 +96,20 @@
           </div>
 
           <div class="space-y-2">
+            <Label>API端点</Label>
+            <Input v-model="configForm.config.apiEndpoint" placeholder="https:/xxxxx/v1/chat/completions" />
+          </div>
+
+          <div class="space-y-2">
             <Label>API密钥</Label>
             <Input type="password" v-model="configForm.config.apiKey" placeholder="输入API密钥" />
           </div>
 
-          <div class="space-y-2">
-            <Label>API端点</Label>
-            <Input v-model="configForm.config.apiEndpoint" placeholder="输入API端点URL" />
-          </div>
+
 
           <div class="space-y-2">
-            <Label>AI模型</Label>
-            <Input v-model="configForm.config.model" placeholder="输入模型名称" />
+            <Label>模型名称</Label>
+            <Input v-model="configForm.config.model" placeholder="gpt-4o-mini" />
           </div>
 
           <div class="space-y-2">

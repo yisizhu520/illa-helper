@@ -17,6 +17,7 @@ import {
   getTranslationDirectionOptions,
   getTargetLanguageOptions,
 } from '@/src/modules/languageManager';
+import { ExternalLink } from 'lucide-vue-next';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 
@@ -117,7 +118,7 @@ const openAdvancedSettings = () => {
   window.open(url);
 };
 
-const showApiSettings = ref(false);
+const showApiSettings = ref(true);
 const toggleApiSettings = () =>
   (showApiSettings.value = !showApiSettings.value);
 
@@ -203,6 +204,10 @@ const originalWordDisplayOptions = [
   { value: OriginalWordDisplayMode.LEARNING, label: '学习模式' },
 ];
 const extensionVersion = ref('N/A');
+
+const openOptionsPage = () => {
+  browser.tabs.create({ url: 'options.html#translation' });
+};
 
 </script>
 
@@ -366,11 +371,15 @@ const extensionVersion = ref('N/A');
 
         <div class="setting-group api-settings">
           <div class="api-header" @click="toggleApiSettings">
-            <span>模型 API 设置</span>
+            <div class="api-header-left">
+              <span>模型 API 设置</span>
+              <button @click.stop="openOptionsPage" class="options-link-btn" title="打开详细设置">
+                <ExternalLink class="w-4 h-4" />
+              </button>
+            </div>
             <svg class="toggle-icon" :class="{ 'is-open': showApiSettings }" width="16" height="16" viewBox="0 0 24 24"
-              fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round" />
+              fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m6 9 6 6 6-6" />
             </svg>
           </div>
 
@@ -378,7 +387,7 @@ const extensionVersion = ref('N/A');
             <div>
               <!-- 配置选择下拉框 -->
               <div class="sub-setting-group">
-                <label>当前配置</label>
+                <label class="text-sm mt-2 mb-1">当前配置</label>
                 <select v-model="settings.activeApiConfigId" @change="handleActiveConfigChange">
                   <option v-for="config in settings.apiConfigs" :key="config.id" :value="config.id">
                     {{ config.name }} ({{ config.provider }})
@@ -805,6 +814,28 @@ header {
   background: rgba(106, 136, 224, 0.05);
 }
 
+.api-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.options-link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--label-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.options-link-btn:hover {
+  color: var(--primary-color);
+}
+
 .api-header span {
   font-weight: 500;
   color: var(--text-color);
@@ -904,8 +935,6 @@ header {
   font-size: 12px;
   font-weight: 500;
 }
-
-
 
 footer p {
   margin: 0;
