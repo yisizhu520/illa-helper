@@ -73,34 +73,20 @@
                   <th class="text-left p-4 font-medium text-foreground">
                     网站模式
                   </th>
-                  <th class="text-left p-4 font-medium text-foreground">状态</th>
-                  <th class="text-left p-4 font-medium text-foreground">
-                    添加时间
-                  </th>
                   <th class="text-right p-4 font-medium text-foreground">操作</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(pattern, index) in filteredPatterns" :key="pattern.url"
+                <tr v-for="(pattern, index) in filteredPatterns" :key="pattern"
                   class="border-t border-border hover:bg-muted/25 transition-colors">
                   <td class="p-4">
-                    <input v-model="selectedPatterns" :value="pattern.url" type="checkbox"
+                    <input v-model="selectedPatterns" :value="pattern" type="checkbox"
                       class="rounded border-border focus:ring-ring" />
                   </td>
                   <td class="p-4">
                     <code class="px-2 py-1 bg-muted rounded text-sm font-mono">
-                  {{ pattern.url }}
+                  {{ pattern }}
                 </code>
-                  </td>
-                  <td class="p-4">
-                    <span
-                      class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                      已启用
-                    </span>
-                  </td>
-                  <td class="p-4 text-muted-foreground text-sm">
-                    {{ formatDate(pattern.addedAt) }}
                   </td>
                   <td class="p-4 text-right">
                     <div class="flex items-center justify-end gap-2">
@@ -109,7 +95,7 @@
                         title="编辑">
                         <Edit3 class="w-4 h-4" />
                       </button>
-                      <button @click="removePattern(pattern.url)"
+                      <button @click="removePattern(pattern)"
                         class="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
                         title="删除">
                         <Trash2 class="w-4 h-4" />
@@ -171,48 +157,37 @@ import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
 import BlacklistDialog from './BlacklistDialog.vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface BlacklistPattern {
-  url: string;
-  addedAt: Date;
-  enabled: boolean;
-}
-
 const emit = defineEmits<{
   saveMessage: [message: string];
 }>();
 
 const manager = new BlacklistManager();
-const patterns = ref<BlacklistPattern[]>([]);
+const patterns = ref<string[]>([]);
 const searchQuery = ref('');
 const selectedPatterns = ref<string[]>([]);
 const selectAll = ref(false);
 const showAddDialog = ref(false);
-const editingPattern = ref<BlacklistPattern | null>(null);
+const editingPattern = ref<string | null>(null);
 
 onMounted(async () => {
   await loadPatterns();
 });
 
 const loadPatterns = async () => {
-  const rawPatterns = await manager.getPatterns();
-  patterns.value = rawPatterns.map((url) => ({
-    url,
-    addedAt: new Date(), // 实际应该从存储中获取
-    enabled: true,
-  }));
+  patterns.value = await manager.getPatterns()
 };
 
 const filteredPatterns = computed(() => {
   if (!searchQuery.value) return patterns.value;
   const query = searchQuery.value.toLowerCase();
   return patterns.value.filter((pattern) =>
-    pattern.url.toLowerCase().includes(query),
+    pattern.toLowerCase().includes(query),
   );
 });
 
 const handleSelectAll = () => {
   if (selectAll.value) {
-    selectedPatterns.value = filteredPatterns.value.map((p) => p.url);
+    selectedPatterns.value = filteredPatterns.value.map((p) => p);
   } else {
     selectedPatterns.value = [];
   }
@@ -238,21 +213,21 @@ const bulkDeletePatterns = async () => {
   }
 };
 
-const editPattern = (pattern: BlacklistPattern, index: number) => {
-  editingPattern.value = { ...pattern };
+const editPattern = (pattern: string, index: number) => {
+  editingPattern.value = pattern;
   showAddDialog.value = true;
 };
 
-const handleSavePattern = async (pattern: BlacklistPattern) => {
+const handleSavePattern = async (pattern: string) => {
   const isEditing = !!editingPattern.value;
 
   if (isEditing) {
     // 编辑模式：先删除旧的模式
-    await manager.removePattern(editingPattern.value!.url);
+    await manager.removePattern(editingPattern.value!);
   }
 
   // 添加新的模式
-  await manager.addPattern(pattern.url);
+  await manager.addPattern(pattern);
   await loadPatterns();
   showAddDialog.value = false;
   editingPattern.value = null;
@@ -268,13 +243,8 @@ const handleCancelEdit = () => {
 const exportPatterns = () => {
   try {
     const exportData = {
-      version: '1.0',
       exportTime: new Date().toISOString(),
-      patterns: patterns.value.map((p) => ({
-        url: p.url,
-        addedAt: p.addedAt.toISOString(),
-        enabled: p.enabled,
-      })),
+      patterns: patterns.value,
     };
 
     const data = JSON.stringify(exportData, null, 2);
@@ -317,7 +287,7 @@ const importPatterns = () => {
         ) {
           // 新格式：包含完整数据的对象
           patternsToImport = importedData.patterns
-            .map((p: any) => p.url || p)
+            .map((p: any) => (typeof p === 'string' ? p : p.url))
             .filter(Boolean);
         } else {
           throw new Error('无效的文件格式');
@@ -329,7 +299,7 @@ const importPatterns = () => {
         }
 
         // 检查重复项
-        const existingPatterns = patterns.value.map((p) => p.url);
+        const existingPatterns = patterns.value.map((p) => p);
         const newPatterns = patternsToImport.filter(
           (pattern) => !existingPatterns.includes(pattern),
         );
@@ -354,13 +324,5 @@ const importPatterns = () => {
     }
   };
   input.click();
-};
-
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
 };
 </script>

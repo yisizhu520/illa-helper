@@ -86,21 +86,15 @@
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
 import { X } from 'lucide-vue-next';
 
-interface BlacklistPattern {
-  url: string;
-  addedAt: Date;
-  enabled: boolean;
-}
-
 interface Props {
-  pattern?: BlacklistPattern | null;
+  pattern?: string | null;
   isEditing: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-  save: [pattern: BlacklistPattern];
+  save: [pattern: string];
   cancel: [];
 }>();
 
@@ -109,7 +103,6 @@ const urlError = ref('');
 
 const formData = reactive({
   url: '',
-  enabled: true,
 });
 
 const presets = [
@@ -121,8 +114,7 @@ const presets = [
 
 onMounted(async () => {
   if (props.pattern) {
-    formData.url = props.pattern.url;
-    formData.enabled = props.pattern.enabled;
+    formData.url = props.pattern;
   }
 
   await nextTick();
@@ -168,13 +160,7 @@ const handleSave = () => {
     return;
   }
 
-  const pattern: BlacklistPattern = {
-    url: formData.url.trim(),
-    addedAt: props.pattern?.addedAt || new Date(),
-    enabled: formData.enabled,
-  };
-
-  emit('save', pattern);
+  emit('save', formData.url.trim());
 };
 
 const handleCancel = () => {

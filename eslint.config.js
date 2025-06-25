@@ -53,6 +53,7 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'off',
       'no-undef': 'off',
       'linebreak-style': ['error', 'unix'], // unix表示LF，windows表示CRLF。
+       "endOfLine": "auto"
     },
   },
   {
