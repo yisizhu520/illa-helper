@@ -26,6 +26,7 @@ import {
 } from '../types';
 import { ApiConfig } from '../../types';
 import { API_CONSTANTS } from '../config';
+import { cleanMarkdownFromResponse } from '@/src/utils';
 
 export class AITranslationProvider implements IPhoneticProvider {
   /** 提供者名称标识 */
@@ -122,7 +123,7 @@ export class AITranslationProvider implements IPhoneticProvider {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: cleanWord },
         ],
-        temperature: 0.3, // 降低温度以获得更稳定的翻译结果
+        temperature: this.apiConfig.temperature || 0.3, // 降低温度以获得更稳定的翻译结果
         max_tokens: 100, // 限制回复长度，避免过长的响应
       };
 
@@ -277,7 +278,7 @@ export class AITranslationProvider implements IPhoneticProvider {
         explain = `${word} 的释义暂不可用`;
       } else {
         // 清理Markdown格式和文本格式
-        explain = this.cleanMarkdownFromResponse(explain);
+        explain = cleanMarkdownFromResponse(explain);
         // 如果解释过长，截取前200个字符
         if (explain.length > 200) {
           explain = explain.substring(0, 200) + '...';
@@ -297,34 +298,7 @@ export class AITranslationProvider implements IPhoneticProvider {
     }
   }
 
-  /**
-   * 清理AI响应中的Markdown格式
-   * @param content AI返回的原始内容
-   * @returns 清理后的文本
-   */
-  private cleanMarkdownFromResponse(content: string): string {
-    if (!content || typeof content !== 'string') {
-      return content;
-    }
 
-    let cleaned = content.trim();
-    // 不校验这个变量 因为需要替换为空字符串 必须是双引号
-    const _ = '';
-    // 移除Markdown代码块标记
-    cleaned = cleaned.replace(/^```(?:\w+)?\s*\n?/gi, _);
-    cleaned = cleaned.replace(/\n?\s*```\s*$/gi, _);
-
-    // 移除Markdown格式标记
-    cleaned = cleaned.replace(/\*\*(.*?)\*\*/g, '$1'); // 粗体
-    cleaned = cleaned.replace(/\*(.*?)\*/g, '$1'); // 斜体
-    cleaned = cleaned.replace(/`(.*?)`/g, '$1'); // 行内代码
-    cleaned = cleaned.replace(/^#+\s*/gm, _); // 标题
-
-    // 移除多余的空白字符
-    cleaned = cleaned.replace(/\n\s*\n/g, '\n').trim();
-
-    return cleaned;
-  }
 
   /**
    * 从缓存获取数据

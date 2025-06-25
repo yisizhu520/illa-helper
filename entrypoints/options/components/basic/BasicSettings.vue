@@ -109,20 +109,26 @@
           <Input id="max-length" type="number" :model-value="settings.maxLength"
             @update:model-value="settings.maxLength = Number($event)" placeholder="例如: 400" />
         </div>
+        <div class="space-y-2">
+          <Label for="user-level">单词熟悉度 ({{ getUserLevelLabel(settings.userLevel) }})</Label>
+          <Slider id="user-level" :model-value="[settings.userLevel]"
+            @update:model-value="settings.userLevel = ($event || [1])[0]" :min="1" :max="5" :step="1" />
+        </div>
+        <div class="space-y-2">
+          <Label for="replacement-rate">替换率 (Replacement Rate:
+            {{ Math.round(settings.replacementRate * 100) }}%)</Label>
+          <Slider id="replacement-rate" :model-value="[settings.replacementRate]" @update:model-value="
+            settings.replacementRate = ($event || [0])[0]
+            " :min="0" :max="1" :step="0.01" />
+        </div>
         <div class="border-t border-border pt-6 flex items-center justify-between">
           <div class="space-y-1">
-            <Label for="enable-pronunciation">启用发音工具提示</Label>
+            <Label for="enable-pronunciation">启用悬浮框</Label>
           </div>
           <Switch id="enable-pronunciation" :model-value="settings.enablePronunciationTooltip"
             @update:model-value="settings.enablePronunciationTooltip = $event" />
         </div>
-        <div class="flex items-center justify-between">
-          <div class="space-y-1">
-            <Label for="enable-thinking">启用GPT思考模式</Label>
-          </div>
-          <Switch id="enable-thinking" :model-value="settings.apiConfig.enable_thinking"
-            @update:model-value="settings.apiConfig.enable_thinking = $event" />
-        </div>
+
       </CardContent>
     </Card>
   </div>
@@ -138,6 +144,7 @@ import {
   TranslationPosition,
   TranslationStyle,
 } from '@/src/modules/types';
+import { getUserLevelLabel } from '@/src/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -150,6 +157,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageManager = new StorageManager();

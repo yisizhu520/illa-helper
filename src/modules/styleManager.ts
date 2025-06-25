@@ -118,6 +118,7 @@ export class StyleManager {
         color: var(--wxt-primary-color);
         transition: filter 0.2s ease-in-out;
       }
+        
       .wxt-translation-term--learning:hover {
         filter: blur(0);
       }

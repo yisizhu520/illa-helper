@@ -16,7 +16,8 @@ export type FloatingBallEventType = 'translate' | 'drag' | 'click' | 'menu';
 export type FloatingBallActionType =
   | 'settings' // 打开设置
   | 'close' // 关闭悬浮球
-  | 'toggle_menu'; // 切换菜单
+  | 'toggle_menu' // 切换菜单
+  | 'options'; // 打开选项
 
 // 悬浮球状态
 export interface FloatingBallState {

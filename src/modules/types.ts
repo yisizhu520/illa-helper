@@ -97,6 +97,17 @@ export enum UserLevel {
   PROFICIENT = 5,
 }
 
+/**
+ * UserLevel 选项配置，包含值和中文标签
+ */
+export const USER_LEVEL_OPTIONS = [
+  { value: UserLevel.BEGINNER, label: '初级' },
+  { value: UserLevel.ELEMENTARY, label: '基础' },
+  { value: UserLevel.INTERMEDIATE, label: '中级' },
+  { value: UserLevel.ADVANCED, label: '高级' },
+  { value: UserLevel.PROFICIENT, label: '精通' },
+];
+
 export enum TranslationStyle {
   DEFAULT = 'default',
   SUBTLE = 'subtle',

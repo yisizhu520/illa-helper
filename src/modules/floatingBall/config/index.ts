@@ -62,8 +62,15 @@ export const DRAG_CONFIG = {
 export const MENU_ACTIONS = [
   {
     id: 'settings',
-    icon: '⚙️',
+    icon: '📌',
     label: '设置',
+    color: '#6A88E0',
+  },
+  // option设置页面
+  {
+    id: 'options',
+    icon: '⚙️',
+    label: '选项',
     color: '#6A88E0',
   },
   {

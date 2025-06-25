@@ -21,7 +21,6 @@ export default defineBackground(() => {
         browser.action.openPopup();
       } catch (error) {
         console.error('无法打开popup:', error);
-        // 备用方案：打开options页面
         const optionsUrl = browser.runtime.getURL('/options.html');
         browser.tabs.create({ url: optionsUrl });
       }
@@ -63,6 +62,13 @@ export default defineBackground(() => {
         sendResponse(false);
       })();
       return true;
+    }
+
+    // 打开options页面
+    if (message.type === 'open-options') {
+      const optionsUrl = browser.runtime.getURL('/options.html');
+      browser.tabs.create({ url: optionsUrl });
+      return;
     }
   });
 });

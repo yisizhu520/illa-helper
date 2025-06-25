@@ -998,7 +998,9 @@ export class FloatingBallManager {
       case 'close':
         this.closeBall();
         break;
-
+      case 'options':
+        this.openOptions();
+        break;
       default:
         console.warn('未知的菜单操作:', action);
     }
@@ -1013,6 +1015,17 @@ export class FloatingBallManager {
       browser.runtime.sendMessage({ type: 'open-popup' });
     } catch (error) {
       console.error('打开设置失败:', error);
+    }
+  }
+
+  /**
+   * 打开选项页面
+   */
+  private openOptions(): void {
+    try {
+      browser.runtime.sendMessage({ type: 'open-options' });
+    } catch (error) {
+      console.error('打开选项失败:', error);
     }
   }
 

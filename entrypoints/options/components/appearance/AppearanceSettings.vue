@@ -3,12 +3,11 @@
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 class="text-2xl font-bold text-foreground">界面与样式设置</h2>
+          <h2 class="text-2xl font-bold text-foreground">悬浮球设置</h2>
         </CardTitle>
       </CardHeader>
       <CardContent class="space-y-6">
         <div class="border-t border-border pt-6">
-          <h4 class="text-md font-medium text-foreground mb-4">悬浮球设置</h4>
           <div class="space-y-6">
             <div class="flex items-center justify-between">
               <div class="space-y-1">

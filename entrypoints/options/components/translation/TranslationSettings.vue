@@ -16,17 +16,23 @@
           <Input id="api-endpoint" type="text" v-model="settings.apiConfig.apiEndpoint" placeholder="输入API端点" />
         </div>
         <div class="space-y-2">
-          <Label for="user-level">单词熟悉度 (User Level: {{ settings.userLevel }})</Label>
-          <Slider id="user-level" :model-value="[settings.userLevel]"
-            @update:model-value="settings.userLevel = ($event || [1])[0]" :min="1" :max="5" :step="1" />
+          <Label for="api-model">AI模型</Label>
+          <Input id="api-model" type="text" v-model="settings.apiConfig.model" placeholder="输入AI模型名称，如：gpt-4, gpt-3.5-turbo" />
         </div>
         <div class="space-y-2">
-          <Label for="replacement-rate">替换率 (Replacement Rate:
-            {{ Math.round(settings.replacementRate * 100) }}%)</Label>
-          <Slider id="replacement-rate" :model-value="[settings.replacementRate]" @update:model-value="
-            settings.replacementRate = ($event || [0])[0]
-            " :min="0" :max="1" :step="0.01" />
+          <Label for="temperature">温度参数 (Temperature: {{ settings.apiConfig.temperature }})</Label>
+          <Slider id="temperature" :model-value="[settings.apiConfig.temperature]"
+            @update:model-value="settings.apiConfig.temperature = ($event || [0.7])[0]" :min="0" :max="2" :step="0.1" />
+          <p class="text-sm text-muted-foreground">较低值更保守，较高值更创新</p>
         </div>
+        <div class="flex items-center justify-between">
+          <div class="space-y-1">
+            <Label for="enable-thinking">启用思考模式</Label>
+            <p class="text-sm text-muted-foreground">让AI在翻译前进行思考推理</p>
+          </div>
+          <Switch id="enable-thinking" v-model="settings.apiConfig.enable_thinking" />
+        </div>
+
       </CardContent>
     </Card>
   </div>
@@ -40,6 +46,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
 
 const settings = ref<UserSettings>(DEFAULT_SETTINGS);
 const storageManager = new StorageManager();
