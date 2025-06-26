@@ -219,7 +219,7 @@
           <div class="space-y-2">
             <Label>温度参数 ({{ configForm.config.temperature }})</Label>
             <Slider :model-value="[configForm.config.temperature]" @update:model-value="updateTemperature" :min="0"
-              :max="2" :step="0.1" />
+              :max="1" :step="0.1" />
           </div>
 
           <div class="flex items-center justify-between">

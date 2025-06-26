@@ -33,6 +33,8 @@
 - **精确替换控制**: 可精确控制翻译比例（1%-100%），支持字符级精确计算
 - **上下文感知**: 考虑语境和用户水平，选择最合适的翻译词汇
 - **多语言支持**: 支持20+种语言的智能翻译（英语、日语、韩语、法语、德语、西班牙语、俄语、意大利语、葡萄牙语、荷兰语、瑞典语、挪威语、丹麦语、芬兰语、波兰语、捷克语、土耳其语、希腊语等）**理论上依赖大模型能力**。
+- **翻译位置控制**: 新增翻译文本位置自定义功能，更灵活的显示方式
+- **括号显示控制**: 可选择是否显示翻译文本的括号，提供更清爽的阅读体验
 
 ### 🔊 发音学习生态系统 ⭐
 - **交互式悬浮框**: 鼠标悬停翻译词汇即可查看音标、AI词义和朗读功能，智能定位避免边界溢出
@@ -42,12 +44,14 @@
 - **AI词义解释**: 实时调用AI生成中文词义解释，理解更准确，支持上下文语境分析
 - **渐进式加载**: 先显示基础信息，再异步加载详细内容，优化用户体验
 - **音频缓存**: 内存级TTS音频缓存，同一单词无需重复生成语音
+- **快捷键支持**: 新增发音弹出框快捷键设置，提升操作效率
 
 ### 🎨 丰富的视觉体验
 - **7种翻译样式**: 默认、微妙、粗体、斜体、下划线、高亮、学习模式（模糊效果）
 - **学习模式**: 翻译词汇初始模糊显示，鼠标悬停时清晰化，增强记忆效果
 - **辉光动画**: 新翻译词汇出现时的柔和提示效果，不干扰阅读体验
 - **响应式设计**: 自适应深色/浅色主题，智能悬浮框定位
+- **悬浮工具球**: 新增可配置的悬浮工具球，快速访问常用功能
 
 ### ⚙️ 高度可配置性
 - **智能翻译模式**: 用户只需选择目标语言，AI自动检测源语言并进行翻译
@@ -56,12 +60,15 @@
 - **原文显示控制**: 可选择显示、隐藏或学习模式（模糊效果）显示被翻译的原文
 - **段落长度控制**: 自定义AI单次处理的最大文本长度
 - **发音功能开关**: 可独立控制发音悬浮框功能的启用状态
+- **多API配置**: 支持配置多个API服务，可灵活切换不同的翻译服务提供商
+- **数据导入导出**: 新增配置数据的导入导出功能，方便备份和迁移
 
 ### 🔌 开放式API集成
 - **兼容OpenAI API**: 支持任何兼容 OpenAI 格式的AI服务（ChatGPT、Claude、豆包等国产大模型）
 - **灵活配置**: 自定义API Key、Endpoint、模型名称、Temperature参数
 - **智能提示词**: 根据翻译方向和用户水平动态生成最优提示词
 - **错误处理**: 完善的API错误处理和重试机制
+- **多API支持**: 支持配置多个API服务并灵活切换，提供更可靠的服务保障
 
 ### 🚀 性能与优化
 - **智能缓存**: 翻译结果、音标数据、TTS音频多级缓存策略
@@ -70,8 +77,11 @@
 - **内存管理**: 及时清理监听器，优化内存使用
 
 ### 💻 现代技术架构
-- **技术栈**: Vue 3 + TypeScript + WXT 框架
-- **模块化设计**: 高内聚低耦合的模块架构，易于维护和扩展
+- **框架**: [WXT](https://wxt.dev/) - 现代WebExtension开发框架
+- **前端**: Vue 3 + TypeScript + Vite
+- **UI库**: Tailwind CSS + Lucide Icons
+- **构建**: ESLint + Prettier + TypeScript编译
+- **API集成**: OpenAI兼容接口 + Dictionary API + 有道TTS
 - **跨浏览器兼容**: 支持Chrome、Edge、Firefox，部分支持Safari
 
 ## 🌐 浏览器兼容性
@@ -232,16 +242,26 @@ browser_specific_settings: {
 ├── .output/              # WXT 打包输出目录
 │   ├── chrome-mv3/       # Chrome/Edge扩展文件
 │   └── firefox-mv2/      # Firefox扩展文件
+├── assets/               # 静态资源目录 (例如 CSS, 字体)
+├── components/           # 全局Vue组件
+├── docs/                 # 📚 项目文档
+│   └── ARCHITECTURE_AND_FEATURES.md  # 详细技术文档
 ├── entrypoints/          # 扩展入口点
 │   ├── background.ts     # 后台服务 (配置验证、通知管理)
 │   ├── content.ts        # 内容脚本 (核心翻译逻辑)
 │   ├── popup/            # Vue 3 弹窗界面
 │   │   ├── App.vue       # 主界面组件
-│   │   └── index.html    # 弹窗页面
+│   │   ├── index.html    # 弹窗页面
+│   │   ├── main.ts       # 入口点脚本
+│   │   └── style.css     # 弹窗样式
 │   └── options/          # 设置页面（Vue 3）
 │       ├── App.vue       # 设置主界面
-│       └── components/   # 设置页面组件
-├── src/modules/          # 核心功能模块
+│       ├── index.html    # 设置页面HTML
+│       ├── main.ts       # 设置页面入口脚本
+│       └── components/   # 设置页面组件 (内容无法获取)
+├── images/               # 项目图片资源
+├── lib/                  # 第三方库或辅助模块
+├── src/modules/          # 核心功能模块 (注意：由于环境限制，此目录下的详细结构未能完全验证)
 │   ├── pronunciation/    # 🔊 发音系统模块（完整生态系统）
 │   │   ├── phonetic/     # 音标获取服务（Dictionary API）
 │   │   ├── tts/          # 语音合成服务（有道TTS + Web Speech）
@@ -265,10 +285,9 @@ browser_specific_settings: {
 │   ├── messaging.ts      # 消息传递系统
 │   └── types.ts          # 核心类型定义
 ├── public/               # 静态资源
-│   ├── icon/             # 扩展图标 (16-128px)
-│   └── warning.png       # 通知图标
-├── docs/                 # 📚 项目文档
-│   └── ARCHITECTURE_AND_FEATURES.md  # 详细技术文档
+│   ├── icon/             # 扩展图标 (内容无法获取)
+│   ├── warning.png       # 通知图标
+│   └── wxt.svg           # WXT 图标
 ├── .env.example          # 环境变量模板
 ├── wxt.config.ts         # WXT 框架配置
 └── package.json          # 项目依赖配置
@@ -278,6 +297,7 @@ browser_specific_settings: {
 
 - **框架**: [WXT](https://wxt.dev/) - 现代WebExtension开发框架
 - **前端**: Vue 3 + TypeScript + Vite
+- **UI库**: Tailwind CSS + Lucide Icons
 - **构建**: ESLint + Prettier + TypeScript编译
 - **API集成**: OpenAI兼容接口 + Dictionary API + 有道TTS
 - **架构模式**: Provider模式 + 模块化设计 + 事件驱动
@@ -448,4 +468,5 @@ Safari需要额外的步骤将Web扩展打包为Safari扩展。请参考[Apple�
   <p>⭐ 如果这个项目对您有帮助，请给我们一个Star！</p>
   <p>🔄 欢迎Fork并贡献您的改进！</p>
 </div>
+
 

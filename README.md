@@ -34,6 +34,8 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **Precise Replacement Control**: Precisely control translation ratio (1%-100%) with character-based calculation support
 - **Context Awareness**: Considers context and user level to select the most appropriate translation vocabulary
 - **Multi-language Support**: Supports 20+ languages intelligent translation (English, Japanese, Korean, French, German, Spanish, Russian, Italian, Portuguese, Dutch, Swedish, Norwegian, Danish, Finnish, Polish, Czech, Turkish, Greek, etc.) **theoretically depends on AI model capabilities**.
+- **Translation Position Control**: Added a feature to customize the position of translated text for more flexible display.
+- **Parentheses Display Control**: Option to show or hide parentheses around translated text for a cleaner reading experience.
 
 ### 🔊 Pronunciation Learning Ecosystem ⭐
 - **Interactive Pronunciation Tooltips**: Hover over translated words to view phonetics, AI definitions, and pronunciation features with intelligent positioning to avoid boundary overflow
@@ -43,12 +45,14 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **AI Definition Explanations**: Real-time AI-generated Chinese definitions for more accurate understanding with contextual analysis support
 - **Progressive Loading**: Display basic information first, then asynchronously load detailed content to optimize user experience
 - **Audio Caching**: Memory-level TTS audio caching, no need to regenerate audio for the same word
+- **Shortcut Key Support**: Added shortcut key settings for the pronunciation pop-up to improve operational efficiency.
 
 ### 🎨 Rich Visual Experience
 - **7 Translation Styles**: Default, subtle, bold, italic, underlined, highlighted, learning mode (blur effect)
 - **Learning Mode**: Translation words initially displayed blurred, clarified on hover to enhance memory effect
 - **Glow Animation**: Gentle hint effects when new translated words appear, non-intrusive to reading experience
 - **Responsive Design**: Auto-adapts to dark/light themes with intelligent tooltip positioning
+- **Floating Tool Ball**: Added a configurable floating tool ball for quick access to frequently used functions.
 
 ### ⚙️ Highly Configurable
 - **Smart Translation Mode**: Users only need to select target language, AI automatically detects source language and translates
@@ -57,12 +61,15 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **Original Text Display Control**: Choose to show, hide, or learning mode (blur effect) display of translated original text
 - **Paragraph Length Control**: Customize maximum text length for AI single processing
 - **Pronunciation Feature Toggle**: Independent control of pronunciation tooltip functionality activation status
+- **Multiple API Configurations**: Supports configuring multiple API services, allowing for flexible switching between different translation providers.
+- **Data Import/Export**: Added functionality to import and export configuration data for easy backup and migration.
 
 ### 🔌 Open API Integration
 - **OpenAI API Compatible**: Supports any AI service compatible with OpenAI format (ChatGPT, Claude, domestic large models like Doubao, etc.)
 - **Flexible Configuration**: Customize API Key, Endpoint, model name, Temperature parameters
 - **Smart Prompts**: Dynamically generate optimal prompts based on translation direction and user level
 - **Error Handling**: Comprehensive API error handling and retry mechanisms
+- **Multiple API Support**: Supports configuring and flexibly switching between multiple API services for more reliable service.
 
 ### 🚀 Performance & Optimization
 - **Smart Caching**: Multi-level caching strategy for translation results, phonetic data, and TTS audio
@@ -71,9 +78,13 @@ We firmly believe that the best way to learn a language is through extensive exp
 - **Memory Management**: Timely cleanup of listeners and optimized memory usage
 
 ### 💻 Modern Technical Architecture
-- **Tech Stack**: Vue 3 + TypeScript + WXT Framework
-- **Modular Design**: High cohesion, low coupling modular architecture, easy to maintain and extend
-- **Cross-browser Compatibility**: Supports Chrome, Edge, Firefox, partial support for Safari
+- **Framework**: [WXT](https://wxt.dev/) - A modern WebExtension development framework.
+- **Frontend**: Vue 3 + TypeScript + Vite.
+- **UI Library**: Tailwind CSS + Lucide Icons.
+- **Tooling**: ESLint + Prettier + TypeScript compilation.
+- **API Integration**: OpenAI-compatible interfaces + Dictionary API + Youdao TTS.
+- **Architectural Patterns**: Provider Pattern + Modular Design + Event-Driven.
+- **Cross-browser Compatibility**: Supports Chrome, Edge, Firefox, with partial support for Safari.
 
 ## 🌐 Browser Compatibility
 
@@ -233,31 +244,41 @@ This ensures proper storage functionality for saving user settings in Firefox.
 ├── .output/              # WXT build output directory
 │   ├── chrome-mv3/       # Chrome/Edge extension files
 │   └── firefox-mv2/      # Firefox extension files
+├── assets/               # Static assets directory (e.g., CSS, fonts)
+├── components/           # Global Vue components
+├── docs/                 # 📚 Project documentation
+│   └── ARCHITECTURE_AND_FEATURES.md  # Detailed technical documentation
 ├── entrypoints/          # Extension entry points
 │   ├── background.ts     # Background service (config validation, notification management)
 │   ├── content.ts        # Content script (core translation logic)
 │   ├── popup/            # Vue 3 popup interface
-│   │   ├── App.vue       # Main interface component
-│   │   └── index.html    # Popup page
-│   └── options/          # Settings page (Vue 3)
-│       ├── App.vue       # Settings main interface
-│       └── components/   # Settings page components
-├── src/modules/          # Core functional modules
+│   │   ├── App.vue       # Main UI component
+│   │   ├── index.html    # Popup page
+│   │   ├── main.ts       # Entry point script
+│   │   └── style.css     # Popup styles
+│   └── options/          # Options page (Vue 3)
+│       ├── App.vue       # Main options UI
+│       ├── index.html    # Options page HTML
+│       ├── main.ts       # Options page entry script
+│       └── components/   # Options page components (content not available)
+├── images/               # Project image assets
+├── lib/                  # Third-party libraries or helper modules
+├── src/modules/          # Core feature modules (Note: Full structure not verified due to environment limits)
 │   ├── pronunciation/    # 🔊 Pronunciation system module (complete ecosystem)
-│   │   ├── phonetic/     # Phonetic retrieval services (Dictionary API)
-│   │   ├── tts/          # Speech synthesis services (Youdao TTS + Web Speech)
-│   │   ├── translation/  # AI translation integration (definition explanations)
+│   │   ├── phonetic/     # Phonetic retrieval service (Dictionary API)
+│   │   ├── tts/          # Speech synthesis service (Youdao TTS + Web Speech)
+│   │   ├── translation/  # AI translation integration (definition explanation)
 │   │   ├── services/     # Pronunciation service coordinator (core logic)
-│   │   ├── ui/           # Tooltip UI components (interactive interface)
-│   │   ├── utils/        # Utility function library (DOM, positioning, timer)
-│   │   ├── config/       # Configuration management (constants, config items)
+│   │   ├── ui/           # Hover box UI component (interactive interface)
+│   │   ├── utils/        # Utility function library (DOM, positioning, timers)
+│   │   ├── config/       # Configuration management (constants, settings)
 │   │   └── types/        # Type definitions (complete type system)
 │   ├── options/          # Settings management module
-│   │   └── blacklist/    # Website blacklist functionality
+│   │   └── blacklist/    # Website blacklist feature
 │   ├── processing/       # Text processing module
-│   ├── floatingBall/     # Floating ball functionality
+│   ├── floatingBall/     # Floating ball feature
 │   ├── apiService.ts     # AI translation API service
-│   ├── textProcessor.ts  # Smart text processor
+│   ├── textProcessor.ts  # Intelligent text processor
 │   ├── textReplacer.ts   # Text replacement engine
 │   ├── styleManager.ts   # Style manager
 │   ├── storageManager.ts # Configuration storage management
@@ -265,11 +286,10 @@ This ensures proper storage functionality for saving user settings in Firefox.
 │   ├── promptManager.ts  # AI prompt management
 │   ├── messaging.ts      # Messaging system
 │   └── types.ts          # Core type definitions
-├── public/               # Static resources
-│   ├── icon/             # Extension icons (16-128px)
-│   └── warning.png       # Notification icon
-├── docs/                 # 📚 Project documentation
-│   └── ARCHITECTURE_AND_FEATURES.md  # Detailed technical documentation
+├── public/               # Static assets
+│   ├── icon/             # Extension icons (content not available)
+│   ├── warning.png       # Notification icon
+│   └── wxt.svg           # WXT icon
 ├── .env.example          # Environment variable template
 ├── wxt.config.ts         # WXT framework configuration
 └── package.json          # Project dependency configuration
@@ -277,15 +297,16 @@ This ensures proper storage functionality for saving user settings in Firefox.
 
 ### 🔧 Core Tech Stack
 
-- **Framework**: [WXT](https://wxt.dev/) - Modern WebExtension development framework
-- **Frontend**: Vue 3 + TypeScript + Vite
-- **Build**: ESLint + Prettier + TypeScript compilation
-- **API Integration**: OpenAI compatible interface + Dictionary API + Youdao TTS
-- **Architecture Patterns**: Provider pattern + Modular design + Event-driven
-- **Pronunciation System**: Factory pattern + Multi-TTS services + Smart caching
-- **Storage Management**: Configuration version control + Cross-browser compatibility
+- **Framework**: [WXT](https://wxt.dev/) - A modern WebExtension development framework.
+- **Frontend**: Vue 3 + TypeScript + Vite.
+- **UI Library**: Tailwind CSS + Lucide Icons.
+- **Tooling**: ESLint + Prettier + TypeScript compilation.
+- **API Integration**: OpenAI-compatible interfaces + Dictionary API + Youdao TTS.
+- **Architectural Patterns**: Provider Pattern + Modular Design + Event-Driven.
+- **Pronunciation System**: Factory Pattern + Multi-TTS services + Smart Caching.
+- **Storage Management**: Configuration versioning + Cross-browser compatibility.
 
-> 📖 **Detailed Documentation**: [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) - Contains complete technical architecture, API reference, and development guide
+> 📖 **See Detailed Documentation**: [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) - Contains the complete technical architecture, API reference, and development guidelines.
 
 ## ❓ FAQ
 
@@ -361,74 +382,74 @@ You can try:
 - Adjusting user level settings
 - Modifying translation ratio
 - Switching to more powerful AI models
-- Adjusting Temperature parameter (recommended 0.1-0.3)
+- Adjusting the Temperature parameter (a range of 0.1-0.3 is recommended).
 
 ## 🛠️ Troubleshooting
 
-### Common Problem Diagnosis
+### Common Issue Diagnosis
 
-#### 1. Extension Loading Failed
-- Check Node.js version (requires 18+)
-- Ensure dependencies are completely installed: `npm install`
-- Review build logs for errors
+#### 1. Extension fails to load
+- Check your Node.js version (requires 18+).
+- Ensure all dependencies are installed: `npm install`.
+- Check the build logs for any errors.
 
-#### 2. Translation Function Not Working
-- Verify API configuration correctness
-- Check network connection
-- Review developer console error messages
+#### 2. Translation feature is not working
+- Verify that your API configuration is correct.
+- Check your internet connection.
+- Look for errors in the developer console.
 
-#### 3. Pronunciation Function Abnormal
-- Ensure browser supports Web Speech API
-- Check Youdao TTS service status
-- Verify Dictionary API accessibility
+#### 3. Pronunciation feature is abnormal
+- Ensure your browser supports the Web Speech API.
+- Check the status of the Youdao TTS service.
+- Verify that the Dictionary API is accessible.
 
-#### 4. Settings Cannot Be Saved
-- Firefox users confirm correct installation method
-- Check extension permission settings
-- Clear browser cache and retry
+#### 4. Settings cannot be saved
+- Firefox users, confirm you are using the correct installation method.
+- Check the extension's permission settings.
+- Try clearing your browser cache and retrying.
 
-## 🤝 Contributing
+## 🤝 Contribution Guide
 
-We welcome contributions of all kinds! Whether reporting bugs, suggesting new features, or directly contributing code.
+We warmly welcome contributions of all kinds! Whether it's submitting a bug, proposing a new feature, or contributing code directly.
 
 ### How to Contribute
 
-1. **Submit Issues**
-   - Use GitHub Issues to report bugs or suggest features
-   - Clearly describe the problem or suggestion details
-   - If it's a bug, please provide reproduction steps and environment information
+1.  **Submit Issues**
+    - Use GitHub Issues to report bugs or suggest features.
+    - Clearly describe the issue or suggestion in detail.
+    - If it's a bug, please provide steps to reproduce and environment information.
 
-2. **Contribute Code**
-   - **Fork** this repository
-   - Create a new branch (`git checkout -b feature/your-amazing-feature`)
-   - Write and test your code
-   - Ensure code follows the project's coding standards
-   - Commit your changes (`git commit -m 'Add some amazing feature'`)
-   - Push your branch to the remote repository (`git push origin feature/your-amazing-feature`)
-   - Create a **Pull Request**
+2.  **Contribute Code**
+    - **Fork** this repository.
+    - Create a new branch (`git checkout -b feature/your-amazing-feature`).
+    - Write and test your code.
+    - Ensure your code follows the project's coding standards.
+    - Commit your changes (`git commit -m 'Add some amazing feature'`).
+    - Push your branch to the remote repository (`git push origin feature/your-amazing-feature`).
+    - Create a **Pull Request**.
 
-3. **Improve Documentation**
-   - Documentation improvements are equally important to the project
-   - Can fix typos, improve explanations, or add examples
+3.  **Improve Documentation**
+    - Documentation improvements are just as important to the project.
+    - You can fix typos, improve explanations, or add examples.
 
-### Development Guidelines
+### Development Guide
 
-- **Architecture Principles**: Follow Provider pattern and modular design, especially the factory pattern for pronunciation system
-- **Code Standards**: TypeScript strict mode, ESLint + Prettier formatting, complete type definitions
-- **Testing Requirements**: Ensure new features work properly on multiple browsers and websites, especially in multi-language environments
-- **Performance Considerations**: Pay attention to DOM operation efficiency, memory management, and multi-language caching strategies
-- **API Compatibility**: Maintain backward compatibility with existing API interfaces, support configuration version migration
-- **Multi-language Support**: When adding new languages, register in languageManager.ts and test translation effects
-- **Pronunciation Features**: When extending TTS services, implement ITTSProvider interface and register to factory
-- **Browser Compatibility**: New features need testing in Chrome, Edge, and Firefox
+- **Architectural Principles**: Follow the Provider Pattern and modular design, especially the Factory Pattern for the pronunciation system.
+- **Coding Standards**: Use TypeScript strict mode, format with ESLint + Prettier, and provide complete type definitions.
+- **Testing Requirements**: Ensure new features work correctly on multiple browsers and websites, especially in multi-language environments.
+- **Performance Considerations**: Pay attention to DOM manipulation efficiency, memory management, and multi-language caching strategies.
+- **API Compatibility**: Maintain backward compatibility with existing API interfaces and support configuration version migration.
+- **Multi-language Support**: When adding a new language, register it in `languageManager.ts` and test the translation effect.
+- **Pronunciation Feature**: When extending TTS services, implement the `ITTSProvider` interface and register it in the factory.
+- **Browser Compatibility**: New features need to be tested in Chrome, Edge, and Firefox.
 
-> 📖 **Detailed Development Guide**: See [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) for complete development environment setup, code structure explanations, and best practices.
+> 📖 **Detailed Development Guide**: Check out the [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md) for complete development environment setup, code structure explanations, and best practices.
 
 ## 🔗 Related Links
 
 - **Project Homepage**: [GitHub Repository](https://github.com/xiao-zaiyi/illa-helper)
-- **Issue Reports**: [GitHub Issues](https://github.com/xiao-zaiyi/illa-helper/issues)
-- **Release Versions**: [GitHub Releases](https://github.com/xiao-zaiyi/illa-helper/releases)
+- **Issue Tracker**: [GitHub Issues](https://github.com/xiao-zaiyi/illa-helper/issues)
+- **Releases**: [GitHub Releases](https://github.com/xiao-zaiyi/illa-helper/releases)
 - **Technical Documentation**: [Architecture & Features Guide](./docs/ARCHITECTURE_AND_FEATURES.md)
 - **WXT Framework**: [WXT.dev](https://wxt.dev/)
 
