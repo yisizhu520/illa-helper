@@ -86,7 +86,7 @@ export async function testApiConnection(
         {
           role: 'user',
           content:
-            'Hello, this is a connection test. Please respond with "OK".',
+            'Hello, this is a connection test. Please respond with "OK" and output JSON format.',
         },
       ],
       response_format: { type: 'json_object' },
