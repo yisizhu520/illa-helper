@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted, watch, computed, reactive, nextTick } from 'vue';
+import { ref, onMounted, watch, computed, reactive, nextTick, onUnmounted } from 'vue';
 import {
   TranslationStyle,
   TriggerMode,
@@ -17,7 +17,13 @@ import {
   getTranslationDirectionOptions,
   getTargetLanguageOptions,
 } from '@/src/modules/languageManager';
-import { ExternalLink } from 'lucide-vue-next';
+import {
+  ExternalLink,
+  Zap as ZapIcon,
+  CheckCircle2 as CheckCircle2Icon,
+  XCircle,
+} from 'lucide-vue-next';
+import { testApiConnection, ApiTestResult } from '@/src/utils';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 
@@ -51,6 +57,46 @@ onMounted(async () => {
     console.error('无法获取扩展版本号:', error);
     // 在非扩展环境或开发服务器中，这可能会失败。可以设置一个默认值。
     extensionVersion.value = 'DEV';
+  }
+});
+
+// API测试状态
+const isTestingConnection = ref(false);
+const testResult = ref<ApiTestResult | null>(null);
+let testResultTimer: number | null = null;
+
+const testActiveApiConnection = async () => {
+  if (!activeConfig.value || !activeConfig.value.config.apiKey) return;
+
+  // 清除之前的定时器
+  if (testResultTimer) {
+    clearTimeout(testResultTimer);
+    testResultTimer = null;
+  }
+
+  isTestingConnection.value = true;
+  testResult.value = null;
+
+  try {
+    testResult.value = await testApiConnection(activeConfig.value.config);
+    // 5秒后自动清除结果
+    testResultTimer = window.setTimeout(() => {
+      testResult.value = null;
+    }, 5000);
+  } catch (error) {
+    console.error('API测试失败:', error);
+    testResult.value = {
+      success: false,
+      message: error instanceof Error ? error.message : '未知错误',
+    };
+  } finally {
+    isTestingConnection.value = false;
+  }
+};
+
+onUnmounted(() => {
+  if (testResultTimer) {
+    clearTimeout(testResultTimer);
   }
 });
 
@@ -175,7 +221,6 @@ const handleActiveConfigChange = async () => {
     // 通知content script配置已更新
     await notifySettingsChanged(settings.value);
 
-    showSavedMessage('活跃配置已切换');
   } catch (error) {
     console.error('切换活跃配置失败:', error);
     showSavedMessage('切换配置失败');
@@ -518,6 +563,44 @@ const openOptionsPage = () => {
                       activeConfig.config.apiKey ? '已配置' : '未配置API密钥'
                     }}
                   </span>
+                </div>
+
+                <!-- API 连接测试 -->
+                <div class="api-test-section">
+                  <Transition name="fade">
+                    <div
+                      v-if="testResult"
+                      class="test-result"
+                      :class="{
+                        success: testResult.success,
+                        error: !testResult.success,
+                      }"
+                    >
+                      <CheckCircle2Icon
+                        v-if="testResult.success"
+                        class="w-4 h-4"
+                      />
+                      <XCircle v-else class="w-4 h-4" />
+                      <span
+                        class="test-result-message"
+                        :title="testResult.message"
+                        >{{ testResult.message }}</span
+                      >
+                    </div>
+                  </Transition>
+                  <button
+                    @click="testActiveApiConnection"
+                    :disabled="
+                      isTestingConnection || !activeConfig?.config.apiKey
+                    "
+                    class="test-connection-btn"
+                  >
+                    <div v-if="isTestingConnection" class="spinner"></div>
+                    <ZapIcon v-else class="w-3 h-3" />
+                    <span>{{
+                      isTestingConnection ? '测试中' : '测试'
+                    }}</span>
+                  </button>
                 </div>
               </div>
 
@@ -1017,17 +1100,15 @@ header {
   border-radius: 6px;
   padding: 10px;
   margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .config-info-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 6px;
-}
-
-.config-info-item:last-child {
-  margin-bottom: 0;
 }
 
 .info-label {
@@ -1183,5 +1264,100 @@ footer p {
       rgba(30, 30, 30, 0) 100%
     );
   }
+}
+
+.api-test-section {
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.test-connection-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--input-bg-color);
+  color: var(--label-color);
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.test-connection-btn:not(:disabled):hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgba(106, 136, 224, 0.05);
+}
+
+.test-connection-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.test-result {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  border: 1px solid;
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.test-result.success {
+  color: var(--success-color);
+  background-color: rgba(76, 175, 80, 0.1);
+  border-color: rgba(76, 175, 80, 0.2);
+}
+
+.test-result.error {
+  color: #f44336;
+  background-color: rgba(244, 67, 54, 0.1);
+  border-color: rgba(244, 67, 54, 0.2);
+}
+
+.test-result-message {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

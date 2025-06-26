@@ -10,19 +10,12 @@
       <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label>当前活跃配置</Label>
-          <Select
-            v-model="settings.activeApiConfigId"
-            @update:model-value="handleActiveConfigChange"
-          >
+          <Select v-model="settings.activeApiConfigId" @update:model-value="handleActiveConfigChange">
             <SelectTrigger>
               <SelectValue placeholder="选择API配置" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem
-                v-for="config in settings.apiConfigs"
-                :key="config.id"
-                :value="config.id"
-              >
+              <SelectItem v-for="config in settings.apiConfigs" :key="config.id" :value="config.id">
                 {{ config.name }} ({{ config.provider }})
               </SelectItem>
             </SelectContent>
@@ -46,13 +39,10 @@
             </div>
             <div>
               <strong>状态：</strong>
-              <span
-                :class="
-                  activeConfig.config.apiKey
-                    ? 'text-green-600'
-                    : 'text-destructive'
-                "
-              >
+              <span :class="activeConfig.config.apiKey
+                  ? 'text-green-600'
+                  : 'text-destructive'
+                ">
                 {{ activeConfig.config.apiKey ? '已配置' : '未配置API密钥' }}
               </span>
             </div>
@@ -74,21 +64,18 @@
         </CardTitle>
       </CardHeader>
       <CardContent class="pt-0">
-        <RadioGroup 
-          :model-value="settings.activeApiConfigId"
-          @update:model-value="(value) => { settings.activeApiConfigId = value; handleActiveConfigChange(); }"
-        >
+        <RadioGroup :model-value="settings.activeApiConfigId"
+          @update:model-value="(value) => { settings.activeApiConfigId = value; handleActiveConfigChange(); }">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div 
-              v-for="config in settings.apiConfigs" 
-              :key="config.id"
+            <div v-for="config in settings.apiConfigs" :key="config.id"
               class="rounded-lg border bg-card p-3 hover:shadow-sm transition-shadow"
-              :class="{ 'border-primary border-2': config.id === settings.activeApiConfigId }"
-            >
+              :class="{ 'border-primary border-2': config.id === settings.activeApiConfigId }">
               <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
-                  <ServerIcon v-if="config.provider.toLowerCase().includes('openai')" class="h-3.5 w-3.5 text-green-500" />
-                  <CloudIcon v-else-if="config.provider.toLowerCase().includes('cloud')" class="h-3.5 w-3.5 text-blue-500" />
+                  <ServerIcon v-if="config.provider.toLowerCase().includes('openai')"
+                    class="h-3.5 w-3.5 text-green-500" />
+                  <CloudIcon v-else-if="config.provider.toLowerCase().includes('cloud')"
+                    class="h-3.5 w-3.5 text-blue-500" />
                   <GlobeIcon v-else class="h-3.5 w-3.5 text-primary" />
                   <h3 class="font-semibold text-sm truncate" :title="config.name">
                     {{ config.name }}
@@ -101,7 +88,7 @@
                   </label>
                 </div>
               </div>
-              
+
               <div class="text-xs text-muted-foreground space-y-0.5 mb-2">
                 <div class="flex items-center gap-1">
                   <HashIcon class="h-3 w-3" />
@@ -114,38 +101,61 @@
                 <div class="flex items-center gap-1">
                   <KeyIcon class="h-3 w-3" />
                   <span class="flex items-center">
-                    <span 
-                      class="inline-block w-1.5 h-1.5 rounded-full mr-1"
-                      :class="config.config.apiKey ? 'bg-green-500' : 'bg-red-500'"
-                    ></span>
+                    <span class="inline-block w-1.5 h-1.5 rounded-full mr-1"
+                      :class="config.config.apiKey ? 'bg-green-500' : 'bg-red-500'"></span>
                     {{ config.config.apiKey ? '已配置' : '未配置' }}
                   </span>
                 </div>
               </div>
-              
-              <div class="flex items-center justify-end pt-1 border-t border-border/40">
+
+              <!-- 测试结果显示 -->
+              <div v-if="cardTestResults[config.id]" class="text-xs p-2 rounded-md mb-2" :class="{
+                'bg-green-50 text-green-700 border border-green-200': cardTestResults[config.id].success,
+                'bg-red-50 text-red-700 border border-red-200': !cardTestResults[config.id].success
+              }">
+                <div class="flex items-center">
+                  <CheckCircle2Icon v-if="cardTestResults[config.id].success" class="h-3 w-3 mr-1" />
+                  <XCircle v-else class="h-3 w-3 mr-1" />
+                  <span class="font-medium">
+                    {{ cardTestResults[config.id].success ? '连接成功' : '连接失败' }}
+                  </span>
+                </div>
+                <div v-if="cardTestResults[config.id].message" class="mt-1 truncate"
+                  :title="cardTestResults[config.id].message">
+                  {{ cardTestResults[config.id].message }}
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between pt-1 border-t border-border/40">
+                <div class="flex items-center gap-1">
+                  <Button @click="testCardApiConnection(config)"
+                    :disabled="cardTestingStates[config.id] || !config.config.apiKey" size="sm" variant="ghost"
+                    class="h-6 text-xs px-2">
+                    <span v-if="cardTestingStates[config.id]" class="flex items-center">
+                      <div class="animate-spin rounded-full h-2 w-2 border-b border-current mr-1"></div>
+                      测试中
+                    </span>
+                    <span v-else class="flex items-center">
+                      <ZapIcon class="h-3 w-3 mr-1" />
+                      测试
+                    </span>
+                  </Button>
+                </div>
                 <div class="flex items-center gap-1">
                   <Button @click="editConfig(config)" size="sm" variant="ghost" class="h-6 w-6 p-0">
                     <PencilIcon class="h-3 w-3" />
                   </Button>
-                  <Button
-                    v-if="!config.isDefault"
-                    @click="deleteConfig(config.id)"
-                    size="sm"
-                    variant="ghost"
-                    class="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                  >
+                  <Button v-if="!config.isDefault" @click="deleteConfig(config.id)" size="sm" variant="ghost"
+                    class="h-6 w-6 p-0 text-destructive hover:bg-destructive/10">
                     <Trash2Icon class="h-3 w-3" />
                   </Button>
                 </div>
               </div>
             </div>
-            
+
             <!-- 空状态 -->
-            <div 
-              v-if="settings.apiConfigs.length === 0" 
-              class="rounded-lg border border-dashed p-6 text-center text-muted-foreground col-span-full"
-            >
+            <div v-if="settings.apiConfigs.length === 0"
+              class="rounded-lg border border-dashed p-6 text-center text-muted-foreground col-span-full">
               <FolderOpenIcon class="h-8 w-8 mx-auto mb-2 opacity-50" />
               暂无配置，点击上方"添加配置"按钮创建
             </div>
@@ -155,15 +165,9 @@
     </Card>
 
     <!-- 配置对话框 -->
-    <div
-      v-if="showAddDialog || editingConfig"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click="cancelEdit"
-    >
-      <Card
-        class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto"
-        @click.stop
-      >
+    <div v-if="showAddDialog || editingConfig" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      @click="cancelEdit">
+      <Card class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto" @click.stop>
         <CardHeader>
           <CardTitle>
             {{ editingConfig ? '编辑配置' : '添加新配置' }}
@@ -177,10 +181,7 @@
 
           <div class="space-y-2">
             <Label>服务提供商</Label>
-            <Select
-              v-model="configForm.provider"
-              @update:model-value="handleProviderChange"
-            >
+            <Select v-model="configForm.provider" @update:model-value="handleProviderChange">
               <SelectTrigger>
                 <SelectValue placeholder="选择服务提供商" />
               </SelectTrigger>
@@ -197,51 +198,69 @@
           <!-- 自定义服务商名称输入 -->
           <div v-if="configForm.provider === 'custom'" class="space-y-2">
             <Label>自定义服务商名称</Label>
-            <Input
-              v-model="configForm.customProviderName"
-              placeholder="输入自定义服务商名称"
-            />
+            <Input v-model="configForm.customProviderName" placeholder="输入自定义服务商名称" />
           </div>
 
           <div class="space-y-2">
             <Label>API端点</Label>
-            <Input
-              v-model="configForm.config.apiEndpoint"
-              placeholder="https:/xxxxx/v1/chat/completions"
-            />
+            <Input v-model="configForm.config.apiEndpoint" placeholder="https:/xxxxx/v1/chat/completions" />
           </div>
 
           <div class="space-y-2">
             <Label>API密钥</Label>
-            <Input
-              type="password"
-              v-model="configForm.config.apiKey"
-              placeholder="输入API密钥"
-            />
+            <Input type="password" v-model="configForm.config.apiKey" placeholder="输入API密钥" />
           </div>
 
           <div class="space-y-2">
             <Label>模型名称</Label>
-            <Input
-              v-model="configForm.config.model"
-              placeholder="gpt-4o-mini"
-            />
+            <Input v-model="configForm.config.model" placeholder="gpt-4o-mini" />
           </div>
 
           <div class="space-y-2">
             <Label>温度参数 ({{ configForm.config.temperature }})</Label>
-            <Slider
-              :model-value="[configForm.config.temperature]"
-              @update:model-value="updateTemperature"
-              :min="0"
-              :max="2"
-              :step="0.1"
-            />
+            <Slider :model-value="[configForm.config.temperature]" @update:model-value="updateTemperature" :min="0"
+              :max="2" :step="0.1" />
           </div>
 
           <div class="flex items-center justify-between">
             <Label>启用思考模式</Label>
             <Switch v-model="configForm.config.enable_thinking" />
+          </div>
+
+          <!-- API连接测试 -->
+          <div class="border-t border-border pt-4">
+            <div class="flex items-center justify-between mb-2">
+              <Label class="text-sm font-medium">API连接测试</Label>
+              <Button @click="testApiConnection"
+                :disabled="isTestingConnection || !configForm.config.apiKey || !configForm.config.apiEndpoint" size="sm"
+                variant="outline">
+                <span v-if="isTestingConnection" class="flex items-center">
+                  <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1"></div>
+                  测试中...
+                </span>
+                <span v-else>测试连接</span>
+              </Button>
+            </div>
+
+            <!-- 测试结果显示 -->
+            <div v-if="testResult" class="text-sm p-2 rounded-md" :class="{
+              'bg-green-50 text-green-700 border border-green-200': testResult.success,
+              'bg-red-50 text-red-700 border border-red-200': !testResult.success
+            }">
+              <div class="flex items-center">
+                <CheckCircle2Icon v-if="testResult.success" class="h-4 w-4 mr-1" />
+                <XCircle v-else class="h-4 w-4 mr-1" />
+                <span class="font-medium">
+                  {{ testResult.success ? 'API连接成功' : 'API连接失败' }}
+                </span>
+              </div>
+              <div v-if="testResult.message" class="mt-1 text-xs">
+                {{ testResult.message }}
+              </div>
+              <div v-if="testResult.success && testResult.model" class="mt-1 text-xs">
+                检测到模型: {{ testResult.model }}
+              </div>
+            </div>
           </div>
         </CardContent>
         <CardFooter class="flex justify-end space-x-2">
@@ -256,8 +275,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
+import { testApiConnection as performApiTest, ApiTestResult } from '@/src/utils';
 import {
   UserSettings,
   DEFAULT_SETTINGS,
@@ -300,6 +320,7 @@ import {
   Server as ServerIcon,
   Cloud as CloudIcon,
   Globe as GlobeIcon,
+  XCircle,
 } from 'lucide-vue-next';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
@@ -380,13 +401,13 @@ const handleActiveConfigChange = async () => {
 
 const editConfig = (config: ApiConfigItem) => {
   editingConfig.value = config;
-  
+
   // 检查是否是预定义的服务商
   const predefinedProvider = Object.keys(providerConfigs).find(
     key => providerConfigs[key as keyof typeof providerConfigs].name === config.provider ||
-           key === config.provider
+      key === config.provider
   );
-  
+
   configForm.value = {
     name: config.name,
     provider: predefinedProvider || 'custom',
@@ -433,7 +454,7 @@ const saveConfig = async () => {
 
   try {
     // 确定最终的provider值
-    const finalProvider = configForm.value.provider === 'custom' 
+    const finalProvider = configForm.value.provider === 'custom'
       ? (configForm.value.customProviderName || 'custom')
       : configForm.value.provider;
 
@@ -463,9 +484,66 @@ const saveConfig = async () => {
   }
 };
 
+// 测试连接状态
+const isTestingConnection = ref(false);
+const testResult = ref<ApiTestResult | null>(null);
+
+// 卡片测试状态
+const cardTestingStates = ref<Record<string, boolean>>({});
+const cardTestResults = ref<Record<string, ApiTestResult>>({});
+
+// 卡片测试结果定时器
+const cardTestTimers = ref<Record<string, NodeJS.Timeout>>({});
+
+// 测试配置对话框中的API连接
+const testApiConnection = async () => {
+  if (!configForm.value.config.apiKey || !configForm.value.config.apiEndpoint) {
+    return;
+  }
+
+  isTestingConnection.value = true;
+  testResult.value = null;
+
+  try {
+    testResult.value = await performApiTest(configForm.value.config);
+  } finally {
+    isTestingConnection.value = false;
+  }
+};
+
+// 测试卡片配置的API连接
+const testCardApiConnection = async (config: ApiConfigItem) => {
+  if (!config.config.apiKey || !config.config.apiEndpoint) {
+    return;
+  }
+
+  // 清除之前的定时器
+  if (cardTestTimers.value[config.id]) {
+    clearTimeout(cardTestTimers.value[config.id]);
+    delete cardTestTimers.value[config.id];
+  }
+
+  cardTestingStates.value[config.id] = true;
+  delete cardTestResults.value[config.id];
+
+  try {
+    cardTestResults.value[config.id] = await performApiTest(config.config);
+    
+    // 设置5秒后自动清除结果
+    cardTestTimers.value[config.id] = setTimeout(() => {
+      delete cardTestResults.value[config.id];
+      delete cardTestTimers.value[config.id];
+    }, 5000);
+  } finally {
+    cardTestingStates.value[config.id] = false;
+  }
+};
+
 const cancelEdit = () => {
   showAddDialog.value = false;
   editingConfig.value = null;
+  isTestingConnection.value = false;
+  testResult.value = null;
   configForm.value = {
     name: '',
     provider: '',
@@ -500,7 +578,20 @@ const notifyConfigChange = () => {
   }
 };
 
+// 清理所有定时器
+const clearAllTestTimers = () => {
+  Object.values(cardTestTimers.value).forEach(timer => {
+    clearTimeout(timer);
+  });
+  cardTestTimers.value = {};
+};
+
 onMounted(async () => {
   await loadSettings();
+});
+
+// 组件卸载时清理定时器
+onUnmounted(() => {
+  clearAllTestTimers();
 });
 </script>
