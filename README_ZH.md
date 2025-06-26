@@ -121,7 +121,11 @@
   <img src="images/home-dark1.png" alt="深色主题变体" style="width:30%; margin:5px; border-radius:6px"/>
   <img src="images/home-light.png" alt="浅色主题翻译效果" style="width:30%; margin:5px; border-radius:6px"/>
   <p><i>🌗 主题适配: 深色/浅色主题智能切换，现代化视觉体验</i></p>
+  <img src="images/set-base.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
+  <img src="images/set-ai.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
+  <p><i>👍 设置页支持多种配置</i></p>
 </div>
+
 
 ### 🌍 多语言学习场景
 <div style="width:100%" align="center">

@@ -123,6 +123,9 @@ This extension is built with [Web Extension API](https://developer.mozilla.org/e
   <img src="images/home-dark1.png" alt="Dark theme variant" style="width:30%; margin:5px; border-radius:6px"/>
   <img src="images/home-light.png" alt="Light theme translation effects" style="width:30%; margin:5px; border-radius:6px"/>
   <p><i>🌗 Theme Adaptation: Smart dark/light theme switching with modern visual experience</i></p>
+  <img src="images/set-base.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
+  <img src="images/set-ai.png" alt="设置" style="width:100%; margin:5px; border-radius:6px;"/>
+  <p><i>👍 Settings page supports multiple configurations </i></p>
 </div>
 
 ### 🌍 Multi-language Learning Scenarios
