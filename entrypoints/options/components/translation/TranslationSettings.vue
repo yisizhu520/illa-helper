@@ -177,9 +177,29 @@
 
           <div class="space-y-2">
             <Label>服务提供商</Label>
-            <Input
+            <Select
               v-model="configForm.provider"
-              placeholder="如: openai, deepseek, silicon-flow"
+              @update:model-value="handleProviderChange"
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="选择服务提供商" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openai">OpenAI</SelectItem>
+                <SelectItem value="deepseek">DeepSeek</SelectItem>
+                <SelectItem value="silicon-flow">Silicon Flow</SelectItem>
+                <SelectItem value="anthropic">Anthropic</SelectItem>
+                <SelectItem value="custom">自定义</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <!-- 自定义服务商名称输入 -->
+          <div v-if="configForm.provider === 'custom'" class="space-y-2">
+            <Label>自定义服务商名称</Label>
+            <Input
+              v-model="configForm.customProviderName"
+              placeholder="输入自定义服务商名称"
             />
           </div>
 
@@ -289,14 +309,40 @@ const storageManager = new StorageManager();
 const showAddDialog = ref(false);
 const editingConfig = ref<ApiConfigItem | null>(null);
 
+// 预定义的服务提供商配置
+const providerConfigs = {
+  'openai': {
+    name: 'OpenAI',
+    apiEndpoint: 'https://api.openai.com/v1/chat/completions',
+    defaultModel: 'gpt-4o-mini'
+  },
+  'deepseek': {
+    name: 'DeepSeek',
+    apiEndpoint: 'https://api.deepseek.com/v1/chat/completions',
+    defaultModel: 'deepseek-chat'
+  },
+  'silicon-flow': {
+    name: 'Silicon Flow',
+    apiEndpoint: 'https://api.siliconflow.cn/v1/chat/completions',
+    defaultModel: 'qwen/Qwen2.5-7B-Instruct'
+  },
+  'anthropic': {
+    name: 'Anthropic',
+    apiEndpoint: 'https://api.anthropic.com/v1/messages',
+    defaultModel: 'claude-3-5-sonnet-20241022'
+  }
+};
+
 // 配置表单
 const configForm = ref<{
   name: string;
   provider: string;
+  customProviderName?: string;
   config: ApiConfig;
 }>({
   name: '',
   provider: '',
+  customProviderName: '',
   config: {
     apiKey: '',
     apiEndpoint: '',
@@ -334,9 +380,17 @@ const handleActiveConfigChange = async () => {
 
 const editConfig = (config: ApiConfigItem) => {
   editingConfig.value = config;
+  
+  // 检查是否是预定义的服务商
+  const predefinedProvider = Object.keys(providerConfigs).find(
+    key => providerConfigs[key as keyof typeof providerConfigs].name === config.provider ||
+           key === config.provider
+  );
+  
   configForm.value = {
     name: config.name,
-    provider: config.provider,
+    provider: predefinedProvider || 'custom',
+    customProviderName: predefinedProvider ? '' : config.provider,
     config: { ...config.config },
   };
 };
@@ -359,6 +413,18 @@ const updateTemperature = (value: number[] | undefined) => {
   configForm.value.config.temperature = (value && value[0]) || 0.7;
 };
 
+const handleProviderChange = (provider: any) => {
+  const providerValue = provider as string;
+  if (providerValue && providerValue !== 'custom' && providerConfigs[providerValue as keyof typeof providerConfigs]) {
+    const config = providerConfigs[providerValue as keyof typeof providerConfigs];
+    configForm.value.config.apiEndpoint = config.apiEndpoint;
+    // 如果配置名称为空，自动设置为服务商名称
+    if (!configForm.value.name) {
+      configForm.value.name = config.name;
+    }
+  }
+};
+
 const saveConfig = async () => {
   if (!configForm.value.name || !configForm.value.config.apiKey) {
     alert('请填写配置名称和API密钥');
@@ -366,17 +432,23 @@ const saveConfig = async () => {
   }
 
   try {
+    // 确定最终的provider值
+    const finalProvider = configForm.value.provider === 'custom' 
+      ? (configForm.value.customProviderName || 'custom')
+      : configForm.value.provider;
+
     if (editingConfig.value) {
       await storageManager.updateApiConfig(
         editingConfig.value.id,
         configForm.value.name,
+        finalProvider,
         configForm.value.config,
       );
       emit('saveMessage', '配置已更新');
     } else {
       await storageManager.addApiConfig(
         configForm.value.name,
-        configForm.value.provider || 'custom',
+        finalProvider,
         configForm.value.config,
       );
       emit('saveMessage', '配置已添加');
@@ -397,6 +469,7 @@ const cancelEdit = () => {
   configForm.value = {
     name: '',
     provider: '',
+    customProviderName: '',
     config: {
       apiKey: '',
       apiEndpoint: '',

@@ -189,7 +189,7 @@ function createDefaultApiConfigItem(): ApiConfigItem {
   return {
     id: 'default-config',
     name: '默认配置',
-    provider: 'openai',
+    provider: 'OpenAI',
     config: DEFAULT_API_CONFIG,
     isDefault: true,
     createdAt: now,

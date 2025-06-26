@@ -143,6 +143,7 @@ export class StorageManager {
   async updateApiConfig(
     configId: string,
     name: string,
+    provider: string,
     config: ApiConfig,
   ): Promise<boolean> {
     try {
@@ -159,6 +160,7 @@ export class StorageManager {
       settings.apiConfigs[configIndex] = {
         ...settings.apiConfigs[configIndex],
         name,
+        provider,
         config,
         updatedAt: Date.now(),
       };
