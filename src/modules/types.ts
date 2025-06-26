@@ -100,7 +100,7 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0.7,
   enable_thinking: false,
   includeThinkingParam: true,
-  customParams: "",
+  customParams: '',
   phraseEnabled: true,
 };
 

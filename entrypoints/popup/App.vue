@@ -1,5 +1,13 @@
 <script lang="ts" setup>
-import { ref, onMounted, watch, computed, reactive, nextTick, onUnmounted } from 'vue';
+import {
+  ref,
+  onMounted,
+  watch,
+  computed,
+  reactive,
+  nextTick,
+  onUnmounted,
+} from 'vue';
 import {
   TranslationStyle,
   TriggerMode,
@@ -220,7 +228,6 @@ const handleActiveConfigChange = async () => {
 
     // 通知content script配置已更新
     await notifySettingsChanged(settings.value);
-
   } catch (error) {
     console.error('切换活跃配置失败:', error);
     showSavedMessage('切换配置失败');
@@ -584,8 +591,9 @@ const openOptionsPage = () => {
                       <span
                         class="test-result-message"
                         :title="testResult.message"
-                        >{{ testResult.message }}</span
                       >
+                        {{ testResult.message }}
+                      </span>
                     </div>
                   </Transition>
                   <button
@@ -597,9 +605,7 @@ const openOptionsPage = () => {
                   >
                     <div v-if="isTestingConnection" class="spinner"></div>
                     <ZapIcon v-else class="w-3 h-3" />
-                    <span>{{
-                      isTestingConnection ? '测试中' : '测试'
-                    }}</span>
+                    <span>{{ isTestingConnection ? '测试中' : '测试' }}</span>
                   </button>
                 </div>
               </div>

@@ -36,17 +36,17 @@ import { cleanMarkdownFromResponse } from '@/src/utils';
  */
 function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
   const merged = { ...baseParams };
-  
+
   // 保护的系统关键参数，不允许被覆盖
   const protectedKeys = ['model', 'messages', 'apiKey'];
-  
+
   if (!customParamsJson?.trim()) {
     return merged;
   }
-  
+
   try {
     const customParams = JSON.parse(customParamsJson);
-    
+
     // 合并自定义参数，但保护系统关键参数
     Object.entries(customParams).forEach(([key, value]) => {
       if (!protectedKeys.includes(key)) {
@@ -55,11 +55,10 @@ function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
         console.warn(`忽略受保护的参数: ${key}`);
       }
     });
-    
   } catch (error) {
     console.warn('自定义参数JSON解析失败:', error);
   }
-  
+
   return merged;
 }
 
@@ -274,7 +273,10 @@ export class AITranslationProvider implements IPhoneticProvider {
       }
 
       // 合并自定义参数
-      testRequestBody = mergeCustomParams(testRequestBody, this.apiConfig.customParams);
+      testRequestBody = mergeCustomParams(
+        testRequestBody,
+        this.apiConfig.customParams,
+      );
 
       const testResponse = await fetch(this.apiConfig.apiEndpoint, {
         method: 'POST',

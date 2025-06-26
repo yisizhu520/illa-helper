@@ -10,7 +10,7 @@ export default defineBackground(() => {
         const { StorageManager } = await import('@/src/modules/storageManager');
         const storageManager = new StorageManager();
         await storageManager.saveUserSettings(DEFAULT_SETTINGS);
-        console.log("DEFAULT_SETTINGS", DEFAULT_SETTINGS);
+        console.log('DEFAULT_SETTINGS', DEFAULT_SETTINGS);
       } catch (error) {
         console.error('保存默认设置失败:', error);
         // 回退到旧的保存方式

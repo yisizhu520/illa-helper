@@ -13,17 +13,17 @@ import { UserLevel, USER_LEVEL_OPTIONS, ApiConfig } from '@/src/modules/types';
  */
 function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
   const merged = { ...baseParams };
-  
+
   // 保护的系统关键参数，不允许被覆盖
   const protectedKeys = ['model', 'messages', 'apiKey'];
-  
+
   if (!customParamsJson?.trim()) {
     return merged;
   }
-  
+
   try {
     const customParams = JSON.parse(customParamsJson);
-    
+
     // 合并自定义参数，但保护系统关键参数
     Object.entries(customParams).forEach(([key, value]) => {
       if (!protectedKeys.includes(key)) {
@@ -32,11 +32,10 @@ function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
         console.warn(`忽略受保护的参数: ${key}`);
       }
     });
-    
   } catch (error) {
     console.warn('自定义参数JSON解析失败:', error);
   }
-  
+
   return merged;
 }
 
@@ -72,7 +71,9 @@ export interface ApiTestResult {
  * @param apiConfig API配置对象
  * @returns Promise<ApiTestResult> 测试结果
  */
-export async function testApiConnection(apiConfig: ApiConfig): Promise<ApiTestResult> {
+export async function testApiConnection(
+  apiConfig: ApiConfig,
+): Promise<ApiTestResult> {
   if (!apiConfig.apiKey || !apiConfig.apiEndpoint) {
     throw new Error('API密钥或端点未配置');
   }
@@ -84,11 +85,12 @@ export async function testApiConnection(apiConfig: ApiConfig): Promise<ApiTestRe
       messages: [
         {
           role: 'user',
-          content: 'Hello, this is a connection test. Please respond with "OK".'
-        }
+          content:
+            'Hello, this is a connection test. Please respond with "OK".',
+        },
       ],
       response_format: { type: 'json_object' },
-      max_tokens: 10
+      max_tokens: 10,
     };
 
     // 只有当配置允许传递思考参数时，才添加enable_thinking字段
@@ -103,23 +105,23 @@ export async function testApiConnection(apiConfig: ApiConfig): Promise<ApiTestRe
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiConfig.apiKey}`,
+        Authorization: `Bearer ${apiConfig.apiKey}`,
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify(requestBody),
     });
 
     if (response.ok) {
       const data = await response.json();
-      
+
       return {
         success: true,
         message: `状态码: ${response.status}`,
-        model: data.model || apiConfig.model
+        model: data.model || apiConfig.model,
       };
     } else {
       const errorData = await response.json().catch(() => null);
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-      
+
       if (errorData?.error?.message) {
         errorMessage = errorData.error.message;
       } else if (errorData?.message) {
@@ -128,13 +130,13 @@ export async function testApiConnection(apiConfig: ApiConfig): Promise<ApiTestRe
 
       return {
         success: false,
-        message: errorMessage
+        message: errorMessage,
       };
     }
   } catch (error: any) {
     return {
       success: false,
-      message: error.message || '网络连接错误'
+      message: error.message || '网络连接错误',
     };
   }
 }
