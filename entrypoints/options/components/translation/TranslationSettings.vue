@@ -63,48 +63,94 @@
 
     <!-- 配置管理 -->
     <Card>
-      <CardHeader>
+      <CardHeader class="pb-3">
         <CardTitle>
           <div class="flex items-center justify-between">
             <h2 class="text-2xl font-bold text-foreground">管理配置</h2>
-            <Button @click="showAddDialog = true">添加配置</Button>
+            <Button @click="showAddDialog = true" size="sm" variant="default">
+              <PlusCircle class="h-4 w-4 mr-1" /> 添加配置
+            </Button>
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent class="space-y-4">
-        <div class="space-y-3">
-          <div
-            v-for="config in settings.apiConfigs"
-            :key="config.id"
-            class="border rounded-lg p-4"
-            :class="{
-              'border-primary bg-primary/5':
-                config.id === settings.activeApiConfigId,
-            }"
-          >
-            <div class="flex items-center justify-between">
-              <div>
-                <h3 class="font-medium">{{ config.name }}</h3>
-                <div class="text-sm text-muted-foreground">
-                  {{ config.provider }} - {{ config.config.model }}
+      <CardContent class="pt-0">
+        <RadioGroup 
+          :model-value="settings.activeApiConfigId"
+          @update:model-value="(value) => { settings.activeApiConfigId = value; handleActiveConfigChange(); }"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div 
+              v-for="config in settings.apiConfigs" 
+              :key="config.id"
+              class="rounded-lg border bg-card p-3 hover:shadow-sm transition-shadow"
+              :class="{ 'border-primary border-2': config.id === settings.activeApiConfigId }"
+            >
+              <div class="flex items-center justify-between mb-1.5">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <ServerIcon v-if="config.provider.toLowerCase().includes('openai')" class="h-3.5 w-3.5 text-green-500" />
+                  <CloudIcon v-else-if="config.provider.toLowerCase().includes('cloud')" class="h-3.5 w-3.5 text-blue-500" />
+                  <GlobeIcon v-else class="h-3.5 w-3.5 text-primary" />
+                  <h3 class="font-semibold text-sm truncate" :title="config.name">
+                    {{ config.name }}
+                  </h3>
+                </div>
+                <div class="flex items-center">
+                  <RadioGroupItem :value="config.id" :id="`config-${config.id}`" />
+                  <label :for="`config-${config.id}`" class="text-xs ml-1.5 text-muted-foreground cursor-pointer">
+                    激活
+                  </label>
                 </div>
               </div>
-              <div class="flex space-x-2">
-                <Button @click="editConfig(config)" variant="outline" size="sm">
-                  编辑
-                </Button>
-                <Button
-                  v-if="!config.isDefault"
-                  @click="deleteConfig(config.id)"
-                  variant="destructive"
-                  size="sm"
-                >
-                  删除
-                </Button>
+              
+              <div class="text-xs text-muted-foreground space-y-0.5 mb-2">
+                <div class="flex items-center gap-1">
+                  <HashIcon class="h-3 w-3" />
+                  <span class="truncate" :title="config.provider">{{ config.provider }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <CodeIcon class="h-3 w-3" />
+                  <span class="truncate" :title="config.config.model">{{ config.config.model }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <KeyIcon class="h-3 w-3" />
+                  <span class="flex items-center">
+                    <span 
+                      class="inline-block w-1.5 h-1.5 rounded-full mr-1"
+                      :class="config.config.apiKey ? 'bg-green-500' : 'bg-red-500'"
+                    ></span>
+                    {{ config.config.apiKey ? '已配置' : '未配置' }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-end pt-1 border-t border-border/40">
+                <div class="flex items-center gap-1">
+                  <Button @click="editConfig(config)" size="sm" variant="ghost" class="h-6 w-6 p-0">
+                    <PencilIcon class="h-3 w-3" />
+                  </Button>
+                  <Button
+                    v-if="!config.isDefault"
+                    @click="deleteConfig(config.id)"
+                    size="sm"
+                    variant="ghost"
+                    class="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2Icon class="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </div>
+            
+            <!-- 空状态 -->
+            <div 
+              v-if="settings.apiConfigs.length === 0" 
+              class="rounded-lg border border-dashed p-6 text-center text-muted-foreground col-span-full"
+            >
+              <FolderOpenIcon class="h-8 w-8 mx-auto mb-2 opacity-50" />
+              暂无配置，点击上方"添加配置"按钮创建
+            </div>
           </div>
-        </div>
+        </RadioGroup>
       </CardContent>
     </Card>
 
@@ -217,6 +263,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from '@/components/ui/radio-group';
+import {
+  PlusCircle,
+  CheckCircle2 as CheckCircle2Icon,
+  Hash as HashIcon,
+  Code as CodeIcon,
+  Key as KeyIcon,
+  Zap as ZapIcon,
+  Pencil as PencilIcon,
+  Trash2 as Trash2Icon,
+  FolderOpen as FolderOpenIcon,
+  Server as ServerIcon,
+  Cloud as CloudIcon,
+  Globe as GlobeIcon,
+} from 'lucide-vue-next';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
 const storageManager = new StorageManager();
