@@ -27,6 +27,7 @@ import {
 import { ApiConfig } from '../../types';
 import { API_CONSTANTS } from '../config';
 import { cleanMarkdownFromResponse } from '@/src/utils';
+import { rateLimitManager } from '../../rateLimit';
 
 /**
  * 合并自定义参数到基础参数对象
@@ -157,7 +158,7 @@ export class AITranslationProvider implements IPhoneticProvider {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: cleanWord },
         ],
-        temperature: this.apiConfig.temperature || 0.3, // 降低温度以获得更稳定的翻译结果
+        temperature: this.apiConfig.temperature || 0, // 降低温度以获得更稳定的翻译结果
         max_tokens: 100, // 限制回复长度，避免过长的响应
       };
 
@@ -169,16 +170,28 @@ export class AITranslationProvider implements IPhoneticProvider {
       // 合并自定义参数
       requestBody = mergeCustomParams(requestBody, this.apiConfig.customParams);
 
-      // 调用AI API
-      const response = await fetch(this.apiConfig.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiConfig.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: AbortSignal.timeout(10000), // 10秒超时
-      });
+      // 通过速率限制器执行API请求
+      const rateLimiter = rateLimitManager.getLimiter(
+        this.apiConfig.apiEndpoint,
+        this.apiConfig.requestsPerSecond || 0,
+        true,
+      );
+
+      // 将API调用包装为函数，通过executeBatch执行以确保串行
+      const apiRequestFunction = async () => {
+        return fetch(this.apiConfig.apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiConfig.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(10000), // 10秒超时
+        });
+      };
+
+      // 通过executeBatch执行单个请求，确保串行
+      const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
 
       if (!response.ok) {
         throw new Error(
@@ -245,9 +258,15 @@ export class AITranslationProvider implements IPhoneticProvider {
    * 批量获取音标信息
    */
   async getBatchPhonetics(words: string[]): Promise<PhoneticResult[]> {
-    // AI翻译API不适合批量请求，使用并发单个请求
-    const promises = words.map((word) => this.getPhonetic(word));
-    return Promise.all(promises);
+    // 使用速率限制器的批量处理功能，智能控制并发
+    const rateLimiter = rateLimitManager.getLimiter(
+      this.apiConfig.apiEndpoint,
+      this.apiConfig.requestsPerSecond || 0,
+      true,
+    );
+
+    const requestFunctions = words.map((word) => () => this.getPhonetic(word));
+    return rateLimiter.executeBatch(requestFunctions);
   }
 
   /**
@@ -278,15 +297,29 @@ export class AITranslationProvider implements IPhoneticProvider {
         this.apiConfig.customParams,
       );
 
-      const testResponse = await fetch(this.apiConfig.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiConfig.apiKey}`,
-        },
-        body: JSON.stringify(testRequestBody),
-        signal: AbortSignal.timeout(5000), // 5秒超时
-      });
+      // 通过速率限制器执行测试请求
+      const rateLimiter = rateLimitManager.getLimiter(
+        this.apiConfig.apiEndpoint,
+        this.apiConfig.requestsPerSecond || 0,
+        true,
+      );
+
+      const testRequestFunction = async () => {
+        return fetch(this.apiConfig.apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${this.apiConfig.apiKey}`,
+          },
+          body: JSON.stringify(testRequestBody),
+          signal: AbortSignal.timeout(5000), // 5秒超时
+        });
+      };
+
+      // 通过executeBatch执行测试请求
+      const [testResponse] = await rateLimiter.executeBatch([
+        testRequestFunction,
+      ]);
 
       return testResponse.ok;
     } catch {

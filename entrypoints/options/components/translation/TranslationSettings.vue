@@ -335,6 +335,27 @@
             />
           </div>
 
+          <div class="space-y-2">
+            <Label>
+              每秒请求限制 ({{
+                configForm.config.requestsPerSecond === 0
+                  ? '无限制'
+                  : configForm.config.requestsPerSecond + ' 次/秒'
+              }})
+            </Label>
+            <p class="text-xs text-muted-foreground">
+              设置每秒最大API请求数，0表示无限制。建议设置适当限制避免触发API
+              429错误。
+            </p>
+            <Input
+              type="number"
+              v-model.number="configForm.config.requestsPerSecond"
+              :min="0"
+              :max="100"
+              placeholder="0 = 无限制"
+            />
+          </div>
+
           <div class="flex items-center justify-between">
             <div class="space-y-1">
               <Label>启用思考模式</Label>
@@ -626,11 +647,12 @@ const configForm = ref<{
     apiKey: '',
     apiEndpoint: '',
     model: '',
-    temperature: 0.7,
+    temperature: 0,
     enable_thinking: false,
     includeThinkingParam: true,
     customParams: '',
     phraseEnabled: true,
+    requestsPerSecond: 0,
   },
 });
 
@@ -697,7 +719,7 @@ const deleteConfig = async (configId: string) => {
 };
 
 const updateTemperature = (value: number[] | undefined) => {
-  configForm.value.config.temperature = (value && value[0]) || 0.7;
+  configForm.value.config.temperature = (value && value[0]) || 0;
 };
 
 // 自定义参数相关方法
@@ -873,11 +895,12 @@ const cancelEdit = () => {
       apiKey: '',
       apiEndpoint: '',
       model: '',
-      temperature: 0.7,
+      temperature: 0,
       enable_thinking: false,
       includeThinkingParam: true,
       customParams: '',
       phraseEnabled: true,
+      requestsPerSecond: 0,
     },
   };
 };

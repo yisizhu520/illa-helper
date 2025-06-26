@@ -12,6 +12,7 @@ import {
   DEFAULT_API_CONFIG,
 } from './types';
 import { cleanMarkdownFromResponse } from '@/src/utils';
+import { rateLimitManager } from './rateLimit';
 
 /**
  * 合并自定义参数到基础参数对象
@@ -170,14 +171,26 @@ export class ApiService {
         activeConfig.config.customParams,
       );
 
-      const response = await fetch(activeConfig.config.apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${activeConfig.config.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      });
+      // 通过速率限制器执行API请求
+      const rateLimiter = rateLimitManager.getLimiter(
+        activeConfig.config.apiEndpoint,
+        activeConfig.config.requestsPerSecond || 0,
+        true,
+      );
+
+      const apiRequestFunction = async () => {
+        return fetch(activeConfig.config.apiEndpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${activeConfig.config.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
+      };
+
+      // 通过executeBatch执行单个请求，确保串行
+      const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
 
       if (!response.ok) {
         console.error(`API 请求失败: ${response.status}`);

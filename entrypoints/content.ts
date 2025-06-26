@@ -114,7 +114,7 @@ function createReplacementConfig(settings: UserSettings): ReplacementConfig {
       apiKey: '',
       apiEndpoint: '',
       model: '',
-      temperature: 0.7,
+      temperature: 0,
       enable_thinking: false,
       phraseEnabled: true,
     },

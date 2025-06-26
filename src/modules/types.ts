@@ -36,6 +36,7 @@ export interface ApiConfig {
   includeThinkingParam?: boolean;
   customParams?: string;
   phraseEnabled?: boolean;
+  requestsPerSecond?: number; // 每秒最大请求数
 }
 
 // 新增：API配置项接口，包含配置的元数据
@@ -97,11 +98,12 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   apiKey: import.meta.env.VITE_WXT_DEFAULT_API_KEY,
   apiEndpoint: import.meta.env.VITE_WXT_DEFAULT_API_ENDPOINT,
   model: import.meta.env.VITE_WXT_DEFAULT_MODEL,
-  temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0.7,
+  temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0,
   enable_thinking: false,
   includeThinkingParam: true,
   customParams: '',
   phraseEnabled: true,
+  requestsPerSecond: 0, // 默认无限制，0表示不限制
 };
 
 export enum UserLevel {

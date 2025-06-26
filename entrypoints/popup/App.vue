@@ -167,7 +167,6 @@ const manualTranslate = async () => {
 };
 
 const openAdvancedSettings = () => {
-  console.error('browser.runtime', browser);
   const url = browser.runtime.getURL('/options.html');
   window.open(url);
 };
