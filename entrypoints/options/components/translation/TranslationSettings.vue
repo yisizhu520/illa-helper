@@ -223,8 +223,107 @@
           </div>
 
           <div class="flex items-center justify-between">
-            <Label>启用思考模式</Label>
+            <div class="space-y-1">
+              <Label>启用思考模式</Label>
+              <p class="text-xs text-muted-foreground">
+                控制是否启用AI的思考过程输出
+              </p>
+            </div>
             <Switch v-model="configForm.config.enable_thinking" />
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div class="space-y-1">
+              <Label>传递思考参数</Label>
+              <p class="text-xs text-muted-foreground">
+                控制是否向API发送思考参数（某些模型不支持此参数）
+              </p>
+            </div>
+            <Switch v-model="configForm.config.includeThinkingParam" />
+          </div>
+
+          <!-- 自定义API参数 -->
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <Label>自定义API参数</Label>
+              <p class="text-xs text-muted-foreground">
+                支持添加额外的API参数，如top_p、presence_penalty等（JSON格式）
+              </p>
+            </div>
+            
+            <div class="space-y-2">
+              <div class="relative">
+                <textarea
+                  v-model="configForm.config.customParams"
+                  @input="validateCustomParams"
+                  placeholder='{"top_p": 0.9, "presence_penalty": 0.1, "max_tokens": 1000}'
+                  class="w-full h-32 p-3 text-sm font-mono border rounded-md resize-none"
+                  :class="{
+                    'border-red-500 focus:border-red-500': customParamsError,
+                    'border-green-500 focus:border-green-500': customParamsValid && configForm.config.customParams?.trim()
+                  }"
+                />
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                  <Button 
+                    @click="formatCustomParams" 
+                    size="sm" 
+                    variant="outline"
+                    :disabled="!configForm.config.customParams?.trim()"
+                  >
+                    格式化JSON
+                  </Button>
+                  <Button 
+                    @click="clearCustomParams" 
+                    size="sm" 
+                    variant="outline"
+                    :disabled="!configForm.config.customParams?.trim()"
+                  >
+                    清空
+                  </Button>
+                  <Button 
+                    @click="showCustomParamsExample = !showCustomParamsExample" 
+                    size="sm" 
+                    variant="ghost"
+                  >
+                    {{ showCustomParamsExample ? '隐藏示例' : '显示示例' }}
+                  </Button>
+                </div>
+                
+                <div v-if="configForm.config.customParams?.trim()" class="flex items-center space-x-1">
+                  <div v-if="customParamsValid" class="flex items-center text-green-600 text-xs">
+                    <CheckCircle2Icon class="h-3 w-3 mr-1" />
+                    JSON格式正确
+                  </div>
+                  <div v-else-if="customParamsError" class="flex items-center text-red-600 text-xs">
+                    <XCircle class="h-3 w-3 mr-1" />
+                    JSON格式错误
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 错误信息 -->
+              <div v-if="customParamsError" class="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
+                {{ customParamsError }}
+              </div>
+              
+              <!-- 参数示例 -->
+              <div v-if="showCustomParamsExample" class="text-xs bg-muted p-3 rounded border">
+                <div class="font-medium mb-2">常用参数示例：</div>
+                <pre class="text-muted-foreground whitespace-pre-wrap">{
+  "top_p": 0.9,
+  "presence_penalty": 0.1,
+  "frequency_penalty": 0.1,
+  "max_tokens": 1000,
+  "stop": ["\n", "###"]
+}</pre>
+                <div class="mt-2 text-muted-foreground">
+                  <strong>注意：</strong>system参数如model、messages、apiKey等将被系统保护，不会被覆盖。
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- API连接测试 -->
@@ -330,6 +429,11 @@ const storageManager = new StorageManager();
 const showAddDialog = ref(false);
 const editingConfig = ref<ApiConfigItem | null>(null);
 
+// 自定义参数状态
+const customParamsError = ref<string>('');
+const customParamsValid = ref<boolean>(false);
+const showCustomParamsExample = ref<boolean>(false);
+
 // 预定义的服务提供商配置
 const providerConfigs = {
   'openai': {
@@ -370,6 +474,8 @@ const configForm = ref<{
     model: '',
     temperature: 0.7,
     enable_thinking: false,
+    includeThinkingParam: true,
+    customParams: '',
     phraseEnabled: true,
   },
 });
@@ -414,6 +520,11 @@ const editConfig = (config: ApiConfigItem) => {
     customProviderName: predefinedProvider ? '' : config.provider,
     config: { ...config.config },
   };
+  
+  // 加载配置后验证自定义参数
+  if (configForm.value.config.customParams) {
+    validateCustomParams();
+  }
 };
 
 const deleteConfig = async (configId: string) => {
@@ -432,6 +543,49 @@ const deleteConfig = async (configId: string) => {
 
 const updateTemperature = (value: number[] | undefined) => {
   configForm.value.config.temperature = (value && value[0]) || 0.7;
+};
+
+// 自定义参数相关方法
+const validateCustomParams = () => {
+  const params = configForm.value.config.customParams?.trim();
+  
+  if (!params) {
+    customParamsError.value = '';
+    customParamsValid.value = false;
+    return;
+  }
+  
+  try {
+    JSON.parse(params);
+    customParamsError.value = '';
+    customParamsValid.value = true;
+  } catch (error) {
+    customParamsValid.value = false;
+    if (error instanceof SyntaxError) {
+      customParamsError.value = `JSON格式错误: ${error.message}`;
+    } else {
+      customParamsError.value = 'JSON解析失败';
+    }
+  }
+};
+
+const formatCustomParams = () => {
+  const params = configForm.value.config.customParams?.trim();
+  if (!params) return;
+  
+  try {
+    const parsed = JSON.parse(params);
+    configForm.value.config.customParams = JSON.stringify(parsed, null, 2);
+    validateCustomParams();
+  } catch (error) {
+    // 格式化失败时不做任何操作，保持原有内容
+  }
+};
+
+const clearCustomParams = () => {
+  configForm.value.config.customParams = '';
+  customParamsError.value = '';
+  customParamsValid.value = false;
 };
 
 const handleProviderChange = (provider: any) => {
@@ -544,6 +698,12 @@ const cancelEdit = () => {
   editingConfig.value = null;
   isTestingConnection.value = false;
   testResult.value = null;
+  
+  // 重置自定义参数状态
+  customParamsError.value = '';
+  customParamsValid.value = false;
+  showCustomParamsExample.value = false;
+  
   configForm.value = {
     name: '',
     provider: '',
@@ -554,6 +714,8 @@ const cancelEdit = () => {
       model: '',
       temperature: 0.7,
       enable_thinking: false,
+      includeThinkingParam: true,
+      customParams: '',
       phraseEnabled: true,
     },
   };

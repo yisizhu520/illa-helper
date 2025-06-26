@@ -13,6 +13,41 @@ import {
 } from './types';
 import { cleanMarkdownFromResponse } from '@/src/utils';
 
+/**
+ * 合并自定义参数到基础参数对象
+ * @param baseParams 基础参数对象
+ * @param customParamsJson 自定义参数JSON字符串
+ * @returns 合并后的参数对象
+ */
+function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
+  const merged = { ...baseParams };
+  
+  // 保护的系统关键参数，不允许被覆盖
+  const protectedKeys = ['model', 'messages', 'apiKey'];
+  
+  if (!customParamsJson?.trim()) {
+    return merged;
+  }
+  
+  try {
+    const customParams = JSON.parse(customParamsJson);
+    
+    // 合并自定义参数，但保护系统关键参数
+    Object.entries(customParams).forEach(([key, value]) => {
+      if (!protectedKeys.includes(key)) {
+        merged[key] = value;
+      } else {
+        console.warn(`忽略受保护的参数: ${key}`);
+      }
+    });
+    
+  } catch (error) {
+    console.warn('自定义参数JSON解析失败:', error);
+  }
+  
+  return merged;
+}
+
 // API 服务类
 export class ApiService {
   private config: ApiConfig;
@@ -112,7 +147,7 @@ export class ApiService {
         );
       }
 
-      const requestBody = {
+      let requestBody: any = {
         model: activeConfig.config.model,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -123,8 +158,15 @@ export class ApiService {
         ],
         temperature: activeConfig.config.temperature,
         response_format: { type: 'json_object' },
-        enable_thinking: activeConfig.config.enable_thinking,
       };
+
+      // 只有当配置允许传递思考参数时，才添加enable_thinking字段
+      if (activeConfig.config.includeThinkingParam) {
+        requestBody.enable_thinking = activeConfig.config.enable_thinking;
+      }
+
+      // 合并自定义参数
+      requestBody = mergeCustomParams(requestBody, activeConfig.config.customParams);
 
       const response = await fetch(activeConfig.config.apiEndpoint, {
         method: 'POST',

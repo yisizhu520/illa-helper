@@ -6,6 +6,41 @@
 import { UserLevel, USER_LEVEL_OPTIONS, ApiConfig } from '@/src/modules/types';
 
 /**
+ * 合并自定义参数到基础参数对象
+ * @param baseParams 基础参数对象
+ * @param customParamsJson 自定义参数JSON字符串
+ * @returns 合并后的参数对象
+ */
+function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
+  const merged = { ...baseParams };
+  
+  // 保护的系统关键参数，不允许被覆盖
+  const protectedKeys = ['model', 'messages', 'apiKey'];
+  
+  if (!customParamsJson?.trim()) {
+    return merged;
+  }
+  
+  try {
+    const customParams = JSON.parse(customParamsJson);
+    
+    // 合并自定义参数，但保护系统关键参数
+    Object.entries(customParams).forEach(([key, value]) => {
+      if (!protectedKeys.includes(key)) {
+        merged[key] = value;
+      } else {
+        console.warn(`忽略受保护的参数: ${key}`);
+      }
+    });
+    
+  } catch (error) {
+    console.warn('自定义参数JSON解析失败:', error);
+  }
+  
+  return merged;
+}
+
+/**
  * 获取 UserLevel 的中文显示名称
  * @param level UserLevel 枚举值
  * @returns 中文显示名称
@@ -43,25 +78,34 @@ export async function testApiConnection(apiConfig: ApiConfig): Promise<ApiTestRe
   }
 
   try {
+    let requestBody: any = {
+      model: apiConfig.model,
+      temperature: apiConfig.temperature,
+      messages: [
+        {
+          role: 'user',
+          content: 'Hello, this is a connection test. Please respond with "OK".'
+        }
+      ],
+      response_format: { type: 'json_object' },
+      max_tokens: 10
+    };
+
+    // 只有当配置允许传递思考参数时，才添加enable_thinking字段
+    if (apiConfig.includeThinkingParam) {
+      requestBody.enable_thinking = apiConfig.enable_thinking;
+    }
+
+    // 合并自定义参数
+    requestBody = mergeCustomParams(requestBody, apiConfig.customParams);
+
     const response = await fetch(apiConfig.apiEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiConfig.apiKey}`,
       },
-      body: JSON.stringify({
-        model: apiConfig.model,
-        temperature: apiConfig.temperature,
-        enable_thinking: apiConfig.enable_thinking,
-        messages: [
-          {
-            role: 'user',
-            content: 'Hello, this is a connection test. Please respond with "OK".'
-          }
-        ],
-        response_format: { type: 'json_object' },
-        max_tokens: 10
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (response.ok) {

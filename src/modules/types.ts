@@ -33,6 +33,8 @@ export interface ApiConfig {
   model: string;
   temperature: number;
   enable_thinking?: boolean;
+  includeThinkingParam?: boolean;
+  customParams?: string;
   phraseEnabled?: boolean;
 }
 
@@ -97,6 +99,8 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   model: import.meta.env.VITE_WXT_DEFAULT_MODEL,
   temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0.7,
   enable_thinking: false,
+  includeThinkingParam: true,
+  customParams: "",
   phraseEnabled: true,
 };
 

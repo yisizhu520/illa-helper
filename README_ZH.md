@@ -112,6 +112,7 @@
 ### 🎬 动态演示
 <div align="center">
   <img src="images/Demo.gif" alt="浸入式语言学习助手完整演示" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
+  <img src="images/demo1.gif" alt="浸入式语言学习助手完整演示" style="max-width:80%; border-radius:8px; box-shadow:0 4px 8px rgba(0,0,0,0.1)"/>
   <p><i>🎯 完整演示: 从智能翻译到发音学习的一站式沉浸式体验</i></p>
 </div>
 
