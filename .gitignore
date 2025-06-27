@@ -30,3 +30,5 @@ web-ext.config.ts
 .output/
 .wxt/chrome-data
 .wxt/firefox-data
+.env
+.env.development
