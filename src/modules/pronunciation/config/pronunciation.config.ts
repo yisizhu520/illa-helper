@@ -3,6 +3,8 @@
  */
 
 import { CACHE_CONSTANTS, PROVIDER_CONSTANTS } from './constants';
+import type { TooltipHotkey } from '../../types';
+import { DEFAULT_TOOLTIP_HOTKEY } from '../../types';
 
 // TTS配置
 export interface TTSConfig {
@@ -17,14 +19,7 @@ export interface TTSConfig {
   accent?: 'us' | 'uk'; // 美式或英式发音
 }
 
-// 快捷键配置接口
-export interface TooltipHotkey {
-  enabled: boolean; // 是否启用快捷键要求
-  requireModifier: boolean; // 是否需要修饰键
-  modifierKeys: string[]; // 修饰键数组 ['ctrl', 'alt', 'shift']
-  key?: string; // 可选的附加键
-  description?: string; // 快捷键描述
-}
+
 
 // 发音UI配置
 export interface PronunciationUIConfig {
@@ -55,13 +50,7 @@ export const DEFAULT_TTS_CONFIG: TTSConfig = {
   accent: 'us',
 };
 
-// 默认快捷键配置
-export const DEFAULT_TOOLTIP_HOTKEY: TooltipHotkey = {
-  enabled: true,
-  requireModifier: true,
-  modifierKeys: ['ctrl'],
-  description: 'Ctrl + 鼠标悬停',
-};
+
 
 // 默认UI配置
 export const DEFAULT_UI_CONFIG: PronunciationUIConfig = {

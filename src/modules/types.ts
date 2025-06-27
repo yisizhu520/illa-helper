@@ -77,7 +77,11 @@ export interface LanguageOption {
 
 // 新增：快捷键配置接口
 export interface TooltipHotkey {
-  enabled: boolean; // 是否启用快捷键要求（Ctrl+鼠标悬停）
+  enabled: boolean; // 是否启用快捷键要求
+  requireModifier: boolean; // 是否需要修饰键
+  modifierKeys: string[]; // 修饰键数组 ['ctrl', 'alt', 'shift']
+  key?: string; // 可选的附加键
+  description?: string; // 快捷键描述
 }
 
 // 悬浮球配置接口
@@ -100,7 +104,7 @@ export const DEFAULT_API_CONFIG: ApiConfig = {
   model: import.meta.env.VITE_WXT_DEFAULT_MODEL,
   temperature: parseFloat(import.meta.env.VITE_WXT_DEFAULT_TEMPERATURE) || 0,
   enable_thinking: false,
-  includeThinkingParam: true,
+  includeThinkingParam: false,
   customParams: '',
   phraseEnabled: true,
   requestsPerSecond: 0, // 默认无限制，0表示不限制
@@ -186,7 +190,10 @@ export const DEFAULT_MULTILINGUAL_CONFIG: MultilingualConfig = {
 
 // 默认快捷键配置
 export const DEFAULT_TOOLTIP_HOTKEY: TooltipHotkey = {
-  enabled: true,
+  enabled: false,
+  requireModifier: true,
+  modifierKeys: ['ctrl'],
+  description: 'Ctrl + 鼠标悬停',
 };
 
 // 新增：创建默认API配置项

@@ -5,7 +5,7 @@
   >
     <!-- 对话框 -->
     <div
-      class="bg-card border border-border rounded-lg shadow-lg w-full max-w-md"
+      class="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl"
       @click.stop
     >
       <!-- 标题栏 -->

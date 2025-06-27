@@ -14,6 +14,7 @@ import {
   MENU_STYLES,
   MENU_ACTIONS,
 } from '../config';
+import { safeSetInnerHTML } from '@/src/utils';
 
 export class FloatingBallManager {
   private config: FloatingBallConfig;
@@ -142,8 +143,8 @@ export class FloatingBallManager {
 
     this.ballElement = document.createElement('div');
     this.ballElement.className = 'wxt-floating-ball';
-    this.ballElement.innerHTML = this.createBallIcon();
-    this.ballElement.title = '点击展开菜单';
+    safeSetInnerHTML(this.ballElement, this.createBallIcon());
+    this.ballElement.title = '翻译';
 
     this.updateBallStyle();
     this.createMenu();
@@ -160,7 +161,7 @@ export class FloatingBallManager {
 
     this.menuContainer = document.createElement('div');
     this.menuContainer.className = 'wxt-floating-menu';
-    this.menuContainer.innerHTML = this.createMenuItems();
+    safeSetInnerHTML(this.menuContainer, this.createMenuItems());
 
     this.updateMenuStyle();
     document.body.appendChild(this.menuContainer);

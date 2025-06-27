@@ -10,19 +10,12 @@
       <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label>当前活跃配置</Label>
-          <Select
-            v-model="settings.activeApiConfigId"
-            @update:model-value="handleActiveConfigChange"
-          >
+          <Select v-model="settings.activeApiConfigId" @update:model-value="handleActiveConfigChange">
             <SelectTrigger>
               <SelectValue placeholder="选择API配置" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem
-                v-for="config in settings.apiConfigs"
-                :key="config.id"
-                :value="config.id"
-              >
+              <SelectItem v-for="config in settings.apiConfigs" :key="config.id" :value="config.id">
                 {{ config.name }} ({{ config.provider }})
               </SelectItem>
             </SelectContent>
@@ -46,13 +39,10 @@
             </div>
             <div>
               <strong>状态：</strong>
-              <span
-                :class="
-                  activeConfig.config.apiKey
-                    ? 'text-green-600'
-                    : 'text-destructive'
-                "
-              >
+              <span :class="activeConfig.config.apiKey
+                ? 'text-green-600'
+                : 'text-destructive'
+                ">
                 {{ activeConfig.config.apiKey ? '已配置' : '未配置API密钥' }}
               </span>
             </div>
@@ -75,52 +65,32 @@
         </CardTitle>
       </CardHeader>
       <CardContent class="pt-0">
-        <RadioGroup
-          :model-value="settings.activeApiConfigId"
-          @update:model-value="
-            (value) => {
-              settings.activeApiConfigId = value;
-              handleActiveConfigChange();
-            }
-          "
-        >
+        <RadioGroup :model-value="settings.activeApiConfigId" @update:model-value="
+          (value) => {
+            settings.activeApiConfigId = value;
+            handleActiveConfigChange();
+          }
+        ">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div
-              v-for="config in settings.apiConfigs"
-              :key="config.id"
-              class="rounded-lg border bg-card p-3 hover:shadow-sm transition-shadow"
-              :class="{
+            <div v-for="config in settings.apiConfigs" :key="config.id"
+              class="rounded-lg border bg-card p-3 hover:shadow-sm transition-shadow" :class="{
                 'border-primary border-2':
                   config.id === settings.activeApiConfigId,
-              }"
-            >
+              }">
               <div class="flex items-center justify-between mb-1.5">
                 <div class="flex items-center gap-1.5 min-w-0">
-                  <ServerIcon
-                    v-if="config.provider.toLowerCase().includes('openai')"
-                    class="h-3.5 w-3.5 text-green-500"
-                  />
-                  <CloudIcon
-                    v-else-if="config.provider.toLowerCase().includes('cloud')"
-                    class="h-3.5 w-3.5 text-blue-500"
-                  />
+                  <ServerIcon v-if="config.provider.toLowerCase().includes('openai')"
+                    class="h-3.5 w-3.5 text-green-500" />
+                  <CloudIcon v-else-if="config.provider.toLowerCase().includes('cloud')"
+                    class="h-3.5 w-3.5 text-blue-500" />
                   <GlobeIcon v-else class="h-3.5 w-3.5 text-primary" />
-                  <h3
-                    class="font-semibold text-sm truncate"
-                    :title="config.name"
-                  >
+                  <h3 class="font-semibold text-sm truncate" :title="config.name">
                     {{ config.name }}
                   </h3>
                 </div>
                 <div class="flex items-center">
-                  <RadioGroupItem
-                    :value="config.id"
-                    :id="`config-${config.id}`"
-                  />
-                  <label
-                    :for="`config-${config.id}`"
-                    class="text-xs ml-1.5 text-muted-foreground cursor-pointer"
-                  >
+                  <RadioGroupItem :value="config.id" :id="`config-${config.id}`" />
+                  <label :for="`config-${config.id}`" class="text-xs ml-1.5 text-muted-foreground cursor-pointer">
                     激活
                   </label>
                 </div>
@@ -142,33 +112,22 @@
                 <div class="flex items-center gap-1">
                   <KeyIcon class="h-3 w-3" />
                   <span class="flex items-center">
-                    <span
-                      class="inline-block w-1.5 h-1.5 rounded-full mr-1"
-                      :class="
-                        config.config.apiKey ? 'bg-green-500' : 'bg-red-500'
-                      "
-                    ></span>
+                    <span class="inline-block w-1.5 h-1.5 rounded-full mr-1" :class="config.config.apiKey ? 'bg-green-500' : 'bg-red-500'
+                      "></span>
                     {{ config.config.apiKey ? '已配置' : '未配置' }}
                   </span>
                 </div>
               </div>
 
               <!-- 测试结果显示 -->
-              <div
-                v-if="cardTestResults[config.id]"
-                class="text-xs p-2 rounded-md mb-2"
-                :class="{
-                  'bg-green-50 text-green-700 border border-green-200':
-                    cardTestResults[config.id].success,
-                  'bg-red-50 text-red-700 border border-red-200':
-                    !cardTestResults[config.id].success,
-                }"
-              >
+              <div v-if="cardTestResults[config.id]" class="text-xs p-2 rounded-md mb-2" :class="{
+                'bg-green-50 text-green-700 border border-green-200':
+                  cardTestResults[config.id].success,
+                'bg-red-50 text-red-700 border border-red-200':
+                  !cardTestResults[config.id].success,
+              }">
                 <div class="flex items-center">
-                  <CheckCircle2Icon
-                    v-if="cardTestResults[config.id].success"
-                    class="h-3 w-3 mr-1"
-                  />
+                  <CheckCircle2Icon v-if="cardTestResults[config.id].success" class="h-3 w-3 mr-1" />
                   <XCircle v-else class="h-3 w-3 mr-1" />
                   <span class="font-medium">
                     {{
@@ -178,35 +137,18 @@
                     }}
                   </span>
                 </div>
-                <div
-                  v-if="cardTestResults[config.id].message"
-                  class="mt-1 truncate"
-                  :title="cardTestResults[config.id].message"
-                >
+                <div v-if="cardTestResults[config.id].message" class="mt-1 truncate"
+                  :title="cardTestResults[config.id].message">
                   {{ cardTestResults[config.id].message }}
                 </div>
               </div>
 
-              <div
-                class="flex items-center justify-between pt-1 border-t border-border/40"
-              >
+              <div class="flex items-center justify-between pt-1 border-t border-border/40">
                 <div class="flex items-center gap-1">
-                  <Button
-                    @click="testCardApiConnection(config)"
-                    :disabled="
-                      cardTestingStates[config.id] || !config.config.apiKey
-                    "
-                    size="sm"
-                    variant="ghost"
-                    class="h-6 text-xs px-2"
-                  >
-                    <span
-                      v-if="cardTestingStates[config.id]"
-                      class="flex items-center"
-                    >
-                      <div
-                        class="animate-spin rounded-full h-2 w-2 border-b border-current mr-1"
-                      ></div>
+                  <Button @click="testCardApiConnection(config)" :disabled="cardTestingStates[config.id] || !config.config.apiKey
+                    " size="sm" variant="ghost" class="h-6 text-xs px-2">
+                    <span v-if="cardTestingStates[config.id]" class="flex items-center">
+                      <div class="animate-spin rounded-full h-2 w-2 border-b border-current mr-1"></div>
                       测试中
                     </span>
                     <span v-else class="flex items-center">
@@ -216,21 +158,11 @@
                   </Button>
                 </div>
                 <div class="flex items-center gap-1">
-                  <Button
-                    @click="editConfig(config)"
-                    size="sm"
-                    variant="ghost"
-                    class="h-6 w-6 p-0"
-                  >
+                  <Button @click="editConfig(config)" size="sm" variant="ghost" class="h-6 w-6 p-0">
                     <PencilIcon class="h-3 w-3" />
                   </Button>
-                  <Button
-                    v-if="!config.isDefault"
-                    @click="deleteConfig(config.id)"
-                    size="sm"
-                    variant="ghost"
-                    class="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                  >
+                  <Button v-if="!config.isDefault" @click="deleteConfig(config.id)" size="sm" variant="ghost"
+                    class="h-6 w-6 p-0 text-destructive hover:bg-destructive/10">
                     <Trash2Icon class="h-3 w-3" />
                   </Button>
                 </div>
@@ -238,10 +170,8 @@
             </div>
 
             <!-- 空状态 -->
-            <div
-              v-if="settings.apiConfigs.length === 0"
-              class="rounded-lg border border-dashed p-6 text-center text-muted-foreground col-span-full"
-            >
+            <div v-if="settings.apiConfigs.length === 0"
+              class="rounded-lg border border-dashed p-6 text-center text-muted-foreground col-span-full">
               <FolderOpenIcon class="h-8 w-8 mx-auto mb-2 opacity-50" />
               暂无配置，点击上方"添加配置"按钮创建
             </div>
@@ -251,20 +181,17 @@
     </Card>
 
     <!-- 配置对话框 -->
-    <div
-      v-if="showAddDialog || editingConfig"
-      class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @mousedown="cancelEdit"
-    >
-      <Card
-        class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto"
-        @click.stop
-        @mousedown.stop
-      >
+    <div v-if="showAddDialog || editingConfig" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <Card class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto" @click.stop @mousedown.stop>
         <CardHeader>
-          <CardTitle>
-            {{ editingConfig ? '编辑配置' : '添加新配置' }}
-          </CardTitle>
+          <div class="flex items-center justify-between">
+            <CardTitle>
+              {{ editingConfig ? '编辑配置' : '添加新配置' }}
+            </CardTitle>
+            <Button @click="cancelEdit" variant="ghost" size="sm" class="h-8 w-8 p-0">
+              <X class="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-2">
@@ -274,10 +201,7 @@
 
           <div class="space-y-2">
             <Label>服务提供商</Label>
-            <Select
-              v-model="configForm.provider"
-              @update:model-value="handleProviderChange"
-            >
+            <Select v-model="configForm.provider" @update:model-value="handleProviderChange">
               <SelectTrigger>
                 <SelectValue placeholder="选择服务提供商" />
               </SelectTrigger>
@@ -294,46 +218,36 @@
           <!-- 自定义服务商名称输入 -->
           <div v-if="configForm.provider === 'custom'" class="space-y-2">
             <Label>自定义服务商名称</Label>
-            <Input
-              v-model="configForm.customProviderName"
-              placeholder="输入自定义服务商名称"
-            />
+            <Input v-model="configForm.customProviderName" placeholder="输入自定义服务商名称" />
           </div>
 
           <div class="space-y-2">
             <Label>API端点</Label>
-            <Input
-              v-model="configForm.config.apiEndpoint"
-              placeholder="https:/xxxxx/v1/chat/completions"
-            />
+            <Input v-model="configForm.config.apiEndpoint" placeholder="https:/xxxxx/v1/chat/completions" />
           </div>
 
           <div class="space-y-2">
             <Label>API密钥</Label>
-            <Input
-              type="password"
-              v-model="configForm.config.apiKey"
-              placeholder="输入API密钥"
-            />
+            <div class="relative">
+              <Input :type="showPassword ? 'text' : 'password'" v-model="configForm.config.apiKey" placeholder="输入API密钥"
+                class="pr-10" />
+              <Button @click="showPassword = !showPassword" type="button" variant="ghost" size="sm"
+                class="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent">
+                <Eye v-if="!showPassword" class="h-4 w-4 text-muted-foreground" />
+                <EyeOff v-else class="h-4 w-4 text-muted-foreground" />
+              </Button>
+            </div>
           </div>
 
           <div class="space-y-2">
             <Label>模型名称</Label>
-            <Input
-              v-model="configForm.config.model"
-              placeholder="gpt-4o-mini"
-            />
+            <Input v-model="configForm.config.model" placeholder="gpt-4o-mini" />
           </div>
 
           <div class="space-y-2">
             <Label>温度参数 ({{ configForm.config.temperature }})</Label>
-            <Slider
-              :model-value="[configForm.config.temperature]"
-              @update:model-value="updateTemperature"
-              :min="0"
-              :max="1"
-              :step="0.1"
-            />
+            <Slider :model-value="[configForm.config.temperature]" @update:model-value="updateTemperature" :min="0"
+              :max="2" :step="0.1" />
           </div>
 
           <div class="space-y-2">
@@ -348,13 +262,8 @@
               设置每秒最大API请求数，0表示无限制。建议设置适当限制避免触发API
               429错误。
             </p>
-            <Input
-              type="number"
-              v-model.number="configForm.config.requestsPerSecond"
-              :min="0"
-              :max="100"
-              placeholder="0 = 无限制"
-            />
+            <Input type="number" v-model.number="configForm.config.requestsPerSecond" :min="0" :max="100"
+              placeholder="0 = 无限制" />
           </div>
 
           <div class="flex items-center justify-between">
@@ -369,9 +278,9 @@
 
           <div class="flex items-center justify-between">
             <div class="space-y-1">
-              <Label>传递思考参数</Label>
+              <Label>请求传递思考参数</Label>
               <p class="text-xs text-muted-foreground">
-                控制是否向API发送思考参数（某些模型不支持此参数）
+                控制enable_thinking参数是否向API发送思考参数（某些模型不支持此参数）
               </p>
             </div>
             <Switch v-model="configForm.config.includeThinkingParam" />
@@ -388,62 +297,37 @@
 
             <div class="space-y-2">
               <div class="relative">
-                <textarea
-                  v-model="configForm.config.customParams"
-                  @input="validateCustomParams"
+                <textarea v-model="configForm.config.customParams" @input="validateCustomParams"
                   placeholder='{"top_p": 0.9, "presence_penalty": 0.1, "max_tokens": 1000}'
-                  class="w-full h-32 p-3 text-sm font-mono border rounded-md resize-none"
-                  :class="{
+                  class="w-full h-32 p-3 text-sm font-mono border rounded-md resize-none" :class="{
                     'border-red-500 focus:border-red-500': customParamsError,
                     'border-green-500 focus:border-green-500':
                       customParamsValid &&
                       configForm.config.customParams?.trim(),
-                  }"
-                />
+                  }" />
               </div>
 
               <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-2">
-                  <Button
-                    @click="formatCustomParams"
-                    size="sm"
-                    variant="outline"
-                    :disabled="!configForm.config.customParams?.trim()"
-                  >
+                  <Button @click="formatCustomParams" size="sm" variant="outline"
+                    :disabled="!configForm.config.customParams?.trim()">
                     格式化JSON
                   </Button>
-                  <Button
-                    @click="clearCustomParams"
-                    size="sm"
-                    variant="outline"
-                    :disabled="!configForm.config.customParams?.trim()"
-                  >
+                  <Button @click="clearCustomParams" size="sm" variant="outline"
+                    :disabled="!configForm.config.customParams?.trim()">
                     清空
                   </Button>
-                  <Button
-                    @click="showCustomParamsExample = !showCustomParamsExample"
-                    size="sm"
-                    variant="ghost"
-                  >
+                  <Button @click="showCustomParamsExample = !showCustomParamsExample" size="sm" variant="ghost">
                     {{ showCustomParamsExample ? '隐藏示例' : '显示示例' }}
                   </Button>
                 </div>
 
-                <div
-                  v-if="configForm.config.customParams?.trim()"
-                  class="flex items-center space-x-1"
-                >
-                  <div
-                    v-if="customParamsValid"
-                    class="flex items-center text-green-600 text-xs"
-                  >
+                <div v-if="configForm.config.customParams?.trim()" class="flex items-center space-x-1">
+                  <div v-if="customParamsValid" class="flex items-center text-green-600 text-xs">
                     <CheckCircle2Icon class="h-3 w-3 mr-1" />
                     JSON格式正确
                   </div>
-                  <div
-                    v-else-if="customParamsError"
-                    class="flex items-center text-red-600 text-xs"
-                  >
+                  <div v-else-if="customParamsError" class="flex items-center text-red-600 text-xs">
                     <XCircle class="h-3 w-3 mr-1" />
                     JSON格式错误
                   </div>
@@ -451,28 +335,22 @@
               </div>
 
               <!-- 错误信息 -->
-              <div
-                v-if="customParamsError"
-                class="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200"
-              >
+              <div v-if="customParamsError" class="text-xs text-red-600 bg-red-50 p-2 rounded border border-red-200">
                 {{ customParamsError }}
               </div>
 
               <!-- 参数示例 -->
-              <div
-                v-if="showCustomParamsExample"
-                class="text-xs bg-muted p-3 rounded border"
-              >
+              <div v-if="showCustomParamsExample" class="text-xs bg-muted p-3 rounded border">
                 <div class="font-medium mb-2">常用参数示例：</div>
                 <pre class="text-muted-foreground whitespace-pre-wrap">
-{
-  "top_p": 0.9,
-  "presence_penalty": 0.1,
-  "frequency_penalty": 0.1,
-  "max_tokens": 1000,
-  "stop": ["\n", "###"]
-}</pre
-                >
+                  {
+                    "top_p": 0.9,
+                    "presence_penalty": 0.1,
+                    "frequency_penalty": 0.1,
+                    "max_tokens": 1000,
+                    "stop": ["\n", "###"]
+                  }
+                </pre>
                 <div class="mt-2 text-muted-foreground">
                   <strong>注意：</strong>
                   system参数如model、messages、apiKey等将被系统保护，不会被覆盖。
@@ -485,20 +363,12 @@
           <div class="border-t border-border pt-4">
             <div class="flex items-center justify-between mb-2">
               <Label class="text-sm font-medium">API连接测试</Label>
-              <Button
-                @click="testApiConnection"
-                :disabled="
-                  isTestingConnection ||
-                  !configForm.config.apiKey ||
-                  !configForm.config.apiEndpoint
-                "
-                size="sm"
-                variant="outline"
-              >
+              <Button @click="testApiConnection" :disabled="isTestingConnection ||
+                !configForm.config.apiKey ||
+                !configForm.config.apiEndpoint
+                " size="sm" variant="outline">
                 <span v-if="isTestingConnection" class="flex items-center">
-                  <div
-                    class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1"
-                  ></div>
+                  <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1"></div>
                   测试中...
                 </span>
                 <span v-else>测试连接</span>
@@ -506,21 +376,14 @@
             </div>
 
             <!-- 测试结果显示 -->
-            <div
-              v-if="testResult"
-              class="text-sm p-2 rounded-md"
-              :class="{
-                'bg-green-50 text-green-700 border border-green-200':
-                  testResult.success,
-                'bg-red-50 text-red-700 border border-red-200':
-                  !testResult.success,
-              }"
-            >
+            <div v-if="testResult" class="text-sm p-2 rounded-md" :class="{
+              'bg-green-50 text-green-700 border border-green-200':
+                testResult.success,
+              'bg-red-50 text-red-700 border border-red-200':
+                !testResult.success,
+            }">
               <div class="flex items-center">
-                <CheckCircle2Icon
-                  v-if="testResult.success"
-                  class="h-4 w-4 mr-1"
-                />
+                <CheckCircle2Icon v-if="testResult.success" class="h-4 w-4 mr-1" />
                 <XCircle v-else class="h-4 w-4 mr-1" />
                 <span class="font-medium">
                   {{ testResult.success ? 'API连接成功' : 'API连接失败' }}
@@ -529,10 +392,7 @@
               <div v-if="testResult.message" class="mt-1 text-xs">
                 {{ testResult.message }}
               </div>
-              <div
-                v-if="testResult.success && testResult.model"
-                class="mt-1 text-xs"
-              >
+              <div v-if="testResult.success && testResult.model" class="mt-1 text-xs">
                 检测到模型: {{ testResult.model }}
               </div>
             </div>
@@ -596,6 +456,9 @@ import {
   Cloud as CloudIcon,
   Globe as GlobeIcon,
   XCircle,
+  Eye,
+  EyeOff,
+  X,
 } from 'lucide-vue-next';
 
 const settings = ref<UserSettings>({ ...DEFAULT_SETTINGS });
@@ -609,6 +472,9 @@ const editingConfig = ref<ApiConfigItem | null>(null);
 const customParamsError = ref<string>('');
 const customParamsValid = ref<boolean>(false);
 const showCustomParamsExample = ref<boolean>(false);
+
+// 密码可见性状态
+const showPassword = ref<boolean>(false);
 
 // 预定义的服务提供商配置
 const providerConfigs = {
@@ -650,7 +516,7 @@ const configForm = ref<{
     model: '',
     temperature: 0,
     enable_thinking: false,
-    includeThinkingParam: true,
+    includeThinkingParam: false,
     customParams: '',
     phraseEnabled: true,
     requestsPerSecond: 0,
@@ -689,7 +555,7 @@ const editConfig = (config: ApiConfigItem) => {
   const predefinedProvider = Object.keys(providerConfigs).find(
     (key) =>
       providerConfigs[key as keyof typeof providerConfigs].name ===
-        config.provider || key === config.provider,
+      config.provider || key === config.provider,
   );
 
   configForm.value = {
@@ -883,6 +749,9 @@ const cancelEdit = () => {
   isTestingConnection.value = false;
   testResult.value = null;
 
+  // 重置密码可见性状态
+  showPassword.value = false;
+
   // 重置自定义参数状态
   customParamsError.value = '';
   customParamsValid.value = false;
@@ -898,7 +767,7 @@ const cancelEdit = () => {
       model: '',
       temperature: 0,
       enable_thinking: false,
-      includeThinkingParam: true,
+      includeThinkingParam: false,
       customParams: '',
       phraseEnabled: true,
       requestsPerSecond: 0,

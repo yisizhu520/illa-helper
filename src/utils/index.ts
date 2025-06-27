@@ -169,3 +169,44 @@ export function cleanMarkdownFromResponse(content: string): string {
 
   return cleaned;
 }
+
+/**
+ * 安全地设置元素的HTML内容，解决Firefox的innerHTML安全警告
+ * 使用DOMParser方式避免直接的innerHTML赋值
+ * @param element 目标DOM元素
+ * @param htmlContent HTML内容字符串
+ * @returns 是否设置成功
+ */
+export function safeSetInnerHTML(
+  element: HTMLElement,
+  htmlContent: string,
+): boolean {
+  if (!element || htmlContent == null) {
+    return false;
+  }
+
+  try {
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(htmlContent, 'text/html');
+    
+    // 清空目标元素
+    element.textContent = '';
+    
+    // 将解析后的内容移动到目标元素
+    const bodyContent = parsed.body;
+    if (bodyContent) {
+      // 将body中的所有子节点移动到目标元素
+      while (bodyContent.firstChild) {
+        element.appendChild(bodyContent.firstChild);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('设置HTML内容失败:', error);
+    return false;
+  }
+}
+
+
+
