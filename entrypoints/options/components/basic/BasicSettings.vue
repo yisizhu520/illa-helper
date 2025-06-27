@@ -129,14 +129,6 @@
           <Slider id="replacement-rate" :model-value="[settings.replacementRate]"
             @update:model-value="settings.replacementRate = ($event || [0])[0]" :min="0" :max="1" :step="0.01" />
         </div>
-
-        <div class="border-t border-border pt-6 flex items-center justify-between">
-          <div class="space-y-1">
-            <Label for="enable-pronunciation">启用悬浮框</Label>
-          </div>
-          <Switch id="enable-pronunciation" :model-value="settings.enablePronunciationTooltip"
-            @update:model-value="settings.enablePronunciationTooltip = $event" />
-        </div>
       </CardContent>
     </Card>
   </div>
