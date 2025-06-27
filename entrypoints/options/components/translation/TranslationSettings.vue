@@ -254,11 +254,12 @@
     <div
       v-if="showAddDialog || editingConfig"
       class="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      @click="cancelEdit"
+      @mousedown="cancelEdit"
     >
       <Card
         class="w-full max-w-2xl m-4 max-h-[90vh] overflow-y-auto"
         @click.stop
+        @mousedown.stop
       >
         <CardHeader>
           <CardTitle>
