@@ -257,6 +257,8 @@
                 <SelectItem value="openai">OpenAI</SelectItem>
                 <SelectItem value="deepseek">DeepSeek</SelectItem>
                 <SelectItem value="silicon-flow">Silicon Flow</SelectItem>
+                <SelectItem value="GoogleGemini">Google Gemini</SelectItem>
+                <SelectItem value="ProxyGemini">Proxy-Gemini</SelectItem>
                 <SelectItem value="anthropic">Anthropic</SelectItem>
                 <SelectItem value="custom">自定义</SelectItem>
               </SelectContent>
@@ -269,9 +271,16 @@
             <Input v-model="configForm.customProviderName" placeholder="输入自定义服务商名称" />
           </div>
 
-          <div class="space-y-2">
+          <!-- API Endpoint for OpenAI/DeepSeek/Custom -->
+          <div v-if="!['GoogleGemini', 'ProxyGemini'].includes(configForm.provider)" class="space-y-2">
             <Label>API端点</Label>
             <Input v-model="configForm.config.apiEndpoint" placeholder="https:/xxxxx/v1/chat/completions" />
+          </div>
+
+          <!-- API Endpoint for Proxy-Gemini -->
+          <div v-if="configForm.provider === 'ProxyGemini'" class="space-y-2">
+            <Label>代理API端点</Label>
+            <Input v-model="configForm.config.apiEndpoint" placeholder="输入你的代理端点URL" />
           </div>
 
           <div class="space-y-2">
@@ -421,10 +430,7 @@
           <div class="border-t border-border pt-4">
             <div class="flex items-center justify-between mb-2">
               <Label class="text-sm font-medium">API连接测试</Label>
-              <Button @click="testApiConnection" :disabled="isTestingConnection ||
-                !configForm.config.apiKey ||
-                !configForm.config.apiEndpoint
-                " size="sm" variant="outline">
+              <Button @click="testApiConnection" :disabled="isTestingConnection || !configForm.config.apiKey || (configForm.provider !== 'GoogleGemini' && !configForm.config.apiEndpoint)" size="sm" variant="outline">
                 <span v-if="isTestingConnection" class="flex items-center">
                   <div class="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1"></div>
                   测试中...
@@ -472,6 +478,7 @@ import { ref, onMounted, computed, onUnmounted, watch } from 'vue';
 import { StorageManager } from '@/src/modules/storageManager';
 import {
   testApiConnection as performApiTest,
+  testGeminiConnection,
   ApiTestResult,
 } from '@/src/utils';
 import {
@@ -555,6 +562,16 @@ const providerConfigs = {
     name: 'Anthropic',
     apiEndpoint: 'https://api.anthropic.com/v1/messages',
     defaultModel: 'claude-3-5-sonnet-20241022',
+  },
+  GoogleGemini: {
+    name: 'Google Gemini',
+    apiEndpoint: '', // Not needed for native SDK
+    defaultModel: 'gemini-2.5-flash-lite-preview-06-17',
+  },
+  ProxyGemini: {
+    name: 'Proxy-Gemini',
+    apiEndpoint: 'https://api-proxy.me/gemini', // User-provided
+    defaultModel: 'gemini-2.5-flash-lite-preview-06-17',
   },
 };
 
@@ -701,6 +718,7 @@ const handleProviderChange = (provider: any) => {
     const config =
       providerConfigs[providerValue as keyof typeof providerConfigs];
     configForm.value.config.apiEndpoint = config.apiEndpoint;
+    configForm.value.config.model = config.defaultModel;
     // 如果配置名称为空，自动设置为服务商名称
     if (!configForm.value.name) {
       configForm.value.name = config.name;
@@ -760,45 +778,65 @@ const cardTestTimers = ref<Record<string, NodeJS.Timeout>>({});
 
 // 测试配置对话框中的API连接
 const testApiConnection = async () => {
-  if (!configForm.value.config.apiKey || !configForm.value.config.apiEndpoint) {
-    return;
-  }
+  const provider = configForm.value.provider;
+  const config = configForm.value.config;
+
+  if (!config.apiKey) return;
+  if (provider !== 'GoogleGemini' && !config.apiEndpoint) return;
 
   isTestingConnection.value = true;
   testResult.value = null;
 
   try {
-    testResult.value = await performApiTest(configForm.value.config, settings.value.apiRequestTimeout);
+    if (provider === 'GoogleGemini' || provider === 'ProxyGemini') {
+      testResult.value = await testGeminiConnection({
+        apiKey: config.apiKey,
+        model: config.model,
+        apiEndpoint: config.apiEndpoint,
+      });
+    } else {
+      testResult.value = await performApiTest(config, settings.value.apiRequestTimeout);
+    }
   } finally {
     isTestingConnection.value = false;
   }
 };
 
 // 测试卡片配置的API连接
-const testCardApiConnection = async (config: ApiConfigItem) => {
-  if (!config.config.apiKey || !config.config.apiEndpoint) {
-    return;
-  }
+const testCardApiConnection = async (configItem: ApiConfigItem) => {
+  const { provider, config, id } = configItem;
+
+  if (!config.apiKey) return;
+  if (provider !== 'GoogleGemini' && !config.apiEndpoint) return;
+
 
   // 清除之前的定时器
-  if (cardTestTimers.value[config.id]) {
-    clearTimeout(cardTestTimers.value[config.id]);
-    delete cardTestTimers.value[config.id];
+  if (cardTestTimers.value[id]) {
+    clearTimeout(cardTestTimers.value[id]);
+    delete cardTestTimers.value[id];
   }
 
-  cardTestingStates.value[config.id] = true;
-  delete cardTestResults.value[config.id];
+  cardTestingStates.value[id] = true;
+  delete cardTestResults.value[id];
 
   try {
-    cardTestResults.value[config.id] = await performApiTest(config.config, settings.value.apiRequestTimeout);
+    if (provider === 'GoogleGemini' || provider === 'ProxyGemini') {
+      cardTestResults.value[id] = await testGeminiConnection({
+        apiKey: config.apiKey,
+        model: config.model,
+        apiEndpoint: config.apiEndpoint,
+      });
+    } else {
+      cardTestResults.value[id] = await performApiTest(config, settings.value.apiRequestTimeout);
+    }
 
     // 设置5秒后自动清除结果
-    cardTestTimers.value[config.id] = setTimeout(() => {
-      delete cardTestResults.value[config.id];
-      delete cardTestTimers.value[config.id];
+    cardTestTimers.value[id] = setTimeout(() => {
+      delete cardTestResults.value[id];
+      delete cardTestTimers.value[id];
     }, 5000);
   } finally {
-    cardTestingStates.value[config.id] = false;
+    cardTestingStates.value[id] = false;
   }
 };
 
@@ -830,6 +868,7 @@ const cancelEdit = () => {
       customParams: '',
       phraseEnabled: true,
       requestsPerSecond: 0,
+      useBackgroundProxy: false,
     },
   };
 };

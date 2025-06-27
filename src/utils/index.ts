@@ -3,7 +3,13 @@
  * 提供 UserLevel 相关的工具函数
  */
 
-import { UserLevel, USER_LEVEL_OPTIONS, ApiConfig } from '@/src/modules/types';
+import {
+  UserLevel,
+  USER_LEVEL_OPTIONS,
+  ApiConfig,
+  GeminiConfig,
+} from '@/src/modules/types';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * 合并自定义参数到基础参数对象
@@ -80,12 +86,46 @@ export function getApiTimeout(baseTimeout: number): number | undefined {
   return baseTimeout === 0 ? undefined : baseTimeout;
 }
 
+export async function testGeminiConnection(
+  geminiConfig: GeminiConfig,
+): Promise<ApiTestResult> {
+  if (!geminiConfig.apiKey) {
+    return { success: false, message: 'API Key is not configured.' };
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(geminiConfig.apiKey);
+    const model = genAI.getGenerativeModel({
+      model: geminiConfig.model,
+      // @ts-ignore
+      ...(geminiConfig.apiEndpoint && {
+        _requestController: {
+          _getBaseUrl: () => geminiConfig.apiEndpoint,
+        },
+      }),
+    });
+
+    const result = await model.generateContent('Hello, this is a connection test. Please respond with "OK".');
+    const response = await result.response;
+    const text = response.text();
+
+    if (text.includes('OK')) {
+      return { success: true, message: 'Connection successful.', model: geminiConfig.model };
+    } else {
+      return { success: false, message: 'Received an unexpected response.' };
+    }
+  } catch (error: any) {
+    console.error('Gemini connection test failed:', error);
+    return { success: false, message: error.message || 'An unknown error occurred.' };
+  }
+}
+
 export async function testApiConnection(
   apiConfig: ApiConfig,
   baseTimeout?: number,
 ): Promise<ApiTestResult> {
   if (!apiConfig.apiKey || !apiConfig.apiEndpoint) {
-    throw new Error('API密钥或端点未配置');
+    return { success: false, message: 'API Key or Endpoint is not configured.' };
   }
 
   try {
@@ -272,3 +312,44 @@ export function safeSetInnerHTML(
 
 
 
+
+/**
+ * 从可能包含Markdown代码块的字符串中提取并解析JSON。
+ * @param text 包含JSON的原始字符串。
+ * @returns 解析后的JavaScript对象。
+ * @throws 如果JSON无效或无法提取，则抛出错误。
+ */
+export function extractAndParseJson(text: string): any {
+  if (!text || typeof text !== 'string') {
+    throw new Error('Invalid input: text must be a non-empty string.');
+  }
+
+  // 匹配Markdown中的JSON代码块
+  const jsonBlockMatch = text.match(/```(json)?\s*([\s\S]+?)\s*```/);
+
+  let jsonString;
+  if (jsonBlockMatch && jsonBlockMatch[2]) {
+    // 从Markdown代码块中提取JSON字符串
+    jsonString = jsonBlockMatch[2];
+  } else {
+    // 如果没有找到代码块，假定整个字符串都是JSON
+    // 尝试找到第一个 '{' 和最后一个 '}' 之间的内容
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      jsonString = text.substring(firstBrace, lastBrace + 1);
+    } else {
+      jsonString = text; // 作为最后的手段
+    }
+  }
+
+  try {
+    // 清理并解析JSON
+    return JSON.parse(jsonString.trim());
+  } catch (error) {
+    console.error('Failed to parse JSON:', error);
+    console.error('Original text:', text);
+    console.error('Extracted JSON string:', jsonString);
+    throw new Error('The response does not contain valid JSON.');
+  }
+}

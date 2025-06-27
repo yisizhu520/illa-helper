@@ -61,6 +61,27 @@ export interface ReplacementConfig {
   translationDirection: string;
 }
 
+export enum TranslationProvider {
+  OpenAI = 'OpenAI',
+  DeepSeek = 'DeepSeek',
+  SiliconFlow = 'SiliconFlow',
+  GoogleGemini = 'GoogleGemini',
+  ProxyGemini = 'ProxyGemini'
+}
+
+export interface GeminiConfig {
+  apiKey: string;
+  model: string;
+  apiEndpoint?: string;
+}
+
+// 主翻译配置
+export interface TranslationConfig {
+  // ... 其他提供商的配置
+  gemini?: GeminiConfig;
+}
+
+
 // 简化：多语言翻译配置接口
 export interface MultilingualConfig {
   intelligentMode: boolean;

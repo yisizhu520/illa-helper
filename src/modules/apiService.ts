@@ -3,6 +3,11 @@
  * 负责调用 GPT 大模型 API 进行文本分析和翻译
  */
 
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from '@google/generative-ai';
 import { getSystemPrompt, getSystemPromptByConfig } from './promptManager';
 import {
   UserSettings,
@@ -10,30 +15,37 @@ import {
   Replacement,
   ApiConfig,
   DEFAULT_API_CONFIG,
+  TranslationProvider,
+  GeminiConfig,
+  ApiConfigItem,
 } from './types';
-import { cleanMarkdownFromResponse, getApiTimeout } from '@/src/utils';
+import {
+  cleanMarkdownFromResponse,
+  extractAndParseJson,
+  getApiTimeout,
+} from '@/src/utils';
 import { rateLimitManager } from './rateLimit';
 
 /**
+ * 翻译提供者接口
+ */
+export interface ITranslationProvider {
+  analyzeFullText(
+    text: string,
+    settings: UserSettings,
+  ): Promise<FullTextAnalysisResponse>;
+}
+
+/**
  * 合并自定义参数到基础参数对象
- * @param baseParams 基础参数对象
- * @param customParamsJson 自定义参数JSON字符串
- * @returns 合并后的参数对象
  */
 function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
+  // ... (此函数保持不变)
   const merged = { ...baseParams };
-
-  // 保护的系统关键参数，不允许被覆盖
   const protectedKeys = ['model', 'messages', 'apiKey'];
-
-  if (!customParamsJson?.trim()) {
-    return merged;
-  }
-
+  if (!customParamsJson?.trim()) return merged;
   try {
     const customParams = JSON.parse(customParamsJson);
-
-    // 合并自定义参数，但保护系统关键参数
     Object.entries(customParams).forEach(([key, value]) => {
       if (!protectedKeys.includes(key)) {
         merged[key] = value;
@@ -44,294 +56,115 @@ function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
   } catch (error) {
     console.warn('自定义参数JSON解析失败:', error);
   }
-
   return merged;
 }
 
-// API 服务类
-export class ApiService {
-  private config: ApiConfig;
-
-  constructor(config?: Partial<ApiConfig>) {
-    this.config = { ...DEFAULT_API_CONFIG, ...config };
-  }
-
-  /**
-   * 设置 API 配置
-   * @param config API 配置
-   */
-  setConfig(config: Partial<ApiConfig>): void {
-    this.config = { ...this.config, ...config };
-  }
-
-  /**
-   * 设置 API 端点
-   * @param apiEndpoint API 端点 URL
-   */
-  setApiEndpoint(apiEndpoint: string): void {
-    this.config.apiEndpoint = apiEndpoint;
-  }
-
-  /**
-   * 设置使用的模型
-   * @param model 模型名称
-   */
-  setModel(model: string): void {
-    this.config.model = model;
-  }
-
-  /**
-   * 统一API请求方法 - 根据配置选择请求方式
-   * @param requestBody 请求体
-   * @param apiConfig API配置
-   * @param timeout 超时时间（毫秒）
-   * @returns Promise<Response>
-   */
-  private async sendApiRequest(requestBody: any, apiConfig: ApiConfig, timeout: number | undefined = 30000): Promise<Response> {
-    if (apiConfig.useBackgroundProxy) {
-      return this.sendViaBackground(requestBody, apiConfig, timeout || 0);
-    } else {
-      // 直接请求方式，处理超时设置
-      const fetchOptions: RequestInit = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiConfig.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      };
-
-      // 只有在timeout不为undefined时才设置AbortSignal
-      if (timeout !== undefined) {
-        fetchOptions.signal = AbortSignal.timeout(timeout);
+/**
+ * 为替换项添加位置信息
+ */
+function addPositionsToReplacements(
+  originalText: string,
+  replacements: Array<{ original: string; translation: string }>,
+): Replacement[] {
+  // ... (此函数保持不变)
+  const result: Replacement[] = [];
+  let lastIndex = 0;
+  for (const rep of replacements) {
+    if (!rep.original || !rep.translation) continue;
+    const index = originalText.indexOf(rep.original, lastIndex);
+    if (index !== -1) {
+      const foundText = originalText.substring(
+        index,
+        index + rep.original.length,
+      );
+      if (foundText === rep.original) {
+        result.push({
+          ...rep,
+          position: { start: index, end: index + rep.original.length },
+          isNew: true,
+        });
+        lastIndex = index + rep.original.length;
       }
-
-      return fetch(apiConfig.apiEndpoint, fetchOptions);
+    } else {
+      const globalIndex = originalText.indexOf(rep.original);
+      if (
+        globalIndex !== -1 &&
+        !result.some(
+          (r) =>
+            r.position.start <= globalIndex && r.position.end > globalIndex,
+        )
+      ) {
+        result.push({
+          ...rep,
+          position: {
+            start: globalIndex,
+            end: globalIndex + rep.original.length,
+          },
+          isNew: true,
+        });
+      }
     }
   }
+  result.sort((a, b) => a.position.start - b.position.start);
+  return result;
+}
 
-  /**
-   * 通过background脚本发送API请求
-   * @param requestBody 请求体
-   * @param apiConfig API配置
-   * @param timeout 超时时间（毫秒）
-   * @returns Promise<Response>
-   */
-  private async sendViaBackground(requestBody: any, apiConfig: ApiConfig, timeout: number = 30000): Promise<Response> {
-    return new Promise((resolve, reject) => {
-      browser.runtime.sendMessage(
-        {
-          type: 'api-request',
-          data: {
-            url: apiConfig.apiEndpoint,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${apiConfig.apiKey}`,
-            },
-            body: JSON.stringify(requestBody),
-            timeout: timeout,
-          },
-        },
-        (response) => {
-          if (response.success) {
-            // 创建一个模拟的Response对象
-            const mockResponse = {
-              ok: true,
-              status: 200,
-              statusText: 'OK',
-              json: async () => response.data,
-            } as Response;
-            resolve(mockResponse);
-          } else {
-            // 创建一个失败的Response对象
-            const mockResponse = {
-              ok: false,
-              status: response.error?.status || 500,
-              statusText: response.error?.statusText || 'Internal Server Error',
-              json: async () => ({ error: response.error }),
-            } as Response;
-            resolve(mockResponse);
-          }
-        }
-      );
-    });
+class GoogleGeminiProvider implements ITranslationProvider {
+  private config: GeminiConfig;
+
+  constructor(config: GeminiConfig) {
+    this.config = config;
   }
 
-  /**
-   * 分析整个文本，识别并翻译句子中的特定部分
-   * 支持智能模式和传统模式
-   * @param text 要分析的完整文本
-   * @param settings 完整的用户设置对象
-   * @returns 分析结果，包含替换信息和语言检测结果
-   */
   async analyzeFullText(
     text: string,
     settings: UserSettings,
   ): Promise<FullTextAnalysisResponse> {
     const originalText = text || '';
-
-    // 获取当前活跃的API配置
-    const activeConfig = settings.apiConfigs.find(
-      (config) => config.id === settings.activeApiConfigId,
-    );
-
-    // 验证输入
-    if (!originalText.trim() || !activeConfig?.config.apiKey) {
-      return {
-        original: originalText,
-        processed: originalText,
-        replacements: [],
-      };
+    if (!originalText.trim() || !this.config.apiKey) {
+      return { original: originalText, processed: originalText, replacements: [] };
     }
 
-    if (!activeConfig.config.apiKey) {
-      console.error('API 密钥未设置');
-    }
     try {
-      // 判断是否使用智能模式
-      const useIntelligentMode =
-        settings.multilingualConfig?.intelligentMode ||
-        settings.translationDirection === 'intelligent';
-
-      let systemPrompt: string;
-
-      if (useIntelligentMode) {
-        // 使用智能模式提示词，直接使用用户选择的目标语言
-        const targetLanguage = settings.multilingualConfig?.targetLanguage;
-
-        if (!targetLanguage) {
-          console.error('智能模式下未找到目标语言配置');
-          return {
-            original: originalText,
-            processed: originalText,
-            replacements: [],
-          };
-        }
-
-        systemPrompt = getSystemPromptByConfig({
-          translationDirection: 'intelligent',
-          targetLanguage: targetLanguage,
-          userLevel: settings.userLevel,
-          replacementRate: settings.replacementRate,
-          intelligentMode: true,
-        });
-      } else {
-        // 使用传统模式提示词
-        systemPrompt = getSystemPrompt(
-          settings.translationDirection,
-          settings.userLevel,
-          settings.replacementRate,
-        );
-      }
-
-      let requestBody: any = {
-        model: activeConfig.config.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          {
-            role: 'user',
-            content: `{{ ${originalText} }}`,
+      const genAI = new GoogleGenerativeAI(this.config.apiKey);
+      const model = genAI.getGenerativeModel({
+        model: this.config.model,
+        generationConfig: {
+          responseMimeType: 'application/json',
+        },
+        // @ts-ignore
+        // HACK: The official SDK doesn't directly support custom base URLs in a straightforward way.
+        // This is an undocumented workaround to support proxying.
+        // We are accessing a private property `_requestController` to modify the `baseUrl`.
+        // This might break in future SDK updates.
+        ...(this.config.apiEndpoint && {
+          _requestController: {
+            _getBaseUrl: () => this.config.apiEndpoint,
           },
-        ],
-        temperature: activeConfig.config.temperature,
-        response_format: { type: 'json_object' },
-      };
+        }),
+      });
 
-      // 只有当配置允许传递思考参数时，才添加enable_thinking字段
-      if (activeConfig.config.includeThinkingParam) {
-        requestBody.enable_thinking = activeConfig.config.enable_thinking;
-      }
+      const systemPrompt = getSystemPromptByConfig({
+        translationDirection: 'intelligent',
+        targetLanguage: settings.multilingualConfig.targetLanguage,
+        userLevel: settings.userLevel,
+        replacementRate: settings.replacementRate,
+        intelligentMode: true,
+        provider: 'gemini', // 指定为gemini获取特定prompt
+      });
 
-      // 合并自定义参数
-      requestBody = mergeCustomParams(
-        requestBody,
-        activeConfig.config.customParams,
-      );
+      const prompt = `${systemPrompt}\n\n${originalText}`;
+      console.log('Gemini Prompt:', prompt);
 
-      // 通过速率限制器执行API请求
-      const rateLimiter = rateLimitManager.getLimiter(
-        activeConfig.config.apiEndpoint,
-        activeConfig.config.requestsPerSecond || 0,
-        true,
-      );
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const responseText = response.text();
+      console.log('Gemini Response Text:', responseText);
 
-      const apiRequestFunction = async () => {
-        const timeout = getApiTimeout(settings.apiRequestTimeout || 30000);
-        return this.sendApiRequest(requestBody, activeConfig.config, timeout);
-      };
+      const content = extractAndParseJson(responseText);
+      console.log('Parsed Gemini Content:', content);
 
-      // 通过executeBatch执行单个请求，确保串行
-      const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
-
-      if (!response.ok) {
-        console.error(`API 请求失败: ${response.status} ${response.statusText}`);
-        return {
-          original: originalText,
-          processed: originalText,
-          replacements: [],
-        };
-      }
-
-      const data = await response.json();
-
-      if (useIntelligentMode) {
-        return this.extractIntelligentReplacements(
-          data,
-          originalText,
-          settings,
-        );
-      } else {
-        return this.extractReplacements(data, originalText);
-      }
-    } catch (error: any) {
-      console.error('API请求失败:', error);
-      return {
-        original: originalText,
-        processed: originalText,
-        replacements: [],
-      };
-    }
-  }
-
-  /**
-   * 极简化：提取智能模式的替换信息
-   * 只关注replacements数组，忽略其他所有信息
-   * @param data API返回的数据
-   * @param originalText 原始文本
-   * @param settings 用户设置
-   * @returns 分析结果，只包含replacements
-   */
-  private extractIntelligentReplacements(
-    data: any,
-    originalText: string,
-    settings: UserSettings,
-  ): FullTextAnalysisResponse {
-    try {
-      if (!data?.choices?.[0]?.message?.content) {
-        return {
-          original: originalText,
-          processed: '',
-          replacements: [],
-        };
-      }
-
-      let content;
-      try {
-        // 清理AI响应中的Markdown格式
-        const cleanedContent = cleanMarkdownFromResponse(
-          data.choices[0].message.content,
-        );
-        content = JSON.parse(cleanedContent);
-      } catch (parseError) {
-        console.error('解析智能模式API响应JSON失败:', parseError);
-        console.error('原始响应内容:', data.choices[0].message.content);
-        // 降级到传统模式处理
-        return this.extractReplacements(data, originalText);
-      }
-
-      // 只处理replacements数组
-      const replacements = this.addPositionsToReplacements(
+      const replacements = addPositionsToReplacements(
         originalText,
         content.replacements || [],
       );
@@ -341,69 +174,8 @@ export class ApiService {
         processed: '',
         replacements,
       };
-    } catch (error) {
-      console.error('提取智能替换信息失败:', error);
-      // 降级处理
-      return this.extractReplacements(data, originalText);
-    }
-  }
-
-  /**
-   * 保持向后兼容：从传统模式API响应中提取替换信息
-   * @param data API返回的数据
-   * @param originalText 原始文本
-   * @returns 分析结果，包含替换信息
-   */
-  private extractReplacements(
-    data: any,
-    originalText: string,
-  ): FullTextAnalysisResponse {
-    try {
-      if (!data?.choices?.[0]?.message?.content) {
-        return {
-          original: originalText,
-          processed: originalText,
-          replacements: [],
-        };
-      }
-
-      let content;
-      try {
-        // 清理AI响应中的Markdown格式
-        const cleanedContent = cleanMarkdownFromResponse(
-          data.choices[0].message.content,
-        );
-        content = JSON.parse(cleanedContent);
-      } catch (parseError) {
-        console.error('解析API响应JSON失败:', parseError);
-        console.error('原始响应内容:', data.choices[0].message.content);
-        return {
-          original: originalText,
-          processed: originalText,
-          replacements: [],
-        };
-      }
-
-      if (!content || !Array.isArray(content.replacements)) {
-        return {
-          original: originalText,
-          processed: originalText,
-          replacements: [],
-        };
-      }
-
-      const replacementsWithPositions = this.addPositionsToReplacements(
-        originalText,
-        content.replacements,
-      );
-
-      return {
-        original: originalText,
-        processed: '', // 不再需要
-        replacements: replacementsWithPositions,
-      };
-    } catch (error) {
-      console.error('提取替换信息失败:', error);
+    } catch (error: any) {
+      console.error('Google Gemini API请求失败:', error);
       return {
         original: originalText,
         processed: originalText,
@@ -411,70 +183,183 @@ export class ApiService {
       };
     }
   }
+}
 
-  /**
-   * 为替换项添加位置信息
-   * @param originalText 原始文本
-   * @param replacements 从API获取的替换项
-   * @returns 带位置信息的替换项数组
-   */
-  private addPositionsToReplacements(
-    originalText: string,
-    replacements: Array<{ original: string; translation: string }>,
-  ): Replacement[] {
-    const result: Replacement[] = [];
-    let lastIndex = 0;
+class OpenAIProvider implements ITranslationProvider {
+  private config: ApiConfig;
 
-    // 按顺序处理替换项，支持重复词汇
-    for (const rep of replacements) {
-      if (!rep.original || !rep.translation) {
-        continue;
-      }
+  constructor(config: ApiConfig) {
+    this.config = config;
+  }
 
-      // 尝试在剩余文本中查找词汇
-      const index = originalText.indexOf(rep.original, lastIndex);
-      if (index !== -1) {
-        // 验证找到的文本确实匹配
-        const foundText = originalText.substring(
-          index,
-          index + rep.original.length,
-        );
-        if (foundText === rep.original) {
-          result.push({
-            ...rep,
-            position: {
-              start: index,
-              end: index + rep.original.length,
-            },
-            isNew: true,
-          });
-          lastIndex = index + rep.original.length;
-        }
+  private async sendApiRequest(
+    requestBody: any,
+    apiConfig: ApiConfig,
+    timeout: number | undefined = 30000,
+  ): Promise<Response> {
+    // ... (sendApiRequest logic from original ApiService)
+    if (apiConfig.useBackgroundProxy) {
+        return this.sendViaBackground(requestBody, apiConfig, timeout || 0);
       } else {
-        // 如果顺序查找失败，尝试全局查找（但要避免重复）
-        const globalIndex = originalText.indexOf(rep.original);
-        if (
-          globalIndex !== -1 &&
-          !result.some(
-            (r) =>
-              r.position.start <= globalIndex && r.position.end > globalIndex,
-          )
-        ) {
-          result.push({
-            ...rep,
-            position: {
-              start: globalIndex,
-              end: globalIndex + rep.original.length,
-            },
-            isNew: true,
-          });
+        const fetchOptions: RequestInit = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${apiConfig.apiKey}`,
+          },
+          body: JSON.stringify(requestBody),
+        };
+        if (timeout !== undefined) {
+          fetchOptions.signal = AbortSignal.timeout(timeout);
         }
+        return fetch(apiConfig.apiEndpoint, fetchOptions);
       }
+  }
+
+  private async sendViaBackground(
+    requestBody: any,
+    apiConfig: ApiConfig,
+    timeout: number = 30000,
+  ): Promise<Response> {
+    // ... (sendViaBackground logic from original ApiService)
+    return new Promise((resolve) => {
+        browser.runtime.sendMessage(
+          {
+            type: 'api-request',
+            data: {
+              url: apiConfig.apiEndpoint,
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiConfig.apiKey}`,
+              },
+              body: JSON.stringify(requestBody),
+              timeout: timeout,
+            },
+          },
+          (response) => {
+            if (response.success) {
+              const mockResponse = {
+                ok: true, status: 200, statusText: 'OK',
+                json: async () => response.data,
+              } as Response;
+              resolve(mockResponse);
+            } else {
+              const mockResponse = {
+                ok: false,
+                status: response.error?.status || 500,
+                statusText: response.error?.statusText || 'Internal Server Error',
+                json: async () => ({ error: response.error }),
+              } as Response;
+              resolve(mockResponse);
+            }
+          }
+        );
+      });
+  }
+
+  async analyzeFullText(
+    text: string,
+    settings: UserSettings,
+  ): Promise<FullTextAnalysisResponse> {
+    // ... (analyzeFullText logic from original ApiService, adapted to use this.config)
+    const originalText = text || '';
+    if (!originalText.trim() || !this.config.apiKey) {
+        return { original: originalText, processed: originalText, replacements: [] };
     }
 
-    // 按位置排序确保处理顺序正确
-    result.sort((a, b) => a.position.start - b.position.start);
+    try {
+        const useIntelligentMode = settings.multilingualConfig?.intelligentMode || settings.translationDirection === 'intelligent';
+        const systemPrompt = useIntelligentMode
+            ? getSystemPromptByConfig({
+                translationDirection: 'intelligent',
+                targetLanguage: settings.multilingualConfig.targetLanguage,
+                userLevel: settings.userLevel,
+                replacementRate: settings.replacementRate,
+                intelligentMode: true,
+              })
+            : getSystemPrompt(settings.translationDirection, settings.userLevel, settings.replacementRate);
 
-    return result;
+        let requestBody: any = {
+            model: this.config.model,
+            messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: `{{ ${originalText} }}` },
+            ],
+            temperature: this.config.temperature,
+            response_format: { type: 'json_object' },
+        };
+
+        if (this.config.includeThinkingParam) {
+            requestBody.enable_thinking = this.config.enable_thinking;
+        }
+        requestBody = mergeCustomParams(requestBody, this.config.customParams);
+
+        const rateLimiter = rateLimitManager.getLimiter(this.config.apiEndpoint, this.config.requestsPerSecond || 0, true);
+        const apiRequestFunction = async () => {
+            const timeout = getApiTimeout(settings.apiRequestTimeout || 30000);
+            return this.sendApiRequest(requestBody, this.config, timeout);
+        };
+
+        const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
+
+        if (!response.ok) {
+            console.error(`API 请求失败: ${response.status} ${response.statusText}`);
+            return { original: originalText, processed: originalText, replacements: [] };
+        }
+
+        const data = await response.json();
+        return this.extractReplacements(data, originalText);
+
+    } catch (error: any) {
+        console.error('API请求失败:', error);
+        return { original: originalText, processed: originalText, replacements: [] };
+    }
+  }
+
+  private extractReplacements(
+    data: any,
+    originalText: string,
+  ): FullTextAnalysisResponse {
+    // ... (extractIntelligentReplacements and extractReplacements logic combined and simplified)
+    try {
+        if (!data?.choices?.[0]?.message?.content) {
+            return { original: originalText, processed: originalText, replacements: [] };
+        }
+        const cleanedContent = cleanMarkdownFromResponse(data.choices[0].message.content);
+        const content = JSON.parse(cleanedContent);
+        const replacements = addPositionsToReplacements(originalText, content.replacements || []);
+        return { original: originalText, processed: '', replacements };
+    } catch (error) {
+        console.error('提取替换信息失败:', error);
+        return { original: originalText, processed: originalText, replacements: [] };
+    }
+  }
+}
+
+// API 服务工厂
+export class ApiService {
+  static createProvider(
+    activeConfig: ApiConfigItem,
+  ): ITranslationProvider {
+    const { provider, config } = activeConfig;
+
+    switch (provider) {
+      case TranslationProvider.GoogleGemini:
+      case TranslationProvider.ProxyGemini:
+        // The distinction between GoogleGemini and ProxyGemini is handled by the apiEndpoint in the config.
+        const geminiConfig: GeminiConfig = {
+          apiKey: config.apiKey,
+          model: config.model,
+          apiEndpoint: provider === TranslationProvider.ProxyGemini ? config.apiEndpoint : undefined,
+        };
+        return new GoogleGeminiProvider(geminiConfig);
+
+      case TranslationProvider.OpenAI:
+      case TranslationProvider.DeepSeek:
+      case TranslationProvider.SiliconFlow:
+      default:
+        return new OpenAIProvider(config);
+    }
   }
 }
