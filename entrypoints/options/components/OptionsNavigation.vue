@@ -14,15 +14,10 @@
       <div class="h-16 flex items-center px-6 border-b border-sidebar-border">
         <div class="flex items-center space-x-3">
           <img src="/assets/vue.svg" alt="logo" class="w-8 h-8" />
-          <div class="bg-black py-4">
+          <div class="py-4">
             <h4
               class="text-sm font-semibold text-center font-mono bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-flicker relative">
               浸入式学语言助手 ILLA Helper
-              <!-- 故障效果伪元素 -->
-              <span
-                class="absolute inset-0 text-sm font-semibold text-center font-mono text-pink-500 opacity-30 blur-sm animate-glitch">
-                浸入式学语言助手 ILLA Helper
-              </span>
             </h4>
           </div>
           <!-- 移动端关闭按钮 -->
@@ -216,7 +211,7 @@ const handleSectionChange = (section: string) => {
   top: 0;
   left: -100%;
   width: 85%;
-  max-width: 320px;
+  max-width: 270px;
   height: 100vh;
   z-index: 50;
   transition: left 0.3s ease;
@@ -241,9 +236,8 @@ const handleSectionChange = (section: string) => {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background-color: var(oklch(0.205 0 0));
+  background-color: var(--background);
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .hamburger {
@@ -259,7 +253,7 @@ const handleSectionChange = (section: string) => {
   display: block;
   height: 2px;
   width: 100%;
-  background-color: white;
+  background-color: var(--foreground);
   border-radius: 2px;
   transition: all 0.3s ease;
 }
