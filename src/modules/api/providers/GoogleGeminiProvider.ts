@@ -2,15 +2,17 @@
  * Google Gemini 翻译提供者
  */
 
-import {
-  GoogleGenerativeAI
-} from '@google/generative-ai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { UserSettings, FullTextAnalysisResponse } from '../../types';
 import { BaseProvider } from '../base/BaseProvider';
 import { mergeCustomParams } from '../utils/apiUtils';
 import { addPositionsToReplacements } from '../utils/textUtils';
 import { getSystemPromptByConfig } from '../../promptManager';
-import { extractAndParseJson, getApiTimeout, mapParamsForProvider } from '@/src/utils';
+import {
+  extractAndParseJson,
+  getApiTimeout,
+  mapParamsForProvider,
+} from '@/src/utils';
 import { rateLimitManager } from '../../rateLimit';
 
 /**

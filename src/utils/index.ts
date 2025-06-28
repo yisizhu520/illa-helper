@@ -129,13 +129,20 @@ export async function testGeminiConnection(
     const text = response.text();
 
     if (text.includes('OK')) {
-      return { success: true, message: 'Connection successful.', model: apiConfig.model };
+      return {
+        success: true,
+        message: 'Connection successful.',
+        model: apiConfig.model,
+      };
     } else {
       return { success: false, message: 'Received an unexpected response.' };
     }
   } catch (error: any) {
     console.error('Gemini connection test failed:', error);
-    return { success: false, message: error.message || 'An unknown error occurred.' };
+    return {
+      success: false,
+      message: error.message || 'An unknown error occurred.',
+    };
   }
 }
 
@@ -182,7 +189,10 @@ export async function testOpenAICompatibleConnection(
   baseTimeout?: number,
 ): Promise<ApiTestResult> {
   if (!apiConfig.apiKey || !apiConfig.apiEndpoint) {
-    return { success: false, message: 'API Key or Endpoint is not configured.' };
+    return {
+      success: false,
+      message: 'API Key or Endpoint is not configured.',
+    };
   }
 
   try {
@@ -241,12 +251,13 @@ export async function testOpenAICompatibleConnection(
               const mockResponse = {
                 ok: false,
                 status: response.error?.status || 500,
-                statusText: response.error?.statusText || 'Internal Server Error',
+                statusText:
+                  response.error?.statusText || 'Internal Server Error',
                 json: async () => ({ error: response.error }),
               } as Response;
               resolve(mockResponse);
             }
-          }
+          },
         );
       });
     } else {
@@ -424,7 +435,7 @@ export function mapParamsForProvider(params: any, provider: 'gemini'): any {
     top_p: 'topP',
     stop: 'stopSequences',
     frequency_penalty: 'frequencyPenalty',
-    presence_penalty: 'presencePenalty'
+    presence_penalty: 'presencePenalty',
   };
 
   const mappedParams: { [key: string]: any } = {};
@@ -437,10 +448,12 @@ export function mapParamsForProvider(params: any, provider: 'gemini'): any {
   }
 
   // 特殊处理 stopSequences，确保它是一个字符串数组
-  if (mappedParams.stopSequences && !Array.isArray(mappedParams.stopSequences)) {
+  if (
+    mappedParams.stopSequences &&
+    !Array.isArray(mappedParams.stopSequences)
+  ) {
     mappedParams.stopSequences = [String(mappedParams.stopSequences)];
   }
-
 
   return mappedParams;
 }

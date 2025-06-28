@@ -29,17 +29,17 @@ export class OpenAIProvider extends BaseProvider {
 
     const systemPrompt = useIntelligentMode
       ? getSystemPromptByConfig({
-        translationDirection: 'intelligent',
-        targetLanguage: settings.multilingualConfig.targetLanguage,
-        userLevel: settings.userLevel,
-        replacementRate: settings.replacementRate,
-        intelligentMode: true,
-      })
+          translationDirection: 'intelligent',
+          targetLanguage: settings.multilingualConfig.targetLanguage,
+          userLevel: settings.userLevel,
+          replacementRate: settings.replacementRate,
+          intelligentMode: true,
+        })
       : getSystemPrompt(
-        settings.translationDirection,
-        settings.userLevel,
-        settings.replacementRate
-      );
+          settings.translationDirection,
+          settings.userLevel,
+          settings.replacementRate,
+        );
 
     let requestBody: any = {
       model: this.config.model,
@@ -60,7 +60,7 @@ export class OpenAIProvider extends BaseProvider {
     const rateLimiter = rateLimitManager.getLimiter(
       this.config.apiEndpoint,
       this.config.requestsPerSecond || 0,
-      true
+      true,
     );
 
     const apiRequestFunction = async () => {
@@ -72,7 +72,9 @@ export class OpenAIProvider extends BaseProvider {
 
     if (!response.ok) {
       console.error(`API 请求失败: ${response.status} ${response.statusText}`);
-      throw new Error(`API 请求失败: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `API 请求失败: ${response.status} ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -91,17 +93,19 @@ export class OpenAIProvider extends BaseProvider {
         throw new Error('API响应格式错误');
       }
 
-      const cleanedContent = cleanMarkdownFromResponse(data.choices[0].message.content);
+      const cleanedContent = cleanMarkdownFromResponse(
+        data.choices[0].message.content,
+      );
       const content = JSON.parse(cleanedContent);
       const replacements = addPositionsToReplacements(
         originalText,
-        content.replacements || []
+        content.replacements || [],
       );
 
       return {
         original: originalText,
         processed: '',
-        replacements
+        replacements,
       };
     } catch (error) {
       console.error('提取替换信息失败:', error);

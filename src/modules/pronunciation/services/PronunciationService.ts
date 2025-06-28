@@ -946,7 +946,10 @@ export class PronunciationService {
     tooltip.className = 'wxt-pronunciation-tooltip';
 
     // 使用TooltipRenderer生成HTML内容
-    safeSetInnerHTML(tooltip, this.tooltipRenderer.createMainTooltipHTML(elementData));
+    safeSetInnerHTML(
+      tooltip,
+      this.tooltipRenderer.createMainTooltipHTML(elementData),
+    );
 
     // 添加主悬浮框事件处理
     this.attachTooltipEventListeners(tooltip, elementData);
@@ -1097,12 +1100,15 @@ export class PronunciationService {
       }
 
       // 使用TooltipRenderer生成嵌套单词悬浮框HTML
-      safeSetInnerHTML(wordTooltip, this.tooltipRenderer.createNestedWordTooltipHTML(
-        word,
-        phoneticText,
-        phonetic?.error?.hasPhoneticError,
-        phonetic?.error?.phoneticErrorMessage,
-      ));
+      safeSetInnerHTML(
+        wordTooltip,
+        this.tooltipRenderer.createNestedWordTooltipHTML(
+          word,
+          phoneticText,
+          phonetic?.error?.hasPhoneticError,
+          phonetic?.error?.phoneticErrorMessage,
+        ),
+      );
 
       // 添加朗读功能
       const audioBtns = wordTooltip.querySelectorAll('.wxt-accent-audio-btn');

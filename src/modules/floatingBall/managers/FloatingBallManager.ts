@@ -531,11 +531,7 @@ export class FloatingBallManager {
       'mousemove',
       this.handleMouseMove.bind(this),
     );
-    this.bindEventListener(
-      document,
-      'mouseup',
-      this.handleMouseUp.bind(this),
-    );
+    this.bindEventListener(document, 'mouseup', this.handleMouseUp.bind(this));
   }
 
   /**
@@ -754,8 +750,8 @@ export class FloatingBallManager {
   }
 
   /**
- * 触摸开始处理（独立实现，避免与鼠标事件冲突）
- */
+   * 触摸开始处理（独立实现，避免与鼠标事件冲突）
+   */
   private handleTouchStart(e: TouchEvent): void {
     // 确保是触摸设备并且只有一个触摸点
     if (e.touches.length !== 1) return;
@@ -804,8 +800,8 @@ export class FloatingBallManager {
   }
 
   /**
- * 触摸移动处理（独立实现）
- */
+   * 触摸移动处理（独立实现）
+   */
   private handleTouchMove(e: TouchEvent): void {
     if (!this.ballElement || e.touches.length !== 1) return;
 
@@ -860,8 +856,8 @@ export class FloatingBallManager {
   }
 
   /**
- * 触摸结束处理（独立实现）
- */
+   * 触摸结束处理（独立实现）
+   */
   private handleTouchEnd(e: TouchEvent): void {
     // 检查是否是悬浮球上的点击/拖动
     const touchOnBall = this.dragStartY !== 0;

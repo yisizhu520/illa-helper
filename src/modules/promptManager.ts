@@ -235,7 +235,6 @@ If the input text is "你好世界" and the target language is English, a valid 
   return `${taskInstruction}\n\n${rules}\n\n${example}`;
 }
 
-
 export function getSystemPromptByConfig(config: {
   translationDirection: string;
   targetLanguage?: string;

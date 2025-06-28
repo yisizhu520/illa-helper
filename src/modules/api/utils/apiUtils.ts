@@ -5,7 +5,10 @@
 /**
  * 合并自定义参数到基础参数对象
  */
-export function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
+export function mergeCustomParams(
+  baseParams: any,
+  customParamsJson?: string,
+): any {
   const merged = { ...baseParams };
   const protectedKeys = ['model', 'messages', 'apiKey'];
 

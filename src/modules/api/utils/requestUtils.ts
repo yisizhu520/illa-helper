@@ -3,7 +3,7 @@
  */
 
 import { ApiConfig } from '../../types';
-import { ApiRequestConfig, BackgroundProxyResponse } from '../types';
+import { BackgroundProxyResponse } from '../types';
 
 /**
  * 发送API请求（支持后台代理）
@@ -85,7 +85,7 @@ async function sendViaBackground(
           } as Response;
           resolve(mockResponse);
         }
-      }
+      },
     );
   });
 }

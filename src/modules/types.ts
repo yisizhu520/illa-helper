@@ -66,7 +66,7 @@ export enum TranslationProvider {
   DeepSeek = 'DeepSeek',
   SiliconFlow = 'SiliconFlow',
   GoogleGemini = 'GoogleGemini',
-  ProxyGemini = 'ProxyGemini'
+  ProxyGemini = 'ProxyGemini',
 }
 
 // 简化：多语言翻译配置接口

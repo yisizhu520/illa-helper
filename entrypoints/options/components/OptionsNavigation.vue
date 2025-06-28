@@ -1,29 +1,49 @@
 <template>
-  <div class="navigation-container" :class="{ 'mobile': isMobile, 'menu-open': mobileMenuOpen }">
+  <div
+    class="navigation-container"
+    :class="{ mobile: isMobile, 'menu-open': mobileMenuOpen }"
+  >
     <!-- 移动端菜单按钮 -->
     <div v-if="isMobile" class="mobile-menu-button" @click="toggleMobileMenu">
-      <div class="hamburger" :class="{ 'active': mobileMenuOpen }">
+      <div class="hamburger" :class="{ active: mobileMenuOpen }">
         <span></span>
         <span></span>
         <span></span>
       </div>
     </div>
 
-    <div class="navigation-content" :class="{ 'mobile': isMobile, 'menu-open': mobileMenuOpen }">
+    <div
+      class="navigation-content"
+      :class="{ mobile: isMobile, 'menu-open': mobileMenuOpen }"
+    >
       <!-- 顶部Logo区域 -->
       <div class="h-16 flex items-center px-6 border-b border-sidebar-border">
         <div class="flex items-center space-x-3">
           <img src="/assets/vue.svg" alt="logo" class="w-8 h-8" />
           <div class="py-4">
             <h4
-              class="text-sm font-semibold text-center font-mono bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-flicker relative">
+              class="text-sm font-semibold text-center font-mono bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.8)] animate-flicker relative"
+            >
               浸入式学语言助手 ILLA Helper
             </h4>
           </div>
           <!-- 移动端关闭按钮 -->
-          <button v-if="isMobile" @click="toggleMobileMenu" class="ml-auto text-sidebar-foreground/60">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <button
+            v-if="isMobile"
+            @click="toggleMobileMenu"
+            class="ml-auto text-sidebar-foreground/60"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -35,22 +55,38 @@
       <nav class="flex-1 px-4 py-6 overflow-y-auto">
         <div class="space-y-6">
           <!-- 基础功能组 -->
-          <NavigationGroup title="基础功能" :items="basicFeatures" :current-section="currentSection"
-            @section-change="handleSectionChange" />
+          <NavigationGroup
+            title="基础功能"
+            :items="basicFeatures"
+            :current-section="currentSection"
+            @section-change="handleSectionChange"
+          />
 
           <!-- 高级功能组 -->
-          <NavigationGroup title="高级功能" :items="advancedFeatures" :current-section="currentSection"
-            @section-change="handleSectionChange" />
+          <NavigationGroup
+            title="高级功能"
+            :items="advancedFeatures"
+            :current-section="currentSection"
+            @section-change="handleSectionChange"
+          />
 
           <!-- 管理工具组 -->
-          <NavigationGroup title="管理工具" :items="managementTools" :current-section="currentSection"
-            @section-change="handleSectionChange" />
+          <NavigationGroup
+            title="管理工具"
+            :items="managementTools"
+            :current-section="currentSection"
+            @section-change="handleSectionChange"
+          />
         </div>
       </nav>
     </div>
 
     <!-- 移动端背景遮罩 -->
-    <div v-if="isMobile && mobileMenuOpen" class="mobile-overlay" @click="toggleMobileMenu"></div>
+    <div
+      v-if="isMobile && mobileMenuOpen"
+      class="mobile-overlay"
+      @click="toggleMobileMenu"
+    ></div>
   </div>
 </template>
 
@@ -165,12 +201,15 @@ onUnmounted(() => {
 });
 
 // 监视currentSection变化，在移动端自动关闭菜单
-watch(() => props.currentSection, () => {
-  if (isMobile.value && mobileMenuOpen.value) {
-    mobileMenuOpen.value = false;
-    document.body.style.overflow = '';
-  }
-});
+watch(
+  () => props.currentSection,
+  () => {
+    if (isMobile.value && mobileMenuOpen.value) {
+      mobileMenuOpen.value = false;
+      document.body.style.overflow = '';
+    }
+  },
+);
 
 const handleSectionChange = (section: string) => {
   emit('sectionChange', section);

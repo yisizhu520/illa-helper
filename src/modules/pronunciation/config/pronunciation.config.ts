@@ -19,8 +19,6 @@ export interface TTSConfig {
   accent?: 'us' | 'uk'; // 美式或英式发音
 }
 
-
-
 // 发音UI配置
 export interface PronunciationUIConfig {
   showPhonetic: boolean;
@@ -49,8 +47,6 @@ export const DEFAULT_TTS_CONFIG: TTSConfig = {
   volume: 1.0,
   accent: 'us',
 };
-
-
 
 // 默认UI配置
 export const DEFAULT_UI_CONFIG: PronunciationUIConfig = {

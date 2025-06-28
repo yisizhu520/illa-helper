@@ -25,7 +25,7 @@ import {
   AITranslationEntry,
   CacheEntry,
 } from '../types';
-import { ApiConfig, ApiConfigItem, TranslationProvider } from '../../types';
+import { ApiConfig } from '../../types';
 import { API_CONSTANTS } from '../config';
 import { cleanMarkdownFromResponse } from '@/src/utils';
 import { UniversalApiService } from '../../api/services/UniversalApiService';
@@ -199,10 +199,10 @@ export class AITranslationProvider implements IPhoneticProvider {
   async getBatchPhonetics(words: string[]): Promise<PhoneticResult[]> {
     // 批量处理单词翻译
     const results = await Promise.allSettled(
-      words.map(word => this.getPhonetic(word))
+      words.map((word) => this.getPhonetic(word)),
     );
 
-    return results.map(result => {
+    return results.map((result) => {
       if (result.status === 'fulfilled') {
         return result.value;
       } else {

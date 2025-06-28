@@ -13,6 +13,8 @@
     "zip:dev": "wxt zip --mode development",
     "zip:firefox": "wxt zip -b firefox --mode production",
     "zip:firefox:dev": "wxt zip -b firefox --mode development",
+    "zip:safari": "wxt zip -b safari --mode production",
+    "zip:safari:dev": "wxt zip -b safari --mode development",
     "compile": "vue-tsc --noEmit",
     "postinstall": "wxt prepare",
     "lint": "eslint .",

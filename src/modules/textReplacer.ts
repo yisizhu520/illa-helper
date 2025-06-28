@@ -143,10 +143,14 @@ export class TextReplacer {
       }
 
       // 使用工厂方法创建正确的提供商实例
-      const translationProvider = ApiServiceFactory.createProvider(activeConfig);
+      const translationProvider =
+        ApiServiceFactory.createProvider(activeConfig);
 
       // 调用API进行翻译
-      const apiResult = await translationProvider.analyzeFullText(text, settings);
+      const apiResult = await translationProvider.analyzeFullText(
+        text,
+        settings,
+      );
 
       // 存入缓存
       this.cache.set(cacheKey, apiResult);

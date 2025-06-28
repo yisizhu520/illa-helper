@@ -6,12 +6,7 @@
 import { StorageManager } from '../../storageManager';
 import { sendApiRequest } from '../utils/requestUtils';
 import { mergeCustomParams } from '../utils/apiUtils';
-import {
-  UserSettings,
-  ApiConfigItem,
-  ApiConfig,
-  TranslationProvider
-} from '../../types';
+import { ApiConfigItem, ApiConfig, TranslationProvider } from '../../types';
 import { getApiTimeout } from '@/src/utils';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -92,7 +87,7 @@ export class UniversalApiService {
    */
   async call(
     prompt: string,
-    options: UniversalApiOptions = {}
+    options: UniversalApiOptions = {},
   ): Promise<UniversalApiResult> {
     try {
       // 验证输入
@@ -101,35 +96,40 @@ export class UniversalApiService {
           success: false,
           prompt: prompt || '',
           content: '',
-          error: '输入提示词不能为空'
+          error: '输入提示词不能为空',
         };
       }
 
       // 获取API配置
-      const apiConfig = await this.getApiConfig(options.configId, options.forceProvider);
+      const apiConfig = await this.getApiConfig(
+        options.configId,
+        options.forceProvider,
+      );
       if (!apiConfig) {
         return {
           success: false,
           prompt,
           content: '',
-          error: '未找到可用的API配置'
+          error: '未找到可用的API配置',
         };
       }
 
       // 根据Provider类型选择不同的调用方式
-      if (apiConfig.provider === 'GoogleGemini' || apiConfig.provider === 'ProxyGemini') {
+      if (
+        apiConfig.provider === 'GoogleGemini' ||
+        apiConfig.provider === 'ProxyGemini'
+      ) {
         return await this.callGoogleGemini(prompt, apiConfig, options);
       } else {
         return await this.callHttpApi(prompt, apiConfig, options);
       }
-
     } catch (error: any) {
       console.error('UniversalApiService调用失败:', error);
       return {
         success: false,
         prompt,
         content: '',
-        error: error.message || '调用过程中发生未知错误'
+        error: error.message || '调用过程中发生未知错误',
       };
     }
   }
@@ -140,7 +140,7 @@ export class UniversalApiService {
   private async callGoogleGemini(
     prompt: string,
     apiConfig: ApiConfigItem,
-    options: UniversalApiOptions
+    options: UniversalApiOptions,
   ): Promise<UniversalApiResult> {
     try {
       const config = apiConfig.config;
@@ -156,7 +156,7 @@ export class UniversalApiService {
       }
 
       // 从 customParams 合并额外参数
-      let generationConfig = mergeCustomParams(
+      const generationConfig = mergeCustomParams(
         baseGenerationConfig,
         options.customParams || config.customParams,
       );
@@ -188,7 +188,7 @@ export class UniversalApiService {
       console.log('Google Gemini调用:', {
         model: config.model,
         prompt: fullPrompt,
-        config: generationConfig
+        config: generationConfig,
       });
 
       const result = await model.generateContent(fullPrompt);
@@ -203,7 +203,7 @@ export class UniversalApiService {
         prompt,
         content,
         model: config.model,
-        provider: this.getProviderDisplayName(apiConfig.provider)
+        provider: this.getProviderDisplayName(apiConfig.provider),
       };
 
       // 添加Token使用信息（如果有）
@@ -211,7 +211,7 @@ export class UniversalApiService {
         apiResult.usage = {
           promptTokens: response.usageMetadata.promptTokenCount,
           completionTokens: response.usageMetadata.candidatesTokenCount,
-          totalTokens: response.usageMetadata.totalTokenCount
+          totalTokens: response.usageMetadata.totalTokenCount,
         };
       }
 
@@ -219,19 +219,18 @@ export class UniversalApiService {
       if (options.rawResponse) {
         apiResult.rawData = {
           candidates: response.candidates,
-          usageMetadata: response.usageMetadata
+          usageMetadata: response.usageMetadata,
         };
       }
 
       return apiResult;
-
     } catch (error: any) {
       console.error('Google Gemini调用失败:', error);
       return {
         success: false,
         prompt,
         content: '',
-        error: error.message || 'Google Gemini调用失败'
+        error: error.message || 'Google Gemini调用失败',
       };
     }
   }
@@ -242,23 +241,33 @@ export class UniversalApiService {
   private async callHttpApi(
     prompt: string,
     apiConfig: ApiConfigItem,
-    options: UniversalApiOptions
+    options: UniversalApiOptions,
   ): Promise<UniversalApiResult> {
     try {
       // 构建请求参数
-      const requestBody = this.buildRequestBody(prompt, apiConfig.config, options);
+      const requestBody = this.buildRequestBody(
+        prompt,
+        apiConfig.config,
+        options,
+      );
 
       console.log('HTTP API调用:', {
         provider: apiConfig.provider,
         endpoint: apiConfig.config.apiEndpoint,
-        body: requestBody
+        body: requestBody,
       });
 
       // 发送API请求
-      const response = await this.sendRequest(requestBody, apiConfig.config, options.timeout);
+      const response = await this.sendRequest(
+        requestBody,
+        apiConfig.config,
+        options.timeout,
+      );
 
       if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `API请求失败: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
@@ -267,14 +276,13 @@ export class UniversalApiService {
 
       // 解析响应
       return this.parseResponse(data, prompt, apiConfig, options.rawResponse);
-
     } catch (error: any) {
       console.error('HTTP API调用失败:', error);
       return {
         success: false,
         prompt,
         content: '',
-        error: error.message || 'HTTP API调用失败'
+        error: error.message || 'HTTP API调用失败',
       };
     }
   }
@@ -285,11 +293,14 @@ export class UniversalApiService {
    * @param systemPrompt 系统提示词(可选)
    * @returns API响应结果
    */
-  async quickCall(prompt: string, systemPrompt?: string): Promise<UniversalApiResult> {
+  async quickCall(
+    prompt: string,
+    systemPrompt?: string,
+  ): Promise<UniversalApiResult> {
     return this.call(prompt, {
       systemPrompt,
       temperature: 0.7,
-      maxTokens: 1000
+      maxTokens: 1000,
     });
   }
 
@@ -300,17 +311,20 @@ export class UniversalApiService {
    * @returns API响应结果
    */
   async chat(
-    messages: Array<{ role: 'user' | 'assistant' | 'system', content: string }>,
-    options: UniversalApiOptions = {}
+    messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
+    options: UniversalApiOptions = {},
   ): Promise<UniversalApiResult> {
     try {
-      const apiConfig = await this.getApiConfig(options.configId, options.forceProvider);
+      const apiConfig = await this.getApiConfig(
+        options.configId,
+        options.forceProvider,
+      );
       if (!apiConfig) {
         return {
           success: false,
-          prompt: messages.map(m => m.content).join('\n'),
+          prompt: messages.map((m) => m.content).join('\n'),
           content: '',
-          error: '未找到可用的API配置'
+          error: '未找到可用的API配置',
         };
       }
 
@@ -329,13 +343,22 @@ export class UniversalApiService {
       if (options.customParams) {
         requestBody = mergeCustomParams(requestBody, options.customParams);
       } else if (apiConfig.config.customParams) {
-        requestBody = mergeCustomParams(requestBody, apiConfig.config.customParams);
+        requestBody = mergeCustomParams(
+          requestBody,
+          apiConfig.config.customParams,
+        );
       }
 
-      const response = await this.sendRequest(requestBody, apiConfig.config, options.timeout);
+      const response = await this.sendRequest(
+        requestBody,
+        apiConfig.config,
+        options.timeout,
+      );
 
       if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `API请求失败: ${response.status} ${response.statusText}`,
+        );
       }
 
       const data = await response.json();
@@ -344,15 +367,14 @@ export class UniversalApiService {
         data,
         messages[messages.length - 1].content,
         apiConfig,
-        options.rawResponse
+        options.rawResponse,
       );
-
     } catch (error: any) {
       return {
         success: false,
-        prompt: messages.map(m => m.content).join('\n'),
+        prompt: messages.map((m) => m.content).join('\n'),
         content: '',
-        error: error.message || '聊天调用失败'
+        error: error.message || '聊天调用失败',
       };
     }
   }
@@ -375,12 +397,14 @@ export class UniversalApiService {
    * 获取可用的模型列表
    * @returns 模型信息列表
    */
-  async getAvailableModels(): Promise<Array<{ provider: string, model: string }>> {
+  async getAvailableModels(): Promise<
+    Array<{ provider: string; model: string }>
+  > {
     try {
       const userSettings = await this.storageManager.getUserSettings();
-      return userSettings.apiConfigs.map(config => ({
+      return userSettings.apiConfigs.map((config) => ({
         provider: config.provider, // 直接使用字符串，不需要转换
-        model: config.config.model
+        model: config.config.model,
       }));
     } catch {
       return [];
@@ -392,24 +416,32 @@ export class UniversalApiService {
    */
   private async getApiConfig(
     configId?: string,
-    forceProvider?: TranslationProvider
+    forceProvider?: TranslationProvider,
   ): Promise<ApiConfigItem | null> {
     const userSettings = await this.storageManager.getUserSettings();
 
     if (configId) {
-      return userSettings.apiConfigs.find(config => config.id === configId) || null;
+      return (
+        userSettings.apiConfigs.find((config) => config.id === configId) || null
+      );
     }
 
     if (forceProvider) {
       // 将枚举值转换为字符串进行比较
       const providerString = forceProvider.toString();
-      return userSettings.apiConfigs.find(config => config.provider === providerString) || null;
+      return (
+        userSettings.apiConfigs.find(
+          (config) => config.provider === providerString,
+        ) || null
+      );
     }
 
     // 使用当前活跃配置
-    return userSettings.apiConfigs.find(
-      config => config.id === userSettings.activeApiConfigId
-    ) || null;
+    return (
+      userSettings.apiConfigs.find(
+        (config) => config.id === userSettings.activeApiConfigId,
+      ) || null
+    );
   }
 
   /**
@@ -418,7 +450,7 @@ export class UniversalApiService {
   private buildRequestBody(
     prompt: string,
     config: ApiConfig,
-    options: UniversalApiOptions
+    options: UniversalApiOptions,
   ): any {
     const messages = [];
 
@@ -456,7 +488,7 @@ export class UniversalApiService {
   private async sendRequest(
     requestBody: any,
     config: ApiConfig,
-    timeout?: number
+    timeout?: number,
   ): Promise<Response> {
     const timeoutMs = timeout ?? 0;
     return await sendApiRequest(requestBody, config, timeoutMs);
@@ -469,21 +501,24 @@ export class UniversalApiService {
     data: any,
     prompt: string,
     apiConfig: ApiConfigItem,
-    rawResponse?: boolean
+    rawResponse?: boolean,
   ): UniversalApiResult {
     try {
       let content = '';
       let usage: any = undefined;
 
       // 根据不同的Provider解析响应格式
-      if (apiConfig.provider === 'GoogleGemini' || apiConfig.provider === 'ProxyGemini') {
+      if (
+        apiConfig.provider === 'GoogleGemini' ||
+        apiConfig.provider === 'ProxyGemini'
+      ) {
         // Google Gemini格式 (包括ProxyGemini)
         content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
         if (data.usageMetadata) {
           usage = {
             promptTokens: data.usageMetadata.promptTokenCount,
             completionTokens: data.usageMetadata.candidatesTokenCount,
-            totalTokens: data.usageMetadata.totalTokenCount
+            totalTokens: data.usageMetadata.totalTokenCount,
           };
         }
       } else {
@@ -493,7 +528,7 @@ export class UniversalApiService {
           usage = {
             promptTokens: data.usage.prompt_tokens,
             completionTokens: data.usage.completion_tokens,
-            totalTokens: data.usage.total_tokens
+            totalTokens: data.usage.total_tokens,
           };
         }
       }
@@ -503,7 +538,7 @@ export class UniversalApiService {
         prompt,
         content,
         model: apiConfig.config.model,
-        provider: this.getProviderDisplayName(apiConfig.provider)
+        provider: this.getProviderDisplayName(apiConfig.provider),
       };
 
       // 添加Token使用信息
@@ -517,12 +552,12 @@ export class UniversalApiService {
       }
 
       return result;
-    } catch (error) {
+    } catch (_) {
       return {
         success: false,
         prompt,
         content: '',
-        error: '解析API响应失败'
+        error: '解析API响应失败',
       };
     }
   }
@@ -532,11 +567,11 @@ export class UniversalApiService {
    */
   private getProviderDisplayName(provider: string): string {
     const nameMap: Record<string, string> = {
-      'OpenAI': 'OpenAI',
-      'GoogleGemini': 'Google Gemini',
-      'ProxyGemini': 'Proxy Gemini',
-      'DeepSeek': 'DeepSeek',
-      'SiliconFlow': 'SiliconFlow'
+      OpenAI: 'OpenAI',
+      GoogleGemini: 'Google Gemini',
+      ProxyGemini: 'Proxy Gemini',
+      DeepSeek: 'DeepSeek',
+      SiliconFlow: 'SiliconFlow',
     };
     return nameMap[provider] || provider;
   }
@@ -553,7 +588,7 @@ export const universalApi = UniversalApiService.getInstance();
  */
 export async function callAI(
   prompt: string,
-  options?: UniversalApiOptions
+  options?: UniversalApiOptions,
 ): Promise<UniversalApiResult> {
   return universalApi.call(prompt, options);
 }
@@ -566,7 +601,7 @@ export async function callAI(
  */
 export async function quickAI(
   prompt: string,
-  systemPrompt?: string
+  systemPrompt?: string,
 ): Promise<UniversalApiResult> {
   return universalApi.quickCall(prompt, systemPrompt);
 }

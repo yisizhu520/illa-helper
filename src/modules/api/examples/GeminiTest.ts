@@ -16,7 +16,7 @@ export async function testGeminiProviders() {
       forceProvider: 'GoogleGemini' as any,
       systemPrompt: 'Please respond in Chinese.',
       temperature: 0.7,
-      maxTokens: 100
+      maxTokens: 100,
     });
 
     console.log('结果:', {
@@ -25,7 +25,7 @@ export async function testGeminiProviders() {
       provider: result1.provider,
       model: result1.model,
       usage: result1.usage,
-      error: result1.error
+      error: result1.error,
     });
   } catch (error) {
     console.error('Google Gemini 测试失败:', error);
@@ -34,11 +34,14 @@ export async function testGeminiProviders() {
   // 测试 2: Proxy Gemini 调用
   console.log('\n2. 测试 Proxy Gemini:');
   try {
-    const result2 = await universalApi.call('Translate this to Chinese: Beautiful day', {
-      forceProvider: 'ProxyGemini' as any,
-      temperature: 0.5,
-      maxTokens: 50
-    });
+    const result2 = await universalApi.call(
+      'Translate this to Chinese: Beautiful day',
+      {
+        forceProvider: 'ProxyGemini' as any,
+        temperature: 0.5,
+        maxTokens: 50,
+      },
+    );
 
     console.log('结果:', {
       success: result2.success,
@@ -46,7 +49,7 @@ export async function testGeminiProviders() {
       provider: result2.provider,
       model: result2.model,
       usage: result2.usage,
-      error: result2.error
+      error: result2.error,
     });
   } catch (error) {
     console.error('Proxy Gemini 测试失败:', error);
