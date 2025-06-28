@@ -15,11 +15,12 @@
     "zip:firefox:dev": "wxt zip -b firefox --mode development",
     "zip:safari": "wxt zip -b safari --mode production",
     "zip:safari:dev": "wxt zip -b safari --mode development",
+    "zip:all": "wxt zip -b safari --mode production && wxt zip -b firefox --mode production && wxt zip -b chrome --mode production",
     "compile": "vue-tsc --noEmit",
     "postinstall": "wxt prepare",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"src/**/*.{js,ts,jsx,tsx,vue}\"",
+    "format": "prettier --write \"src/**/*.{js,ts,jsx,tsx,vue} && entrypoints/**/*.{js,ts,jsx,tsx,vue}\"",
     "check": "npm run format && npm run lint:fix",
     "prepare": "husky install"
   },
