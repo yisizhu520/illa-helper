@@ -3,7 +3,7 @@
  * 负责根据用户设置替换文本中的词汇
  */
 
-import { ApiService } from './apiService';
+import { ApiServiceFactory } from './api';
 import { StyleManager } from './styleManager';
 import { StorageManager } from './storageManager';
 import {
@@ -45,14 +45,12 @@ export class TextReplacer {
   private static readonly CACHE_MAX_SIZE = 100;
   private static readonly CACHE_CLEANUP_BATCH = 20;
 
-  private apiService: ApiService;
   private styleManager: StyleManager;
   private config: ReplacementConfig;
   private cache: Map<string, FullTextAnalysisResponse>;
 
   constructor(config: ReplacementConfig) {
     this.config = config;
-    this.apiService = new ApiService();
     this.styleManager = new StyleManager();
     this.cache = new Map<string, FullTextAnalysisResponse>();
     this.styleManager.setTranslationStyle(
@@ -135,8 +133,20 @@ export class TextReplacer {
     }
 
     try {
+      // 获取当前活跃的API配置
+      const activeConfig = settings.apiConfigs.find(
+        (config) => config.id === settings.activeApiConfigId,
+      );
+
+      if (!activeConfig) {
+        throw new Error('No active API configuration found.');
+      }
+
+      // 使用工厂方法创建正确的提供商实例
+      const translationProvider = ApiServiceFactory.createProvider(activeConfig);
+
       // 调用API进行翻译
-      const apiResult = await this.apiService.analyzeFullText(text, settings);
+      const apiResult = await translationProvider.analyzeFullText(text, settings);
 
       // 存入缓存
       this.cache.set(cacheKey, apiResult);

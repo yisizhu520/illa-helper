@@ -3,7 +3,7 @@
  * This file contains shared type definitions and default constants to avoid circular dependencies.
  */
 
-// From apiService.ts
+// API related types (now in ./api module)
 export interface Replacement {
   original: string;
   translation: string;
@@ -59,6 +59,14 @@ export interface ReplacementConfig {
   inlineTranslation: boolean;
   translationStyle: TranslationStyle;
   translationDirection: string;
+}
+
+export enum TranslationProvider {
+  OpenAI = 'OpenAI',
+  DeepSeek = 'DeepSeek',
+  SiliconFlow = 'SiliconFlow',
+  GoogleGemini = 'GoogleGemini',
+  ProxyGemini = 'ProxyGemini'
 }
 
 // 简化：多语言翻译配置接口

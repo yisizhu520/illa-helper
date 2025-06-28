@@ -281,7 +281,7 @@ This ensures proper storage functionality for saving user settings in Firefox.
 │   │   └── blacklist/    # Website blacklist feature
 │   ├── processing/       # Text processing module
 │   ├── floatingBall/     # Floating ball feature
-│   ├── apiService.ts     # AI translation API service
+│   ├── api/              # AI translation API service module
 │   ├── textProcessor.ts  # Intelligent text processor
 │   ├── textReplacer.ts   # Text replacement engine
 │   ├── styleManager.ts   # Style manager

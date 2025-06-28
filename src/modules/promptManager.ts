@@ -192,13 +192,70 @@ function generateTraditionalTaskInstruction(direction: string): string {
  * @param config 翻译配置对象
  * @returns 系统提示词
  */
+/**
+ * 为 Google Gemini 设计的专用系统提示词。
+ * 这个版本简化了指令，并强化了JSON输出的要求，以适应Gemini的特点。
+ * @param targetLanguage 目标语言代码
+ * @param level 用户水平
+ * @param replacementRate 替换比例
+ * @returns Gemini 优化的系统提示词
+ */
+export function getGeminiSystemPrompt(
+  targetLanguage: string,
+  level: UserLevel,
+  replacementRate: number,
+): string {
+  const targetLanguageName = getTargetLanguageDisplayName(targetLanguage);
+
+  const taskInstruction = `Your task is to act as a translation engine. You will be given a text in any language. Your goal is to select key words and phrases and provide their translations in ${targetLanguageName}.`;
+
+  const rules = `
+CRITICAL RULES:
+1.  **Output Format**: You MUST output a single, valid JSON object. Nothing else. The JSON object must have a single key named "replacements", which is an array of objects.
+2.  **Object Structure**: Each object in the "replacements" array must contain exactly two keys: "original" (the source word/phrase) and "translation" (the ${targetLanguageName} translation).
+3.  **No Self-Translation**: If a word in the source text is already in ${targetLanguageName}, you MUST skip it. Do not include it in the output.
+4.  **Content Purity**: The "translation" value must ONLY be the translated text. Do not add any explanations, comments, or extra information.
+5.  **Word Selection**: Adjust the number and difficulty of the selected words based on the user's learning level: ${UserLevel[level]}.
+6.  **Translation Rate**: The total length of the *original* words/phrases you select to translate should be approximately ${Math.round(
+    replacementRate * 100,
+  )}% of the total text length.
+`;
+
+  const example = `
+EXAMPLE:
+If the input text is "你好世界" and the target language is English, a valid output is:
+{
+  "replacements": [
+    {"original": "你好", "translation": "Hello"},
+    {"original": "世界", "translation": "World"}
+  ]
+}
+`;
+
+  return `${taskInstruction}\n\n${rules}\n\n${example}`;
+}
+
+
 export function getSystemPromptByConfig(config: {
   translationDirection: string;
   targetLanguage?: string;
   userLevel: UserLevel;
   replacementRate: number;
   intelligentMode?: boolean;
+  provider?: 'gemini' | string; // 新增 provider 字段
 }): string {
+  // Gemini特定路由
+  if (config.provider === 'gemini') {
+    if (!config.targetLanguage) {
+      throw new Error('Gemini 模式下必须提供目标语言');
+    }
+    return getGeminiSystemPrompt(
+      config.targetLanguage,
+      config.userLevel,
+      config.replacementRate,
+    );
+  }
+
   // 智能模式路由
   if (config.intelligentMode || config.translationDirection === 'intelligent') {
     if (!config.targetLanguage) {

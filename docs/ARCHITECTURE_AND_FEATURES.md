@@ -93,15 +93,35 @@ public async processRoot(
 - 避免处理已翻译或标记的内容
 - 智能识别并保护隐藏或不可见元素
 
-### 2. AI翻译服务
+### 2. AI翻译服务（重构后模块化架构）
 
-**位置**: `src/modules/apiService.ts`
+**位置**: `src/modules/api/` 模块
+
+**架构说明**:
+```
+src/modules/api/
+├── index.ts                    # 统一导出入口
+├── types.ts                   # 接口和类型定义
+├── base/
+│   └── BaseProvider.ts        # 抽象基类，提供公共功能
+├── providers/
+│   ├── GoogleGeminiProvider.ts # Google Gemini API实现
+│   ├── OpenAIProvider.ts      # OpenAI兼容API实现
+│   └── index.ts               # Provider统一导出
+├── utils/
+│   ├── apiUtils.ts            # API相关工具函数
+│   ├── textUtils.ts           # 文本处理工具函数
+│   └── requestUtils.ts        # 请求处理工具函数
+└── factory/
+    └── ApiServiceFactory.ts   # API服务工厂
+```
 
 **核心职责**:
 - 调用兼容OpenAI API的大语言模型
-- 智能词汇选择和难度适配
+- 智能词汇选择和难度适配  
 - 结构化翻译结果处理
 - 错误处理和重试机制
+- 模块化设计，易于扩展新的翻译服务
 
 **API接口设计**:
 ```typescript
@@ -424,76 +444,41 @@ styleManager.registerStyle('neon', {
 
 ---
 
-## 🔌 API参考
+## 📖 使用指南和测试文档
 
-### 用户设置API
+**详细的API使用方法、测试指南、调试技巧和故障排除，请参考：**
 
-#### 获取用户设置
-```typescript
-const storageManager = new StorageManager();
-const settings = await storageManager.getUserSettings();
+📚 **[TEST_DOC.md](./TEST_DOC.md)** - 完整的使用指南与测试文档
+
+该文档包含：
+- ✅ **UniversalApiService 通用AI服务** - 新增的通用大模型调用能力
+- ✅ **API参考与使用示例** - 翻译服务、发音服务、设置管理等完整API
+- ✅ **测试指南** - 自动化测试和手动测试检查清单
+- ✅ **调试技巧** - 性能监控、错误诊断、网络调试等
+- ✅ **故障排除** - 常见问题解决方案和错误代码参考
+- ✅ **性能优化建议** - 缓存策略、内存管理、批量处理等
 ```
 
-#### 保存用户设置
+#### 请求处理工具函数
 ```typescript
-await storageManager.saveUserSettings({
-  userLevel: UserLevel.INTERMEDIATE,
-  replacementRate: 0.3,
-  translationStyle: TranslationStyle.HIGHLIGHTED
-});
-```
+import { sendApiRequest } from '@/src/modules/api';
 
-#### 设置更新通知
-```typescript
-import { notifySettingsChanged } from '@/src/modules/messaging';
-
-await notifySettingsChanged(newSettings);
-```
-
-### 发音服务API
-
-#### 初始化发音服务
-```typescript
-import { PronunciationService, DEFAULT_PRONUNCIATION_CONFIG } from '@/src/modules/pronunciation';
-
-const pronunciationService = new PronunciationService({
-  ...DEFAULT_PRONUNCIATION_CONFIG,
-  uiConfig: {
-    tooltipEnabled: true,
-    showPhonetic: true,
-    showPlayButton: true
-  }
-});
-```
-
-#### 为元素添加发音功能
-```typescript
-await pronunciationService.addPronunciationToElement(
-  element,           // HTML元素
-  'hello world',     // 单词或短语
-  false             // 是否为短语
+// 发送API请求（支持后台代理）
+const response = await sendApiRequest(
+  requestBody,    // 请求体
+  apiConfig,      // API配置
+  0              // 超时时间（0表示无限制）
 );
-```
-
-#### 语音合成
-```typescript
-// 使用默认TTS
-const result = await pronunciationService.speakText('Hello World');
-
-// 指定口音
-const result = await pronunciationService.speakTextWithAccent('Hello', 'en-GB');
-```
-
-#### 获取音标
-```typescript
-const phoneticResult = await pronunciationService.getPhonetic('hello');
-console.log(phoneticResult.phonetics[0].text); // "/həˈloʊ/"
 ```
 
 ### 文本处理API
 
 #### 处理页面内容
 ```typescript
+import { TextProcessor } from '@/src/modules/textProcessor';
+import { TextReplacer } from '@/src/modules/textReplacer';
+import { OriginalWordDisplayMode } from '@/src/modules/types';
+
 const textProcessor = new TextProcessor(true); // 启用发音功能
 const textReplacer = new TextReplacer(config);
 
@@ -507,6 +492,16 @@ await textProcessor.processRoot(
 
 #### 替换文本
 ```typescript
+import { ReplacementConfig } from '@/src/modules/types';
+
+const config: ReplacementConfig = {
+  userLevel: UserLevel.INTERMEDIATE,
+  replacementRate: 0.3,
+  useGptApi: true,
+  translationStyle: TranslationStyle.DEFAULT,
+  translationDirection: 'intelligent'
+};
+
 const textReplacer = new TextReplacer(config);
 const result = await textReplacer.replaceText("这是一段中文文本");
 
@@ -613,34 +608,63 @@ type Theme = 'light' | 'dark' | 'auto';
 
 ### 新功能开发流程
 
-#### 1. 添加新的Provider
+#### 1. 添加新的翻译Provider（新架构）
 ```typescript
-// 1. 定义接口（如果需要）
-interface INewProvider {
-  process(input: string): Promise<Result>;
-}
+// 1. 在 src/modules/api/providers/ 目录下创建新文件
+// 例如：ClaudeProvider.ts
 
-// 2. 实现Provider
-class NewProvider implements INewProvider {
-  async process(input: string): Promise<Result> {
-    // 实现逻辑
+import { BaseProvider } from '../base/BaseProvider';
+import { UserSettings, FullTextAnalysisResponse } from '../../types';
+
+export class ClaudeProvider extends BaseProvider {
+  protected getProviderName(): string {
+    return 'Claude';
+  }
+
+  protected async doAnalyzeFullText(
+    text: string,
+    settings: UserSettings,
+  ): Promise<FullTextAnalysisResponse> {
+    // 实现Claude API调用逻辑
+    const response = await this.callClaudeAPI(text, settings);
+    return this.parseClaudeResponse(response, text);
+  }
+
+  private async callClaudeAPI(text: string, settings: UserSettings) {
+    // Claude API调用实现
+    const config = this.getConfig();
+    // ... 具体实现
+  }
+
+  private parseClaudeResponse(response: any, originalText: string): FullTextAnalysisResponse {
+    // 解析Claude响应格式
+    // ... 具体实现
   }
 }
 
-// 3. 在工厂中注册
-export class ProviderFactory {
-  static createProvider(type: string): INewProvider {
-    switch (type) {
-      case 'new':
-        return new NewProvider();
-      default:
-        throw new Error(`Unknown provider: ${type}`);
+// 2. 在 providers/index.ts 中导出
+export { ClaudeProvider } from './ClaudeProvider';
+
+// 3. 在 ApiServiceFactory.ts 中添加创建逻辑
+import { ClaudeProvider } from '../providers';
+
+export class ApiServiceFactory {
+  static createProvider(activeConfig: ApiConfigItem): ITranslationProvider {
+    const { provider, config } = activeConfig;
+
+    switch (provider) {
+      case TranslationProvider.Claude:  // 添加新的枚举值
+        return new ClaudeProvider(config);
+      // ... 其他Provider
     }
   }
 }
 
-// 4. 添加到模块导出
-export { NewProvider } from './NewProvider';
+// 4. 在 types.ts 中添加新的Provider类型
+enum TranslationProvider {
+  // ... 现有类型
+  Claude = 'claude'
+}
 ```
 
 #### 2. 添加新的样式
@@ -684,233 +708,6 @@ const DEFAULT_SETTINGS: UserSettings = {
 </div>
 ```
 
-### 测试指南
-
-#### 1. 手动测试检查清单
-- [ ] 基本翻译功能在不同类型网站上工作正常
-- [ ] 智能语言检测功能正确识别网页源语言
-- [ ] 智能多语言模式翻译准确（测试中英日韩等语言）
-- [ ] 发音功能音标显示正确（Dictionary API）
-- [ ] TTS语音播放正常（测试有道TTS + Web Speech双TTS）
-- [ ] 悬浮框定位和交互响应正确（避免边界溢出）
-- [ ] 双层学习体验正常（短语→单词交互）
-- [ ] 7种翻译样式显示正常（含学习模式模糊效果）
-- [ ] 主题适配正常（深色/浅色自动切换）
-- [ ] 设置保存和跨设备同步功能正常
-- [ ] 20+种语言翻译方向正确
-- [ ] 性能表现良好（大页面、动态内容、缓存机制）
-
-#### 2. 调试技巧
-```typescript
-// 启用调试日志
-localStorage.setItem('wxt-debug', 'true');
-
-// 检查缓存状态
-console.log('Cache status:', pronunciationService.getCacheStatus());
-
-// 验证配置
-console.log('Current settings:', await storageManager.getUserSettings());
-```
-
-### 发布流程
-
-#### 1. 版本发布准备
-```bash
-# 1. 更新版本号
-# 编辑 wxt.config.ts 中的 manifest.version
-
-# 2. 构建生产版本
-npm run build
-
-# 3. 创建发布包
-npm run zip
-```
-
-#### 2. 商店发布
-- **Chrome Web Store**: 上传 `.output/chrome-mv3.zip`
-- **Edge Add-ons**: 上传相同的Chrome包
-- **Firefox**: 使用 `npm run build:firefox && npm run zip:firefox`
-
----
-
-## ⚡ 性能与优化
-
-### 缓存策略
-
-#### 1. 翻译结果缓存
-- **缓存键**: 基于文本内容和用户设置的哈希
-- **缓存时间**: 会话级缓存，浏览器关闭后清除
-- **缓存大小**: 使用LRU算法，最多缓存1000个翻译结果
-
-#### 2. 发音数据缓存
-- **音标缓存**: 24小时TTL，存储在 `localStorage`
-- **TTS缓存**: 内存级缓存，避免重复音频生成
-- **AI词义缓存**: 1小时TTL，减少API调用
-
-### 性能优化
-
-#### 1. DOM操作优化
-```typescript
-// 批量DOM更新
-const fragment = document.createDocumentFragment();
-// 添加所有元素到fragment
-element.appendChild(fragment);
-
-// 使用Range API精确替换
-const range = document.createRange();
-range.setStart(textNode, startOffset);
-range.setEnd(textNode, endOffset);
-```
-
-#### 2. 异步处理优化
-```typescript
-// 并行加载音标和词义
-const [phoneticResult, aiTranslation] = await Promise.allSettled([
-  this.phoneticProvider.getPhonetic(word),
-  this.aiTranslationProvider.getTranslation(word)
-]);
-```
-
-#### 3. 内存管理
-- 及时清理事件监听器
-- 定期清理过期缓存
-- 使用WeakMap存储DOM相关数据
-
-### 监控指标
-
-#### 1. 性能指标
-- 翻译处理时间（目标: <2秒）
-- 悬浮框响应时间（目标: <500ms）
-- 内存使用量（目标: <50MB）
-- API调用成功率（目标: >95%）
-
-#### 2. 用户体验指标
-- 翻译准确率
-- 发音功能使用率
-- 设置保存成功率
-- 错误发生频率
-
----
-
-## 🛠️ 故障排除
-
-### 常见问题
-
-#### 1. API配置问题
-**症状**: 翻译功能不工作，显示API配置错误通知
-**解决方案**:
-```typescript
-// 检查API配置
-const settings = await browser.storage.sync.get('apiConfig');
-console.log('API Config:', settings.apiConfig);
-
-// 验证API密钥格式
-if (!settings.apiConfig?.apiKey?.startsWith('sk-')) {
-  console.error('Invalid API key format');
-}
-```
-
-#### 2. 发音功能无法使用
-**症状**: 悬浮框显示但音标或TTS不工作
-**解决方案**:
-```typescript
-// 检查TTS服务状态
-const ttsStatus = pronunciationService.getTTSProviderStatus();
-console.log('TTS Status:', ttsStatus);
-
-// 检查浏览器TTS支持
-if ('speechSynthesis' in window) {
-  console.log('Web Speech API supported');
-} else {
-  console.warn('Web Speech API not supported');
-}
-```
-
-#### 3. 样式显示异常
-**症状**: 翻译文本样式不正确或冲突
-**解决方案**:
-```typescript
-// 检查样式注入
-const styleSheets = document.querySelectorAll('style[data-wxt]');
-console.log('Injected styles:', styleSheets.length);
-
-// 检查样式类名
-const translatedElements = document.querySelectorAll('[class*="wxt-style"]');
-console.log('Styled elements:', translatedElements.length);
-```
-
-#### 4. 权限问题
-**症状**: 扩展在某些网站无法工作
-**解决方案**:
-```javascript
-// 检查权限配置
-chrome.permissions.getAll((permissions) => {
-  console.log('Granted permissions:', permissions);
-});
-
-// 请求额外权限（如果需要）
-chrome.permissions.request({
-  origins: ['https://specific-site.com/*']
-});
-```
-
-### 调试工具
-
-#### 1. 开发者控制台命令
-```javascript
-// 启用详细日志
-window.wxtDebug = true;
-
-// 查看扩展状态
-window.wxtExtension.getStatus();
-
-// 强制重新处理页面
-window.wxtExtension.reprocess();
-
-// 清除所有缓存
-window.wxtExtension.clearCache();
-```
-
-#### 2. 性能分析
-```javascript
-// 测量翻译性能
-console.time('translation');
-await textReplacer.replaceText(text);
-console.timeEnd('translation');
-
-// 监控内存使用
-const memoryInfo = performance.memory;
-console.log('Memory usage:', {
-  used: Math.round(memoryInfo.usedJSHeapSize / 1024 / 1024) + 'MB',
-  total: Math.round(memoryInfo.totalJSHeapSize / 1024 / 1024) + 'MB'
-});
-```
-
-### 错误报告
-
-如果遇到无法解决的问题，请提供以下信息：
-
-1. **环境信息**:
-   - 浏览器版本和操作系统
-   - 扩展版本号
-   - 复现问题的具体网站
-
-2. **错误信息**:
-   - 控制台错误日志
-   - 扩展设置配置
-   - 具体的复现步骤
-
-3. **调试信息**:
-   ```javascript
-   // 运行此命令获取调试信息
-   console.log(JSON.stringify({
-     version: chrome.runtime.getManifest().version,
-     settings: await browser.storage.sync.get(),
-     permissions: await chrome.permissions.getAll(),
-     url: window.location.href
-   }, null, 2));
-   ```
-
 ---
 
 ## 📞 技术支持与贡献
@@ -935,6 +732,7 @@ console.log('Memory usage:', {
 - [x] 7种翻译样式（含学习模式）
 - [x] 主题适配系统（深色/浅色）
 - [x] 智能缓存机制（多级缓存优化）
+- [x] **API模块重构**（模块化架构，易于扩展）
 
 #### 规划中特性 🚀
 - [ ] 增加单词收藏和复习功能
@@ -945,3 +743,304 @@ console.log('Memory usage:', {
 - [ ] 支持更多TTS服务（Azure、Google等）
 
 ---
+
+## 📋 API迁移指南
+
+### 从旧API迁移到新API
+
+如果您之前使用旧的API，请按照以下步骤进行迁移：
+
+#### 1. 导入语句更新
+
+```typescript
+// 旧版本 (已废弃)
+import { ApiService } from '@/src/modules/apiService';
+
+// 新版本 (推荐)
+import { ApiServiceFactory } from '@/src/modules/api';
+```
+
+#### 2. 创建Provider实例
+
+```typescript
+// 旧版本
+const provider = ApiService.createProvider(activeConfig);
+
+// 新版本 (方法名相同，但使用新的工厂类)
+const provider = ApiServiceFactory.createProvider(activeConfig);
+```
+
+#### 3. 导入工具函数
+
+```typescript
+// 旧版本 (直接从apiService导入)
+import { mergeCustomParams } from '@/src/modules/apiService';
+
+// 新版本 (从api模块导入)
+import { mergeCustomParams } from '@/src/modules/api';
+```
+
+#### 4. 扩展新Provider
+
+```typescript
+// 旧版本 (需要修改apiService.ts文件)
+// 在单个文件中添加新的Provider类...
+
+// 新版本 (创建独立文件)
+// 1. 在 src/modules/api/providers/ 下创建新文件
+// 2. 继承 BaseProvider
+// 3. 在工厂中注册
+```
+
+### 迁移检查清单
+
+- [ ] 更新所有导入语句从 `./apiService` 到 `./api`
+- [ ] 将 `ApiService` 替换为 `ApiServiceFactory`
+- [ ] 检查自定义Provider是否需要重构为新的架构
+- [ ] 验证所有API调用正常工作
+- [ ] 更新相关测试代码
+
+### 迁移优势
+
+- ✅ **模块化设计**: 更清晰的代码组织
+- ✅ **易于扩展**: 添加新Provider更简单  
+- ✅ **更好的测试**: 各模块可独立测试
+- ✅ **类型安全**: 更严格的TypeScript类型检查
+- ✅ **代码复用**: 公共功能通过BaseProvider共享
+
+---
+
+### 
+```mermaid
+graph TB
+    subgraph "重构前 - 单文件架构"
+        A1[apiService.ts<br/>385行代码]
+        A1 --> A2[🔴 接口定义]
+        A1 --> A3[🔴 工具函数]
+        A1 --> A4[🔴 GoogleGeminiProvider类]
+        A1 --> A5[🔴 OpenAIProvider类]
+        A1 --> A6[🔴 ApiService工厂]
+        A1 --> A7[🔴 重复代码和逻辑混合]
+        
+        style A1 fill:#ffcccc
+        style A2 fill:#ffeeee
+        style A3 fill:#ffeeee
+        style A4 fill:#ffeeee
+        style A5 fill:#ffeeee
+        style A6 fill:#ffeeee
+        style A7 fill:#ffeeee
+    end
+    
+    subgraph "重构后 - 模块化架构"
+        B1[api/index.ts<br/>统一导出]
+        
+        subgraph "类型定义"
+            B2[types.ts<br/>接口和类型]
+        end
+        
+        subgraph "基础架构"
+            B3[base/BaseProvider.ts<br/>抽象基类]
+        end
+        
+        subgraph "工具函数"
+            B4[utils/apiUtils.ts<br/>API工具]
+            B5[utils/textUtils.ts<br/>文本处理]
+            B6[utils/requestUtils.ts<br/>请求处理]
+        end
+        
+        subgraph "Provider实现"
+            B7[providers/GoogleGeminiProvider.ts<br/>Gemini实现]
+            B8[providers/OpenAIProvider.ts<br/>OpenAI实现]
+            B9[providers/index.ts<br/>Provider导出]
+        end
+        
+        subgraph "工厂模式"
+            B10[factory/ApiServiceFactory.ts<br/>Provider工厂]
+        end
+        
+        subgraph "现已删除"
+            B11[❌ ../apiService.ts<br/>已删除的兼容文件]
+        end
+        
+        B1 --> B2
+        B1 --> B3
+        B1 --> B4
+        B1 --> B5
+        B1 --> B6
+        B1 --> B9
+        B1 --> B10
+        B7 --> B3
+        B8 --> B3
+        B9 --> B7
+        B9 --> B8
+        B10 --> B9
+        
+        style B1 fill:#ccffcc
+        style B2 fill:#eeffee
+        style B3 fill:#eeffee
+        style B4 fill:#eeffee
+        style B5 fill:#eeffee
+        style B6 fill:#eeffee
+        style B7 fill:#eeffee
+        style B8 fill:#eeffee
+        style B9 fill:#eeffee
+        style B10 fill:#ccffcc
+        style B11 fill:#ffcccc
+    end
+```
+
+## 📚 快速开始 - 新API使用指南
+
+### 基础翻译服务使用
+
+```typescript
+// 1. 导入必要的模块
+import { ApiServiceFactory } from '@/src/modules/api';
+import { StorageManager } from '@/src/modules/storageManager';
+
+// 2. 获取用户设置和配置
+const storageManager = new StorageManager();
+const settings = await storageManager.getUserSettings();
+
+// 3. 获取当前活跃的API配置
+const activeConfig = settings.apiConfigs.find(
+  config => config.id === settings.activeApiConfigId
+);
+
+// 4. 创建翻译提供者
+const provider = ApiServiceFactory.createProvider(activeConfig);
+
+// 5. 执行翻译
+const result = await provider.analyzeFullText('Hello World', settings);
+console.log(result.replacements); // 查看替换结果
+```
+
+### 支持的Provider类型
+
+```typescript
+import { TranslationProvider } from '@/src/modules/types';
+
+// 支持的Provider类型
+enum TranslationProvider {
+  OpenAI = 'openai',           // OpenAI API
+  GoogleGemini = 'gemini',     // Google Gemini API  
+  ProxyGemini = 'proxy-gemini', // 代理Gemini API
+  DeepSeek = 'deepseek',       // DeepSeek API
+  SiliconFlow = 'siliconflow'  // SiliconFlow API
+}
+```
+
+### 检查工厂支持的Provider
+
+```typescript
+import { ApiServiceFactory } from '@/src/modules/api';
+
+// 获取支持的Provider列表
+const supportedProviders = ApiServiceFactory.getSupportedProviders();
+console.log('支持的Provider:', supportedProviders);
+
+// 检查特定Provider是否受支持
+const isSupported = ApiServiceFactory.isProviderSupported(TranslationProvider.OpenAI);
+console.log('OpenAI是否支持:', isSupported);
+```
+
+### 错误处理最佳实践
+
+```typescript
+import { ApiServiceFactory, createErrorResponse } from '@/src/modules/api';
+
+async function safeTranslate(text: string, settings: UserSettings) {
+  try {
+    const activeConfig = settings.apiConfigs.find(
+      config => config.id === settings.activeApiConfigId
+    );
+    
+    if (!activeConfig) {
+      console.error('未找到活跃的API配置');
+      return createErrorResponse(text);
+    }
+    
+    const provider = ApiServiceFactory.createProvider(activeConfig);
+    const result = await provider.analyzeFullText(text, settings);
+    
+    // 检查结果是否有效
+    if (!result.replacements || result.replacements.length === 0) {
+      console.warn('翻译结果为空');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('翻译过程中发生错误:', error);
+    return createErrorResponse(text);
+  }
+}
+```
+
+### 自定义Provider开发
+
+```typescript
+import { BaseProvider } from '@/src/modules/api';
+import { UserSettings, FullTextAnalysisResponse, ApiConfig } from '@/src/modules/types';
+
+// 1. 继承BaseProvider创建自定义Provider
+class MyCustomProvider extends BaseProvider {
+  protected getProviderName(): string {
+    return 'My Custom Provider';
+  }
+
+  protected async doAnalyzeFullText(
+    text: string,
+    settings: UserSettings,
+  ): Promise<FullTextAnalysisResponse> {
+    // 实现自定义翻译逻辑
+    const replacements = await this.customTranslateLogic(text, settings);
+    
+    return {
+      original: text,
+      processed: '',
+      replacements,
+    };
+  }
+
+  private async customTranslateLogic(text: string, settings: UserSettings) {
+    // 自定义翻译实现
+    // 可以调用第三方API或本地算法
+    return [];
+  }
+}
+
+// 2. 扩展工厂以支持新Provider
+// 需要在 ApiServiceFactory.ts 中添加：
+// case 'my-custom':
+//   return new MyCustomProvider(config);
+```
+
+### 高级配置示例
+
+```typescript
+import { ApiConfig, TranslationProvider } from '@/src/modules/types';
+
+// 完整的API配置示例
+const customApiConfig: ApiConfig = {
+  apiKey: 'your-api-key',
+  apiEndpoint: 'https://api.custom-service.com/v1/chat/completions',
+  model: 'gpt-4-turbo',
+  temperature: 0.2,
+  useBackgroundProxy: false,           // 是否使用后台代理
+  requestsPerSecond: 2,               // 每秒请求限制
+  customParams: JSON.stringify({       // 自定义参数
+    max_tokens: 1000,
+    top_p: 0.9,
+    frequency_penalty: 0.1
+  }),
+  includeThinkingParam: false,        // 是否包含thinking参数
+  enable_thinking: false              // 启用thinking模式
+};
+
+// 使用自定义配置
+const provider = ApiServiceFactory.createProvider({
+  id: 'custom-config',
+  provider: TranslationProvider.OpenAI,
+  config: customApiConfig
+});
+```

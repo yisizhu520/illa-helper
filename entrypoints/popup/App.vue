@@ -86,7 +86,7 @@ const testActiveApiConnection = async () => {
   testResult.value = null;
 
   try {
-    testResult.value = await testApiConnection(activeConfig.value.config, settings.value.apiRequestTimeout);
+    testResult.value = await testApiConnection(activeConfig.value, settings.value.apiRequestTimeout);
     // 5秒后自动清除结果
     testResultTimer = window.setTimeout(() => {
       testResult.value = null;

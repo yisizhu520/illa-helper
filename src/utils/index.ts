@@ -3,7 +3,14 @@
  * 提供 UserLevel 相关的工具函数
  */
 
-import { UserLevel, USER_LEVEL_OPTIONS, ApiConfig } from '@/src/modules/types';
+import {
+  UserLevel,
+  USER_LEVEL_OPTIONS,
+  ApiConfig,
+  TranslationProvider,
+  ApiConfigItem,
+} from '@/src/modules/types';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * 合并自定义参数到基础参数对象
@@ -67,11 +74,6 @@ export interface ApiTestResult {
 }
 
 /**
- * 测试API连接
- * @param apiConfig API配置对象
- * @returns Promise<ApiTestResult> 测试结果
- */
-/**
  * 获取API超时时间
  * @param baseTimeout 基础超时时间（毫秒）
  * @returns 超时时间（毫秒），如果为0则返回undefined表示无超时限制
@@ -80,12 +82,107 @@ export function getApiTimeout(baseTimeout: number): number | undefined {
   return baseTimeout === 0 ? undefined : baseTimeout;
 }
 
+export async function testGeminiConnection(
+  apiConfig: ApiConfig,
+  baseTimeout?: number,
+): Promise<ApiTestResult> {
+  if (!apiConfig.apiKey) {
+    return { success: false, message: 'API Key is not configured.' };
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiConfig.apiKey);
+
+    const baseGenerationConfig: any = {
+      temperature: apiConfig.temperature,
+    };
+
+    let generationConfig = mergeCustomParams(
+      baseGenerationConfig,
+      apiConfig.customParams,
+    );
+
+    // 适配参数
+    generationConfig = mapParamsForProvider(generationConfig, 'gemini');
+
+    const requestOptions: { timeout?: number; baseUrl?: string } = {};
+    const timeout = getApiTimeout(baseTimeout || 0);
+    if (timeout) {
+      requestOptions.timeout = timeout;
+    }
+    if (apiConfig.apiEndpoint) {
+      requestOptions.baseUrl = apiConfig.apiEndpoint;
+    }
+
+    const model = genAI.getGenerativeModel(
+      {
+        model: apiConfig.model,
+        generationConfig,
+      },
+      requestOptions,
+    );
+
+    const result = await model.generateContent(
+      'Hello, this is a connection test. Please respond with "OK".',
+    );
+    const response = result.response;
+    const text = response.text();
+
+    if (text.includes('OK')) {
+      return { success: true, message: 'Connection successful.', model: apiConfig.model };
+    } else {
+      return { success: false, message: 'Received an unexpected response.' };
+    }
+  } catch (error: any) {
+    console.error('Gemini connection test failed:', error);
+    return { success: false, message: error.message || 'An unknown error occurred.' };
+  }
+}
+
+/**
+ * 统一的API连接测试入口函数
+ * 根据provider类型自动选择合适的测试方法
+ * @param userConfig 用户API配置对象（包含provider信息）
+ * @param baseTimeout 超时时间（毫秒）
+ * @returns Promise<ApiTestResult> 测试结果
+ */
 export async function testApiConnection(
+  userConfig: ApiConfigItem,
+  baseTimeout?: number,
+): Promise<ApiTestResult> {
+  const { provider, config } = userConfig;
+
+  // 根据provider类型选择合适的测试方法
+  switch (provider) {
+    case TranslationProvider.GoogleGemini:
+    case TranslationProvider.ProxyGemini:
+    case 'GoogleGemini':
+    case 'ProxyGemini':
+      return testGeminiConnection(config, baseTimeout);
+
+    case TranslationProvider.OpenAI:
+    case TranslationProvider.DeepSeek:
+    case TranslationProvider.SiliconFlow:
+    case 'OpenAI':
+    case 'DeepSeek':
+    case 'SiliconFlow':
+    default:
+      return testOpenAICompatibleConnection(config, baseTimeout);
+  }
+}
+
+/**
+ * 测试OpenAI兼容API的连接
+ * @param apiConfig API配置对象
+ * @param baseTimeout 超时时间（毫秒）
+ * @returns Promise<ApiTestResult> 测试结果
+ */
+export async function testOpenAICompatibleConnection(
   apiConfig: ApiConfig,
   baseTimeout?: number,
 ): Promise<ApiTestResult> {
   if (!apiConfig.apiKey || !apiConfig.apiEndpoint) {
-    throw new Error('API密钥或端点未配置');
+    return { success: false, message: 'API Key or Endpoint is not configured.' };
   }
 
   try {
@@ -127,7 +224,7 @@ export async function testApiConnection(
                 Authorization: `Bearer ${apiConfig.apiKey}`,
               },
               body: JSON.stringify(requestBody),
-              timeout: getApiTimeout(baseTimeout || 30000) || 0,
+              timeout: getApiTimeout(baseTimeout || 0) || 0,
             },
           },
           (response) => {
@@ -154,7 +251,7 @@ export async function testApiConnection(
       });
     } else {
       // 直接发送请求，处理超时设置
-      const timeout = getApiTimeout(baseTimeout || 30000);
+      const timeout = getApiTimeout(baseTimeout || 0);
       const fetchOptions: RequestInit = {
         method: 'POST',
         headers: {
@@ -270,5 +367,80 @@ export function safeSetInnerHTML(
   }
 }
 
+/**
+ * 从可能包含Markdown代码块的字符串中提取并解析JSON。
+ * @param text 包含JSON的原始字符串。
+ * @returns 解析后的JavaScript对象。
+ * @throws 如果JSON无效或无法提取，则抛出错误。
+ */
+export function extractAndParseJson(text: string): any {
+  if (!text || typeof text !== 'string') {
+    throw new Error('Invalid input: text must be a non-empty string.');
+  }
+
+  // 匹配Markdown中的JSON代码块
+  const jsonBlockMatch = text.match(/```(json)?\s*([\s\S]+?)\s*```/);
+
+  let jsonString;
+  if (jsonBlockMatch && jsonBlockMatch[2]) {
+    // 从Markdown代码块中提取JSON字符串
+    jsonString = jsonBlockMatch[2];
+  } else {
+    // 如果没有找到代码块，假定整个字符串都是JSON
+    // 尝试找到第一个 '{' 和最后一个 '}' 之间的内容
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+      jsonString = text.substring(firstBrace, lastBrace + 1);
+    } else {
+      jsonString = text; // 作为最后的手段
+    }
+  }
+
+  try {
+    // 清理并解析JSON
+    return JSON.parse(jsonString.trim());
+  } catch (error) {
+    console.error('Failed to parse JSON:', error);
+    console.error('Original text:', text);
+    console.error('Extracted JSON string:', jsonString);
+    throw new Error('The response does not contain valid JSON.');
+  }
+}
+
+/**
+ * 将 OpenAI 风格的参数映射到特定提供商（如 Google Gemini）的格式。
+ * @param params - 包含类 OpenAI 参数的对象。
+ * @param provider - 目标提供商的标识符 ('gemini' 等)。
+ * @returns 映射后适合目标提供商的参数对象。
+ */
+export function mapParamsForProvider(params: any, provider: 'gemini'): any {
+  if (provider !== 'gemini') {
+    return params; // 目前只为 Gemini 实现
+  }
+
+  const mapping: { [key: string]: string } = {
+    max_tokens: 'maxOutputTokens',
+    top_p: 'topP',
+    stop: 'stopSequences',
+    frequency_penalty: 'frequencyPenalty',
+    presence_penalty: 'presencePenalty'
+  };
+
+  const mappedParams: { [key: string]: any } = {};
+
+  for (const key in params) {
+    if (Object.prototype.hasOwnProperty.call(params, key)) {
+      const mappedKey = mapping[key] || key;
+      mappedParams[mappedKey] = params[key];
+    }
+  }
+
+  // 特殊处理 stopSequences，确保它是一个字符串数组
+  if (mappedParams.stopSequences && !Array.isArray(mappedParams.stopSequences)) {
+    mappedParams.stopSequences = [String(mappedParams.stopSequences)];
+  }
 
 
+  return mappedParams;
+}
