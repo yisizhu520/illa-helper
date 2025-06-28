@@ -7,7 +7,6 @@ import {
   UserLevel,
   USER_LEVEL_OPTIONS,
   ApiConfig,
-  GeminiConfig,
 } from '@/src/modules/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -87,30 +86,50 @@ export function getApiTimeout(baseTimeout: number): number | undefined {
 }
 
 export async function testGeminiConnection(
-  geminiConfig: GeminiConfig,
+  apiConfig: ApiConfig,
+  baseTimeout?: number,
 ): Promise<ApiTestResult> {
-  if (!geminiConfig.apiKey) {
+  if (!apiConfig.apiKey) {
     return { success: false, message: 'API Key is not configured.' };
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(geminiConfig.apiKey);
-    const model = genAI.getGenerativeModel({
-      model: geminiConfig.model,
-      // @ts-ignore
-      ...(geminiConfig.apiEndpoint && {
-        _requestController: {
-          _getBaseUrl: () => geminiConfig.apiEndpoint,
-        },
-      }),
-    });
+    const genAI = new GoogleGenerativeAI(apiConfig.apiKey);
 
-    const result = await model.generateContent('Hello, this is a connection test. Please respond with "OK".');
-    const response = await result.response;
+    const baseGenerationConfig: any = {
+      temperature: apiConfig.temperature,
+    };
+
+    const generationConfig = mergeCustomParams(
+      baseGenerationConfig,
+      apiConfig.customParams,
+    );
+
+    const requestOptions: { timeout?: number; baseUrl?: string } = {};
+    const timeout = getApiTimeout(baseTimeout || 0);
+    if (timeout) {
+      requestOptions.timeout = timeout;
+    }
+    if (apiConfig.apiEndpoint) {
+      requestOptions.baseUrl = apiConfig.apiEndpoint;
+    }
+
+    const model = genAI.getGenerativeModel(
+      {
+        model: apiConfig.model,
+        generationConfig,
+      },
+      requestOptions,
+    );
+
+    const result = await model.generateContent(
+      'Hello, this is a connection test. Please respond with "OK".',
+    );
+    const response = result.response;
     const text = response.text();
 
     if (text.includes('OK')) {
-      return { success: true, message: 'Connection successful.', model: geminiConfig.model };
+      return { success: true, message: 'Connection successful.', model: apiConfig.model };
     } else {
       return { success: false, message: 'Received an unexpected response.' };
     }

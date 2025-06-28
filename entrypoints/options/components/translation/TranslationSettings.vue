@@ -301,12 +301,14 @@
             <Input v-model="configForm.config.model" placeholder="gpt-4o-mini" />
           </div>
 
+          <!-- Temperature -->
           <div class="space-y-2">
             <Label>温度参数 ({{ configForm.config.temperature }})</Label>
             <Slider :model-value="[configForm.config.temperature]" @update:model-value="updateTemperature" :min="0"
               :max="2" :step="0.1" />
           </div>
 
+          <!-- Requests Per Second -->
           <div class="space-y-2">
             <Label>
               每秒请求限制 ({{
@@ -610,6 +612,10 @@ const activeConfig = computed(() => {
   );
 });
 
+const isGeminiProvider = computed(() => {
+  return ['GoogleGemini', 'ProxyGemini'].includes(configForm.value.provider);
+});
+
 const handleActiveConfigChange = async () => {
   try {
     await storageManager.setActiveApiConfig(settings.value.activeApiConfigId);
@@ -789,11 +795,7 @@ const testApiConnection = async () => {
 
   try {
     if (provider === 'GoogleGemini' || provider === 'ProxyGemini') {
-      testResult.value = await testGeminiConnection({
-        apiKey: config.apiKey,
-        model: config.model,
-        apiEndpoint: config.apiEndpoint,
-      });
+      testResult.value = await testGeminiConnection(config);
     } else {
       testResult.value = await performApiTest(config, settings.value.apiRequestTimeout);
     }
@@ -821,11 +823,7 @@ const testCardApiConnection = async (configItem: ApiConfigItem) => {
 
   try {
     if (provider === 'GoogleGemini' || provider === 'ProxyGemini') {
-      cardTestResults.value[id] = await testGeminiConnection({
-        apiKey: config.apiKey,
-        model: config.model,
-        apiEndpoint: config.apiEndpoint,
-      });
+      cardTestResults.value[id] = await testGeminiConnection(config);
     } else {
       cardTestResults.value[id] = await performApiTest(config, settings.value.apiRequestTimeout);
     }

@@ -16,7 +16,6 @@ import {
   ApiConfig,
   DEFAULT_API_CONFIG,
   TranslationProvider,
-  GeminiConfig,
   ApiConfigItem,
 } from './types';
 import {
@@ -110,9 +109,9 @@ function addPositionsToReplacements(
 }
 
 class GoogleGeminiProvider implements ITranslationProvider {
-  private config: GeminiConfig;
+  private config: ApiConfig;
 
-  constructor(config: GeminiConfig) {
+  constructor(config: ApiConfig) {
     this.config = config;
   }
 
@@ -127,22 +126,36 @@ class GoogleGeminiProvider implements ITranslationProvider {
 
     try {
       const genAI = new GoogleGenerativeAI(this.config.apiKey);
-      const model = genAI.getGenerativeModel({
-        model: this.config.model,
-        generationConfig: {
-          responseMimeType: 'application/json',
+
+      // 基础生成配置
+      const baseGenerationConfig: any = {
+        responseMimeType: 'application/json',
+        temperature: this.config.temperature,
+      };
+
+      // 从 customParams 合并额外参数
+      const generationConfig = mergeCustomParams(
+        baseGenerationConfig,
+        this.config.customParams,
+      );
+
+      // 请求选项，如超时和代理端点
+      const requestOptions: { timeout?: number; baseUrl?: string } = {};
+      const timeout = getApiTimeout(settings.apiRequestTimeout);
+      if (timeout) {
+        requestOptions.timeout = timeout;
+      }
+      if (this.config.apiEndpoint) {
+        requestOptions.baseUrl = this.config.apiEndpoint;
+      }
+
+      const model = genAI.getGenerativeModel(
+        {
+          model: this.config.model,
+          generationConfig,
         },
-        // @ts-ignore
-        // HACK: The official SDK doesn't directly support custom base URLs in a straightforward way.
-        // This is an undocumented workaround to support proxying.
-        // We are accessing a private property `_requestController` to modify the `baseUrl`.
-        // This might break in future SDK updates.
-        ...(this.config.apiEndpoint && {
-          _requestController: {
-            _getBaseUrl: () => this.config.apiEndpoint,
-          },
-        }),
-      });
+        requestOptions,
+      );
 
       const systemPrompt = getSystemPromptByConfig({
         translationDirection: 'intelligent',
@@ -156,8 +169,16 @@ class GoogleGeminiProvider implements ITranslationProvider {
       const prompt = `${systemPrompt}\n\n${originalText}`;
       console.log('Gemini Prompt:', prompt);
 
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
+      const rateLimiter = rateLimitManager.getLimiter(
+        this.config.apiEndpoint || 'google-gemini-native',
+        this.config.requestsPerSecond || 0,
+        true,
+      );
+
+      const apiRequestFunction = () => model.generateContent(prompt);
+
+      const [result] = await rateLimiter.executeBatch([apiRequestFunction]);
+      const response = result.response;
       const responseText = response.text();
       console.log('Gemini Response Text:', responseText);
 
@@ -347,13 +368,7 @@ export class ApiService {
     switch (provider) {
       case TranslationProvider.GoogleGemini:
       case TranslationProvider.ProxyGemini:
-        // The distinction between GoogleGemini and ProxyGemini is handled by the apiEndpoint in the config.
-        const geminiConfig: GeminiConfig = {
-          apiKey: config.apiKey,
-          model: config.model,
-          apiEndpoint: provider === TranslationProvider.ProxyGemini ? config.apiEndpoint : undefined,
-        };
-        return new GoogleGeminiProvider(geminiConfig);
+        return new GoogleGeminiProvider(config);
 
       case TranslationProvider.OpenAI:
       case TranslationProvider.DeepSeek:
