@@ -22,6 +22,7 @@ import {
   cleanMarkdownFromResponse,
   extractAndParseJson,
   getApiTimeout,
+  mapParamsForProvider,
 } from '@/src/utils';
 import { rateLimitManager } from './rateLimit';
 
@@ -134,10 +135,13 @@ class GoogleGeminiProvider implements ITranslationProvider {
       };
 
       // 从 customParams 合并额外参数
-      const generationConfig = mergeCustomParams(
+      let generationConfig = mergeCustomParams(
         baseGenerationConfig,
         this.config.customParams,
       );
+
+      // 适配参数
+      generationConfig = mapParamsForProvider(generationConfig, 'gemini');
 
       // 请求选项，如超时和代理端点
       const requestOptions: { timeout?: number; baseUrl?: string } = {};

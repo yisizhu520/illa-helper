@@ -100,10 +100,13 @@ export async function testGeminiConnection(
       temperature: apiConfig.temperature,
     };
 
-    const generationConfig = mergeCustomParams(
+    let generationConfig = mergeCustomParams(
       baseGenerationConfig,
       apiConfig.customParams,
     );
+    
+    // 适配参数
+    generationConfig = mapParamsForProvider(generationConfig, 'gemini');
 
     const requestOptions: { timeout?: number; baseUrl?: string } = {};
     const timeout = getApiTimeout(baseTimeout || 0);
@@ -371,4 +374,41 @@ export function extractAndParseJson(text: string): any {
     console.error('Extracted JSON string:', jsonString);
     throw new Error('The response does not contain valid JSON.');
   }
+}
+
+/**
+ * 将 OpenAI 风格的参数映射到特定提供商（如 Google Gemini）的格式。
+ * @param params - 包含类 OpenAI 参数的对象。
+ * @param provider - 目标提供商的标识符 ('gemini' 等)。
+ * @returns 映射后适合目标提供商的参数对象。
+ */
+export function mapParamsForProvider(params: any, provider: 'gemini'): any {
+  if (provider !== 'gemini') {
+    return params; // 目前只为 Gemini 实现
+  }
+
+  const mapping: { [key: string]: string } = {
+    max_tokens: 'maxOutputTokens',
+    top_p: 'topP',
+    stop: 'stopSequences',
+    frequency_penalty: 'frequencyPenalty',
+    presence_penalty: 'presencePenalty'
+  };
+
+  const mappedParams: { [key: string]: any } = {};
+
+  for (const key in params) {
+    if (Object.prototype.hasOwnProperty.call(params, key)) {
+      const mappedKey = mapping[key] || key;
+      mappedParams[mappedKey] = params[key];
+    }
+  }
+
+  // 特殊处理 stopSequences，确保它是一个字符串数组
+  if (mappedParams.stopSequences && !Array.isArray(mappedParams.stopSequences)) {
+    mappedParams.stopSequences = [String(mappedParams.stopSequences)];
+  }
+
+
+  return mappedParams;
 }
