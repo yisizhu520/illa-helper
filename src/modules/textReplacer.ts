@@ -3,7 +3,7 @@
  * 负责根据用户设置替换文本中的词汇
  */
 
-import { ApiService } from './apiService';
+import { ApiServiceFactory } from './api';
 import { StyleManager } from './styleManager';
 import { StorageManager } from './storageManager';
 import {
@@ -143,7 +143,7 @@ export class TextReplacer {
       }
 
       // 使用工厂方法创建正确的提供商实例
-      const translationProvider = ApiService.createProvider(activeConfig);
+      const translationProvider = ApiServiceFactory.createProvider(activeConfig);
 
       // 调用API进行翻译
       const apiResult = await translationProvider.analyzeFullText(text, settings);

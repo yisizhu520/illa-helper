@@ -11,9 +11,10 @@
  * - 完善的错误处理和超时控制
  * - 支持动态API配置更新
  * - 与现有音标系统完全兼容
+ * - 使用统一的UniversalApiService进行API调用
  *
  * @author AI Assistant
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import { IPhoneticProvider } from '../phonetic/IPhoneticProvider';
@@ -24,44 +25,10 @@ import {
   AITranslationEntry,
   CacheEntry,
 } from '../types';
-import { ApiConfig } from '../../types';
+import { ApiConfig, ApiConfigItem, TranslationProvider } from '../../types';
 import { API_CONSTANTS } from '../config';
-import { cleanMarkdownFromResponse, getApiTimeout } from '@/src/utils';
-import { rateLimitManager } from '../../rateLimit';
-
-/**
- * 合并自定义参数到基础参数对象
- * @param baseParams 基础参数对象
- * @param customParamsJson 自定义参数JSON字符串
- * @returns 合并后的参数对象
- */
-function mergeCustomParams(baseParams: any, customParamsJson?: string): any {
-  const merged = { ...baseParams };
-
-  // 保护的系统关键参数，不允许被覆盖
-  const protectedKeys = ['model', 'messages', 'apiKey'];
-
-  if (!customParamsJson?.trim()) {
-    return merged;
-  }
-
-  try {
-    const customParams = JSON.parse(customParamsJson);
-
-    // 合并自定义参数，但保护系统关键参数
-    Object.entries(customParams).forEach(([key, value]) => {
-      if (!protectedKeys.includes(key)) {
-        merged[key] = value;
-      } else {
-        console.warn(`忽略受保护的参数: ${key}`);
-      }
-    });
-  } catch (error) {
-    console.warn('自定义参数JSON解析失败:', error);
-  }
-
-  return merged;
-}
+import { cleanMarkdownFromResponse } from '@/src/utils';
+import { UniversalApiService } from '../../api/services/UniversalApiService';
 
 export class AITranslationProvider implements IPhoneticProvider {
   /** 提供者名称标识 */
@@ -71,7 +38,7 @@ export class AITranslationProvider implements IPhoneticProvider {
   private apiConfig: ApiConfig;
 
   /** API请求超时时间（毫秒） */
-  private timeout: number = 30000;
+  private timeout: number = 0;
 
   /** 内存缓存，存储翻译结果以减少API调用 */
   private cache = new Map<string, CacheEntry<AITranslationEntry>>();
@@ -79,30 +46,32 @@ export class AITranslationProvider implements IPhoneticProvider {
   /** 缓存生存时间，24小时TTL */
   private readonly cacheTTL = API_CONSTANTS.AI_TRANSLATION_CACHE_TTL;
 
+  /** UniversalApiService 实例 */
+  private universalApi: UniversalApiService;
+
   /**
    * 构造函数
    *
    * @param apiConfig - AI API配置对象，包含端点URL、密钥等信息
-   * @param timeout - API请求超时时间（毫秒），默认30秒
+   * @param timeout - API请求超时时间（毫秒），默认0（无限制）
    */
-  constructor(apiConfig: ApiConfig, timeout: number = 30000) {
+  constructor(apiConfig: ApiConfig, timeout: number = 0) {
     this.apiConfig = apiConfig;
     this.timeout = timeout;
+    this.universalApi = UniversalApiService.getInstance();
   }
 
   /**
    * 获取单词的中文词义翻译
    *
-   * 该方法是AI翻译提供者的核心功能，通过调用AI大模型API获取英语单词的
+   * 该方法是AI翻译提供者的核心功能，通过调用UniversalApiService获取英语单词的
    * 中文释义。实现了完整的缓存策略、错误处理和超时控制。
    *
    * 处理流程：
    * 1. 输入参数验证和文本清理
    * 2. 检查内存缓存，命中则直接返回
-   * 3. 验证API配置完整性
-   * 4. 构建专门的AI翻译提示词
-   * 5. 调用AI API获取翻译结果
-   * 6. 解析响应并存入缓存
+   * 3. 使用UniversalApiService调用AI获取翻译结果
+   * 4. 解析响应并存入缓存
    *
    * @param word - 要翻译的英语单词
    * @returns Promise<AITranslationResult> - 翻译结果，包含成功状态、数据和缓存标识
@@ -130,74 +99,47 @@ export class AITranslationProvider implements IPhoneticProvider {
       }
 
       // 验证API配置
-      if (!this.apiConfig.apiKey || !this.apiConfig.apiEndpoint) {
+      if (!this.apiConfig.apiKey) {
         return {
           success: false,
-          error: 'AI API配置不完整',
+          error: 'AI API配置不完整：缺少API Key',
         };
       }
 
       // 构建专门用于单词翻译的AI提示词
-      // 这个提示词经过优化，确保AI返回格式化的中文释义
       const systemPrompt = `你是一个专业的英语词典助手。请为用户提供准确、简洁的中文词义解释。
-          要求：
-          1. 只返回单词的中文释义，格式为：词性 + 释义
-          2. 如果有多个词性，用分号分隔
-          3. 释义要简洁准确，适合快速理解
-          4. 不要包含例句或其他额外信息
-          5. 返回格式为纯文本，不要JSON
+要求：
+1. 只返回单词的中文释义，格式为：词性 + 释义
+2. 如果有多个词性，用分号分隔
+3. 释义要简洁准确，适合快速理解
+4. 不要包含例句或其他额外信息
+5. 返回格式为纯文本，不要JSON
 
-          示例：
-          输入：hello
-          输出：interj. 你好；n. 打招呼
+示例：
+输入：hello
+输出：interj. 你好；n. 打招呼
 
-          输入：beautiful
-          输出：adj. 美丽的，漂亮的
-      `;
+输入：beautiful
+输出：adj. 美丽的，漂亮的`;
 
-      // 构建AI API请求体
-      // 使用较低的temperature确保翻译结果的一致性和准确性
-      let requestBody: any = {
-        model: this.apiConfig.model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: cleanWord },
-        ],
-        temperature: this.apiConfig.temperature || 0, // 降低温度以获得更稳定的翻译结果
-        max_tokens: 100, // 限制回复长度，避免过长的响应
-      };
+      // 使用UniversalApiService调用AI
+      const result = await this.universalApi.call(cleanWord, {
+        systemPrompt,
+        temperature: this.apiConfig.temperature || 0,
+        maxTokens: 100,
+        timeout: this.timeout,
+        customParams: this.apiConfig.customParams,
+      });
 
-      // 只有当配置允许传递思考参数时，才添加enable_thinking字段
-      if (this.apiConfig.includeThinkingParam) {
-        requestBody.enable_thinking = this.apiConfig.enable_thinking;
+      if (!result.success) {
+        return {
+          success: false,
+          error: result.error || 'AI翻译请求失败',
+        };
       }
 
-      // 合并自定义参数
-      requestBody = mergeCustomParams(requestBody, this.apiConfig.customParams);
-
-      // 通过速率限制器执行API请求
-      const rateLimiter = rateLimitManager.getLimiter(
-        this.apiConfig.apiEndpoint,
-        this.apiConfig.requestsPerSecond || 0,
-        true,
-      );
-
-      // 将API调用包装为函数，通过executeBatch执行以确保串行
-      const apiRequestFunction = async () => {
-        return this.sendApiRequest(requestBody);
-      };
-
-      // 通过executeBatch执行单个请求，确保串行
-      const [response] = await rateLimiter.executeBatch([apiRequestFunction]);
-
-      if (!response.ok) {
-        throw new Error(
-          `AI API请求失败: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const data = await response.json();
-      const meaningInfo = this.parseApiResponse(data, cleanWord);
+      // 解析AI响应
+      const meaningInfo = this.parseAIResponse(result.content, cleanWord);
 
       // 存入缓存
       this.setCache(cleanWord, meaningInfo);
@@ -255,15 +197,21 @@ export class AITranslationProvider implements IPhoneticProvider {
    * 批量获取音标信息
    */
   async getBatchPhonetics(words: string[]): Promise<PhoneticResult[]> {
-    // 使用速率限制器的批量处理功能，智能控制并发
-    const rateLimiter = rateLimitManager.getLimiter(
-      this.apiConfig.apiEndpoint,
-      this.apiConfig.requestsPerSecond || 0,
-      true,
+    // 批量处理单词翻译
+    const results = await Promise.allSettled(
+      words.map(word => this.getPhonetic(word))
     );
 
-    const requestFunctions = words.map((word) => () => this.getPhonetic(word));
-    return rateLimiter.executeBatch(requestFunctions);
+    return results.map(result => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        return {
+          success: false,
+          error: result.reason?.message || '批量处理失败',
+        };
+      }
+    });
   }
 
   /**
@@ -272,45 +220,12 @@ export class AITranslationProvider implements IPhoneticProvider {
   async isAvailable(): Promise<boolean> {
     try {
       // 检查API配置
-      if (!this.apiConfig.apiKey || !this.apiConfig.apiEndpoint) {
+      if (!this.apiConfig.apiKey) {
         return false;
       }
 
-      // 进行简单的API测试
-      let testRequestBody: any = {
-        model: this.apiConfig.model,
-        messages: [{ role: 'user', content: 'test' }],
-        max_tokens: 1,
-      };
-
-      // 只有当配置允许传递思考参数时，才添加enable_thinking字段
-      if (this.apiConfig.includeThinkingParam) {
-        testRequestBody.enable_thinking = this.apiConfig.enable_thinking;
-      }
-
-      // 合并自定义参数
-      testRequestBody = mergeCustomParams(
-        testRequestBody,
-        this.apiConfig.customParams,
-      );
-
-      // 通过速率限制器执行测试请求
-      const rateLimiter = rateLimitManager.getLimiter(
-        this.apiConfig.apiEndpoint,
-        this.apiConfig.requestsPerSecond || 0,
-        true,
-      );
-
-      const testRequestFunction = async () => {
-        return this.sendApiRequest(testRequestBody);
-      };
-
-      // 通过executeBatch执行测试请求
-      const [testResponse] = await rateLimiter.executeBatch([
-        testRequestFunction,
-      ]);
-
-      return testResponse.ok;
+      // 使用UniversalApiService检查可用性
+      return await this.universalApi.isAvailable();
     } catch {
       return false;
     }
@@ -340,89 +255,11 @@ export class AITranslationProvider implements IPhoneticProvider {
   }
 
   /**
-   * 统一API请求方法 - 根据配置选择请求方式
-   * @param requestBody 请求体
-   * @returns Promise<Response>
+   * 解析AI响应内容
    */
-  private async sendApiRequest(requestBody: any): Promise<Response> {
-    const timeout = getApiTimeout(this.timeout);
-
-    if (this.apiConfig.useBackgroundProxy) {
-      return this.sendViaBackground(requestBody, timeout || 0);
-    } else {
-      const fetchOptions: RequestInit = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${this.apiConfig.apiKey}`,
-        },
-        body: JSON.stringify(requestBody),
-      };
-
-      // 只有在timeout不为undefined时才设置AbortSignal
-      if (timeout !== undefined) {
-        fetchOptions.signal = AbortSignal.timeout(timeout);
-      }
-
-      return fetch(this.apiConfig.apiEndpoint, fetchOptions);
-    }
-  }
-
-  /**
-   * 通过background脚本发送API请求
-   * @param requestBody 请求体
-   * @returns Promise<Response>
-   */
-  private async sendViaBackground(requestBody: any, timeout: number = 10000): Promise<Response> {
-    return new Promise((resolve) => {
-      browser.runtime.sendMessage(
-        {
-          type: 'api-request',
-          data: {
-            url: this.apiConfig.apiEndpoint,
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${this.apiConfig.apiKey}`,
-            },
-            body: JSON.stringify(requestBody),
-            timeout: timeout,
-          },
-        },
-        (response) => {
-          if (response.success) {
-            const mockResponse = {
-              ok: true,
-              status: 200,
-              statusText: 'OK',
-              json: async () => response.data,
-            } as Response;
-            resolve(mockResponse);
-          } else {
-            const mockResponse = {
-              ok: false,
-              status: response.error?.status || 500,
-              statusText: response.error?.statusText || 'Internal Server Error',
-              json: async () => ({ error: response.error }),
-            } as Response;
-            resolve(mockResponse);
-          }
-        }
-      );
-    });
-  }
-
-  /**
-   * 解析AI API响应数据
-   */
-  private parseApiResponse(data: any, word: string): AITranslationEntry {
+  private parseAIResponse(content: string, word: string): AITranslationEntry {
     try {
-      let explain = '';
-
-      // 解析AI API标准响应格式
-      if (data?.choices?.[0]?.message?.content) {
-        explain = data.choices[0].message.content.trim();
-      }
+      let explain = content?.trim() || '';
 
       // 清理和验证解释文本
       if (!explain || typeof explain !== 'string') {
@@ -441,7 +278,7 @@ export class AITranslationProvider implements IPhoneticProvider {
         source: 'ai-translation',
       };
     } catch (error) {
-      console.error('解析AI翻译API响应失败:', error);
+      console.error('解析AI翻译响应失败:', error);
       return {
         explain: `${word} 的释义暂不可用`,
         source: 'ai-translation',

@@ -7,6 +7,8 @@ import {
   UserLevel,
   USER_LEVEL_OPTIONS,
   ApiConfig,
+  TranslationProvider,
+  ApiConfigItem,
 } from '@/src/modules/types';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
@@ -72,11 +74,6 @@ export interface ApiTestResult {
 }
 
 /**
- * 测试API连接
- * @param apiConfig API配置对象
- * @returns Promise<ApiTestResult> 测试结果
- */
-/**
  * 获取API超时时间
  * @param baseTimeout 基础超时时间（毫秒）
  * @returns 超时时间（毫秒），如果为0则返回undefined表示无超时限制
@@ -104,7 +101,7 @@ export async function testGeminiConnection(
       baseGenerationConfig,
       apiConfig.customParams,
     );
-    
+
     // 适配参数
     generationConfig = mapParamsForProvider(generationConfig, 'gemini');
 
@@ -142,7 +139,45 @@ export async function testGeminiConnection(
   }
 }
 
+/**
+ * 统一的API连接测试入口函数
+ * 根据provider类型自动选择合适的测试方法
+ * @param userConfig 用户API配置对象（包含provider信息）
+ * @param baseTimeout 超时时间（毫秒）
+ * @returns Promise<ApiTestResult> 测试结果
+ */
 export async function testApiConnection(
+  userConfig: ApiConfigItem,
+  baseTimeout?: number,
+): Promise<ApiTestResult> {
+  const { provider, config } = userConfig;
+
+  // 根据provider类型选择合适的测试方法
+  switch (provider) {
+    case TranslationProvider.GoogleGemini:
+    case TranslationProvider.ProxyGemini:
+    case 'GoogleGemini':
+    case 'ProxyGemini':
+      return testGeminiConnection(config, baseTimeout);
+
+    case TranslationProvider.OpenAI:
+    case TranslationProvider.DeepSeek:
+    case TranslationProvider.SiliconFlow:
+    case 'OpenAI':
+    case 'DeepSeek':
+    case 'SiliconFlow':
+    default:
+      return testOpenAICompatibleConnection(config, baseTimeout);
+  }
+}
+
+/**
+ * 测试OpenAI兼容API的连接
+ * @param apiConfig API配置对象
+ * @param baseTimeout 超时时间（毫秒）
+ * @returns Promise<ApiTestResult> 测试结果
+ */
+export async function testOpenAICompatibleConnection(
   apiConfig: ApiConfig,
   baseTimeout?: number,
 ): Promise<ApiTestResult> {
@@ -189,7 +224,7 @@ export async function testApiConnection(
                 Authorization: `Bearer ${apiConfig.apiKey}`,
               },
               body: JSON.stringify(requestBody),
-              timeout: getApiTimeout(baseTimeout || 30000) || 0,
+              timeout: getApiTimeout(baseTimeout || 0) || 0,
             },
           },
           (response) => {
@@ -216,7 +251,7 @@ export async function testApiConnection(
       });
     } else {
       // 直接发送请求，处理超时设置
-      const timeout = getApiTimeout(baseTimeout || 30000);
+      const timeout = getApiTimeout(baseTimeout || 0);
       const fetchOptions: RequestInit = {
         method: 'POST',
         headers: {
@@ -331,9 +366,6 @@ export function safeSetInnerHTML(
     return false;
   }
 }
-
-
-
 
 /**
  * 从可能包含Markdown代码块的字符串中提取并解析JSON。

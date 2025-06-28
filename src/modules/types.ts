@@ -3,7 +3,7 @@
  * This file contains shared type definitions and default constants to avoid circular dependencies.
  */
 
-// From apiService.ts
+// API related types (now in ./api module)
 export interface Replacement {
   original: string;
   translation: string;

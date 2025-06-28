@@ -280,7 +280,7 @@ browser_specific_settings: {
 │   │   └── blacklist/    # 网站黑名单功能
 │   ├── processing/       # 文本处理模块
 │   ├── floatingBall/     # 浮动球功能
-│   ├── apiService.ts     # AI翻译API服务
+│   ├── api/              # AI翻译API服务模块
 │   ├── textProcessor.ts  # 智能文本处理器
 │   ├── textReplacer.ts   # 文本替换引擎
 │   ├── styleManager.ts   # 样式管理器
