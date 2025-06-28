@@ -34,9 +34,9 @@
                 设置所有API请求的最大等待时间。填写 <code class="px-1 py-0.5 bg-muted rounded text-xs">0</code> 表示不做任何超时限制。
               </p>
               <div class="relative">
-                <Input id="api-timeout" type="number" :model-value="Math.round(settings.apiRequestTimeout / 1000)"
+                <Input id="api-timeout" type="number" :model-value="(settings.apiRequestTimeout / 1000).toFixed(3)"
                   @update:model-value="settings.apiRequestTimeout = Number($event || 0) * 1000"
-                  placeholder="输入超时时间（秒），0表示无限制" min="0" class="pr-12" />
+                  placeholder="输入超时时间（秒），0表示无限制" min="0" step="0.001" class="pr-12" />
                 <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <span class="text-sm text-muted-foreground">秒</span>
                 </div>
@@ -47,7 +47,7 @@
                 <button v-for="preset in [10, 30, 60, 120, 0]" :key="preset"
                   @click="settings.apiRequestTimeout = preset * 1000" type="button"
                   class="inline-flex items-center rounded-md bg-background border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted transition-colors"
-                  :class="{ 'bg-primary/10 border-primary/20 text-primary': Math.round(settings.apiRequestTimeout / 1000) === preset }">
+                  :class="{ 'bg-primary/10 border-primary/20 text-primary': (settings.apiRequestTimeout / 1000) === preset }">
                   {{ preset === 0 ? '无限制' : `${preset}秒` }}
                 </button>
               </div>
