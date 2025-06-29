@@ -2,6 +2,7 @@
 export { default as EnhancementTooltip } from './EnhancementTooltip.vue';
 export { default as WritingEnhancementCard } from './WritingEnhancementCard.vue';
 export { default as EnhancementContainer } from './EnhancementContainer.vue';
+export { default as DebugPanel } from './DebugPanel.vue';
 
 // 组件类型定义
 export interface UIPosition {

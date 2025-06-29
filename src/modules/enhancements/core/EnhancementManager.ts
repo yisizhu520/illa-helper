@@ -27,6 +27,9 @@ export class EnhancementManager {
       ...uiConfig,
     });
 
+    // 设置EnhancementManager引用到UIRenderer
+    this.uiRenderer.setEnhancementManager(this);
+
     this.initializeDefaultProviders();
   }
 
@@ -270,5 +273,19 @@ export class EnhancementManager {
    */
   public getUIRenderer(): UIRenderer {
     return this.uiRenderer;
+  }
+
+  /**
+   * 显示/隐藏调试面板
+   */
+  public toggleDebugPanel(): string {
+    return this.uiRenderer.renderDebugPanel();
+  }
+
+  /**
+   * 检查调试面板是否可见
+   */
+  public isDebugPanelVisible(): boolean {
+    return this.uiRenderer.isDebugPanelVisible();
   }
 }

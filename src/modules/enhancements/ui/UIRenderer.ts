@@ -7,6 +7,8 @@ import type {
 } from './components';
 import EnhancementTooltip from './components/EnhancementTooltip.vue';
 import EnhancementContainer from './components/EnhancementContainer.vue';
+import DebugPanel from './components/DebugPanel.vue';
+import type { EnhancementManager } from '../core/EnhancementManager';
 
 /**
  * UI渲染引擎配置
@@ -32,7 +34,7 @@ export interface UIRendererConfig {
  */
 interface RenderedUI {
   id: string;
-  type: 'tooltip' | 'container';
+  type: 'tooltip' | 'container' | 'debug';
   element: HTMLElement;
   vueApp: VueApp;
   enhancement?: Enhancement;
@@ -71,6 +73,7 @@ export class UIRenderer {
   private renderedUIs = new Map<string, RenderedUI>();
   private container: HTMLElement | null = null;
   private smartPositioning: SmartPositioningConfig;
+  private enhancementManager?: EnhancementManager;
 
   constructor(config: UIRendererConfig = {}) {
     this.config = {
@@ -91,6 +94,13 @@ export class UIRenderer {
     };
 
     this.initialize();
+  }
+
+  /**
+   * 设置 EnhancementManager 引用
+   */
+  public setEnhancementManager(manager: EnhancementManager): void {
+    this.enhancementManager = manager;
   }
 
   /**
@@ -616,6 +626,65 @@ export class UIRenderer {
 
   private handleContainerClearAll(): void {
     console.log('Container clear all requested');
+  }
+
+  /**
+   * 渲染调试面板
+   */
+  public renderDebugPanel(): string {
+    const id = 'debug-panel';
+
+    // 如果已存在，先清理
+    if (this.renderedUIs.has(id)) {
+      this.cleanup(id);
+      return id; // 切换显示/隐藏
+    }
+
+    if (!this.enhancementManager) {
+      console.error('UIRenderer: EnhancementManager not set, cannot render debug panel');
+      return '';
+    }
+
+    // 创建容器元素
+    const debugContainer = document.createElement('div');
+    debugContainer.className = 'illa-debug-panel-container';
+    this.container!.appendChild(debugContainer);
+
+    // 创建Vue应用
+    const vueApp = createApp(DebugPanel, {
+      enhancementManager: this.enhancementManager,
+    });
+
+    vueApp.mount(debugContainer);
+
+    // 记录渲染信息
+    const renderedUI: RenderedUI = {
+      id,
+      type: 'debug',
+      element: debugContainer,
+      vueApp,
+      cleanup: () => {
+        vueApp.unmount();
+        debugContainer.remove();
+      },
+    };
+
+    this.renderedUIs.set(id, renderedUI);
+
+    // 添加进入动画
+    if (this.config.animations.enabled) {
+      this.addEnterAnimation(debugContainer);
+    }
+
+    console.log('Debug panel rendered');
+    return id;
+  }
+
+  /**
+   * 检查调试面板是否可见
+   */
+  public isDebugPanelVisible(): boolean {
+    return this.renderedUIs.has('debug-panel');
   }
 
   /**

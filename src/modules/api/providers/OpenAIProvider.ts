@@ -96,7 +96,20 @@ export class OpenAIProvider extends BaseProvider {
       const cleanedContent = cleanMarkdownFromResponse(
         data.choices[0].message.content,
       );
-      const content = JSON.parse(cleanedContent);
+      
+      let content;
+      try {
+        content = JSON.parse(cleanedContent);
+      } catch (parseError) {
+        console.warn('JSON解析失败，尝试处理非JSON响应:', cleanedContent);
+        // 如果JSON解析失败，返回一个空的替换结果
+        return {
+          original: originalText,
+          processed: '',
+          replacements: [],
+        };
+      }
+
       const replacements = addPositionsToReplacements(
         originalText,
         content.replacements || [],
@@ -109,7 +122,12 @@ export class OpenAIProvider extends BaseProvider {
       };
     } catch (error) {
       console.error('提取替换信息失败:', error);
-      throw error;
+      // 返回一个安全的默认结果而不是抛出错误
+      return {
+        original: originalText,
+        processed: '',
+        replacements: [],
+      };
     }
   }
 }

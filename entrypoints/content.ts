@@ -11,6 +11,7 @@ import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
 import { EnhancementManager } from '@/src/modules/enhancements/core/EnhancementManager';
 import { UniversalApiService } from '@/src/modules/api/services/UniversalApiService';
+import { globalShortcuts, PREDEFINED_SHORTCUTS } from '@/src/modules/enhancements/ui/KeyboardShortcuts';
 
 export default defineContentScript({
   // 匹配所有网站
@@ -47,6 +48,15 @@ export default defineContentScript({
 
     // 初始化增强系统
     const enhancementManager = new EnhancementManager(settings, apiService);
+
+    // 设置调试面板快捷键
+    globalShortcuts.register({
+      ...PREDEFINED_SHORTCUTS.TOGGLE_DEBUG_PANEL,
+      action: () => {
+        console.log('Debug panel shortcut triggered');
+        enhancementManager.toggleDebugPanel();
+      },
+    });
 
     // 获取当前活跃的API配置
     const textProcessor = new TextProcessor(

@@ -18,6 +18,11 @@ export class WritingAssistantProvider implements IEnhancementProvider {
    * 检查内容是否适用于写作增强
    */
   async isApplicable(context: ContentContext): Promise<boolean> {
+    // 检查输入是否有效
+    if (!context || !context.text || typeof context.text !== 'string') {
+      return false;
+    }
+
     // 检查文本长度 - 至少需要一个完整句子
     if (context.text.length < 20) return false;
 
@@ -170,6 +175,11 @@ export class WritingAssistantProvider implements IEnhancementProvider {
    * 检查是否是有意义的文本
    */
   private isMeaningfulText(text: string): boolean {
+    // 检查输入是否有效
+    if (!text || typeof text !== 'string') {
+      return false;
+    }
+
     // 过滤掉纯数字、纯符号、链接等
     const meaninglessPatterns = [
       /^[\d\s\-+.,%]+$/, // 纯数字和符号
@@ -183,7 +193,8 @@ export class WritingAssistantProvider implements IEnhancementProvider {
     }
 
     // 检查是否包含足够的文字内容
-    const wordCount = text.match(/[\u4e00-\u9fa5\w]+/g)?.length || 0;
+    const matches = text.match(/[\u4e00-\u9fa5\w]+/g);
+    const wordCount = matches ? matches.length : 0;
     return wordCount >= 3;
   }
 }

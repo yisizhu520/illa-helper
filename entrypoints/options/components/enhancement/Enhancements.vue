@@ -80,10 +80,13 @@ const enhancementCategories = [
   },
 ];
 
+// 创建 StorageManager 实例
+const storageManager = new StorageManager();
+
 // 保存设置
 const saveSettings = async () => {
   try {
-    await StorageManager.saveUserSettings(settings.value);
+    await storageManager.saveUserSettings(settings.value);
     emit('saveMessage', '智能增强设置已保存');
   } catch (error) {
     console.error('保存设置失败:', error);
@@ -97,7 +100,7 @@ watch(settings, saveSettings, { deep: true });
 // 初始化加载设置
 onMounted(async () => {
   try {
-    settings.value = await StorageManager.loadUserSettings();
+    settings.value = await storageManager.getUserSettings();
   } catch (error) {
     console.error('加载设置失败:', error);
     settings.value = DEFAULT_SETTINGS;

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试面板测试页面</title>
+    <style>
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .content-card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #4f46e5;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #10b981;
+            background-color: #f0fdf4;
+        }
+        .instructions {
+            background-color: #fef3c7;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f59e0b;
+            margin-bottom: 20px;
+        }
+        code {
+            background-color: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="content-card">
+        <h1>🔧 ILLA Helper 调试面板测试</h1>
+        
+        <div class="instructions">
+            <h3>📋 测试说明</h3>
+            <p><strong>快捷键：</strong>按 <code>Ctrl + Alt + D</code> 打开/关闭调试面板</p>
+            <p><strong>功能验证：</strong>调试面板应该显示在页面右下角，包含系统状态、手动触发和日志功能</p>
+        </div>
+
+        <div class="test-section">
+            <h3>测试文本 1: 写作能力增强</h3>
+            <p>这是一个测试文本，用来验证写作助手的功能。文本应该足够长来触发写作分析功能。这个段落包含了完整的句子结构，应该能被写作助手识别并提供改进建议。</p>
+        </div>
+
+        <div class="test-section">
+            <h3>测试文本 2: 短文本</h3>
+            <p>短文本测试。</p>
+        </div>
+
+        <div class="test-section">
+            <h3>测试文本 3: 包含标点的长文本</h3>
+            <p>在现代社会中，人工智能技术正在快速发展，并深刻地改变着我们的生活方式。从智能手机到自动驾驶汽车，从语音助手到推荐系统，AI的应用无处不在。然而，随着技术的进步，我们也需要思考如何确保AI的发展是负责任的、可控的，并且能够真正造福人类社会。</p>
+        </div>
+
+        <div class="test-section">
+            <h3>测试文本 4: 代码块（应该被忽略）</h3>
+            <pre><code>function testFunction() {
+    console.log("这是代码，不应该被写作助手处理");
+    return true;
+}</code></pre>
+        </div>
+
+        <div class="test-section">
+            <h3>测试文本 5: 无意义文本（应该被忽略）</h3>
+            <p>123456789</p>
+            <p>https://example.com</p>
+            <p>！@#￥%……&*（）</p>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <h2>🧪 调试面板功能测试</h2>
+        
+        <div class="test-section">
+            <h3>系统状态检查</h3>
+            <ul>
+                <li>✅ 增强系统启用状态显示</li>
+                <li>✅ 已注册Providers列表显示</li>
+                <li>✅ 面板可拖拽移动</li>
+                <li>✅ 面板可最小化/展开</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>手动触发功能</h3>
+            <ul>
+                <li>✅ 手动分析按钮可用</li>
+                <li>✅ 分析过程状态显示</li>
+                <li>✅ 分析结果日志记录</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h3>日志功能</h3>
+            <ul>
+                <li>✅ 操作日志实时显示</li>
+                <li>✅ 时间戳记录</li>
+                <li>✅ 清空日志功能</li>
+                <li>✅ 日志滚动查看</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 添加一些交互来测试增强功能
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('测试页面加载完成');
+            
+            // 模拟用户交互
+            const sections = document.querySelectorAll('.test-section');
+            sections.forEach((section, index) => {
+                section.addEventListener('click', function() {
+                    console.log(`点击了测试区域 ${index + 1}`);
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
