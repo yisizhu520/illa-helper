@@ -78,24 +78,62 @@ const runAnalysis = async () => {
   addLog('手动分析开始...');
   
   try {
+    // 获取页面文本并清理，排除调试面板本身
+    const debugPanel = document.querySelector('.illa-debug-panel') as HTMLElement;
+    if (debugPanel) {
+      debugPanel.style.display = 'none';
+    }
+    
+    const pageText = document.body.innerText;
+    const cleanedText = pageText.replace(/\s+/g, ' ').trim();
+    
+    // 恢复调试面板显示
+    if (debugPanel) {
+      debugPanel.style.display = '';
+    }
+    
+    addLog(`页面文本长度: ${pageText.length} 字符`);
+    addLog(`清理后文本长度: ${cleanedText.length} 字符`);
+    addLog(`文本前100字符: "${cleanedText.substring(0, 100)}..."`);
+    
     const context = {
       elementId: 'manual-debug',
       element: document.body,
-      text: document.body.innerText,
+      text: cleanedText,
       pageUrl: window.location.href,
       pageType: 'other' as const,
     };
     
+    addLog('开始调用 enhanceContent...');
+    console.log('🔍 Debug: Context created:', context);
+    
     const enhancements = await props.enhancementManager.enhanceContent(context);
+    
+    console.log('🔍 Debug: Enhancements result:', enhancements);
+    addLog(`enhanceContent 返回 ${enhancements.length} 个结果`);
     
     if (enhancements.length > 0) {
       addLog(`分析完成，发现 ${enhancements.length} 个增强点。`);
-      enhancements.forEach(enh => {
+      enhancements.forEach((enh, index) => {
         addLog(`  - [${enh.type}] ${enh.title}`);
+        addLog(`    置信度: ${enh.confidence}`);
+        console.log(`🔍 Debug: Enhancement ${index}:`, enh);
         props.enhancementManager.showEnhancementTooltip(enh, document.body);
       });
     } else {
       addLog('分析完成，未发现可用的增强点。');
+      
+      // 详细检查为什么没有增强点
+      const providers = props.enhancementManager.getProviders();
+      addLog(`当前注册的Providers数量: ${providers.length}`);
+      providers.forEach(provider => {
+        addLog(`  - ${provider.name} (${provider.id})`);
+      });
+      
+      const settings = props.enhancementManager.getSettings();
+      addLog(`增强系统启用状态: ${settings.enhancementSettings.isEnhancementEnabled}`);
+      addLog(`触发频率: ${settings.enhancementSettings.frequency}`);
+      addLog(`启用的分类: ${settings.enhancementSettings.enabledCategories.join(', ')}`);
     }
   } catch (error: any) {
     addLog(`分析出错: ${error.message}`);
@@ -145,16 +183,83 @@ const endDrag = () => {
   document.removeEventListener('mouseup', endDrag);
 };
 
-onMounted(() => {
-  addLog('调试面板已加载。');
-  // 确保面板位置在视窗内
-  const maxX = window.innerWidth - 350;
-  const maxY = window.innerHeight - 400;
-  panelPosition.value = {
-    x: Math.min(Math.max(10, panelPosition.value.x), maxX),
-    y: Math.min(Math.max(10, panelPosition.value.y), maxY)
+// 提前声明测试接口函数
+const createTestInterface = () => {
+  const testInterface = async (text: string) => {
+    console.log('✅ 调试面板测试接口被调用');
+    addLog(`测试指定文本: "${text.substring(0, 50)}..."`);
+    
+    try {
+      const context = {
+        elementId: 'test-specific',
+        element: document.body,
+        text: text,
+        pageUrl: window.location.href,
+        pageType: 'other' as const,
+      };
+      
+      console.log('🔍 调用 enhanceContent 分析文本...');
+      const enhancements = await props.enhancementManager.enhanceContent(context);
+      console.log('🔍 分析结果:', enhancements);
+      
+      if (enhancements.length > 0) {
+        addLog(`✅ 发现 ${enhancements.length} 个增强点`);
+        enhancements.forEach((enh, index) => {
+          addLog(`  - [${enh.type}] ${enh.title}`);
+          console.log(`Enhancement ${index}:`, enh);
+        });
+      } else {
+        addLog(`❌ 未发现增强点`);
+      }
+    } catch (error: any) {
+      addLog(`❌ 测试出错: ${error.message}`);
+      console.error('测试出错:', error);
+    }
   };
-  console.log('Debug panel position:', panelPosition.value);
+  
+  return testInterface;
+};
+
+onMounted(() => {
+  console.log('🔄 DebugPanel onMounted 开始执行...');
+  
+  try {
+    addLog('调试面板已加载。');
+    
+    // 确保面板位置在视窗内
+    const maxX = window.innerWidth - 350;
+    const maxY = window.innerHeight - 400;
+    panelPosition.value = {
+      x: Math.min(Math.max(10, panelPosition.value.x), maxX),
+      y: Math.min(Math.max(10, panelPosition.value.y), maxY)
+    };
+    console.log('Debug panel position:', panelPosition.value);
+    
+    // 设置全局测试接口
+    console.log('🔄 正在设置全局测试接口...');
+    (window as any).debugPanelTest = createTestInterface();
+    
+    // 验证接口是否设置成功
+    if ((window as any).debugPanelTest) {
+      console.log('✅ 调试面板测试接口设置成功');
+      console.log('✅ 调试面板初始化完成，测试接口已设置');
+    } else {
+      console.error('❌ 调试面板测试接口设置失败');
+    }
+    
+    // 额外确认一次
+    setTimeout(() => {
+      if ((window as any).debugPanelTest) {
+        console.log('✅ 延迟验证：测试接口确认存在');
+      } else {
+        console.error('❌ 延迟验证：测试接口仍然不存在');
+      }
+    }, 50);
+    
+  } catch (error) {
+    console.error('❌ DebugPanel onMounted 执行出错:', error);
+    addLog(`初始化出错: ${error}`);
+  }
 });
 </script>
 

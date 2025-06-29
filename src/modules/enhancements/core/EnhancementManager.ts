@@ -95,26 +95,42 @@ export class EnhancementManager {
    * 核心方法：处理页面内容并生成增强建议
    */
   public async enhanceContent(context: ContentContext): Promise<Enhancement[]> {
+    console.log('🔍 EnhancementManager.enhanceContent called with context:', {
+      elementId: context.elementId,
+      textLength: context.text?.length,
+      pageUrl: context.pageUrl,
+      pageType: context.pageType
+    });
+
     // 检查系统是否已初始化
     if (!this.isInitialized) {
-      console.warn('EnhancementManager not initialized');
+      console.warn('🚨 EnhancementManager not initialized');
       return [];
     }
 
     // 检查全局开关是否开启
     if (!this.settings.enhancementSettings.isEnhancementEnabled) {
+      console.log('🚨 Enhancement system is disabled');
       return [];
     }
+
+    console.log('✅ Enhancement system is enabled, proceeding...');
 
     const allEnhancements: Enhancement[] = [];
     let processedCount = 0;
     const maxEnhancements =
       this.settings.enhancementSettings.maxEnhancementsPerPage;
 
+    console.log(`🔍 Processing with max ${maxEnhancements} enhancements`);
+    console.log(`🔍 Available providers: ${this.providers.size}`);
+
     // 遍历所有已注册的providers
     for (const provider of this.providers.values()) {
+      console.log(`🔍 Checking provider: ${provider.name} (${provider.id})`);
+      
       // 达到最大增强数量限制时停止处理
       if (processedCount >= maxEnhancements) {
+        console.log('🛑 Reached maximum enhancements limit');
         break;
       }
 
@@ -126,34 +142,58 @@ export class EnhancementManager {
           ),
         );
 
+        console.log(`🔍 Provider ${provider.name} enabled: ${isProviderEnabled}`);
+        console.log(`🔍 Provider categories: ${provider.categories.join(', ')}`);
+        console.log(`🔍 Enabled categories: ${this.settings.enhancementSettings.enabledCategories.join(', ')}`);
+
         if (!isProviderEnabled) {
+          console.log(`⏭️ Skipping ${provider.name} - category not enabled`);
           continue;
         }
 
         // 根据频率设置随机决定是否处理
-        if (Math.random() > this.settings.enhancementSettings.frequency) {
+        const randomValue = Math.random();
+        const frequency = this.settings.enhancementSettings.frequency;
+        console.log(`🔍 Random value: ${randomValue}, Frequency: ${frequency}`);
+        
+        if (randomValue > frequency) {
+          console.log(`⏭️ Skipping ${provider.name} - frequency check failed`);
           continue;
         }
 
         // 检查该provider是否适用于当前内容
-        if (await provider.isApplicable(context)) {
-          console.log(`Applying provider: ${provider.name}`);
+        console.log(`🔍 Checking if ${provider.name} is applicable...`);
+        const isApplicable = await provider.isApplicable(context);
+        console.log(`🔍 Provider ${provider.name} applicable: ${isApplicable}`);
+
+        if (isApplicable) {
+          console.log(`✅ Applying provider: ${provider.name}`);
 
           const enhancements = await provider.enhance(context);
+          console.log(`🔍 Provider ${provider.name} returned ${enhancements?.length || 0} enhancements`);
+          
           if (enhancements && enhancements.length > 0) {
             allEnhancements.push(...enhancements);
             processedCount += enhancements.length;
 
             console.log(
-              `Generated ${enhancements.length} enhancements from ${provider.name}`,
+              `✅ Generated ${enhancements.length} enhancements from ${provider.name}`,
             );
+            enhancements.forEach((enh, index) => {
+              console.log(`  Enhancement ${index}: ${enh.title} (confidence: ${enh.confidence})`);
+            });
+          } else {
+            console.log(`❌ Provider ${provider.name} returned no enhancements`);
           }
+        } else {
+          console.log(`❌ Provider ${provider.name} not applicable to current content`);
         }
       } catch (error) {
-        console.error(`Error in provider ${provider.id}:`, error);
+        console.error(`❌ Error in provider ${provider.id}:`, error);
       }
     }
 
+    console.log(`🔍 Final result: ${allEnhancements.length} total enhancements`);
     return allEnhancements.slice(0, maxEnhancements);
   }
 

@@ -47,7 +47,10 @@ export default defineContentScript({
     const apiService = UniversalApiService.getInstance();
 
     // 初始化增强系统
+    console.log('🔄 Initializing EnhancementManager...');
+    console.log('🔍 Enhancement settings:', settings.enhancementSettings);
     const enhancementManager = new EnhancementManager(settings, apiService);
+    console.log('✅ EnhancementManager initialized');
 
     // 设置调试面板快捷键
     globalShortcuts.register({
@@ -59,11 +62,13 @@ export default defineContentScript({
     });
 
     // 获取当前活跃的API配置
+    console.log('🔄 Initializing TextProcessor...');
     const textProcessor = new TextProcessor(
       settings,
       apiService,
       enhancementManager,
     );
+    console.log('✅ TextProcessor initialized with EnhancementManager');
     const textReplacer = new TextReplacer(createReplacementConfig(settings));
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
 
@@ -86,8 +91,12 @@ export default defineContentScript({
 
     // --- 根据触发模式执行操作 ---
     if (settings.triggerMode === TriggerMode.AUTOMATIC) {
+      console.log('🔄 Automatic mode detected, processing page...');
       // 翻译功能和增强功能共享同一个触发模式
       await processPage(textProcessor, textReplacer);
+      console.log('✅ Page processing completed');
+    } else {
+      console.log('📋 Manual mode detected, waiting for user action');
     }
 
     // --- 监听消息和DOM变化 ---
@@ -144,7 +153,10 @@ async function processPage(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
 ) {
+  console.log('🔄 processPage called');
+  console.log('🔍 Processing document.body:', document.body);
   await textProcessor.processRoot(document.body, textReplacer);
+  console.log('✅ processPage completed');
 }
 
 /**

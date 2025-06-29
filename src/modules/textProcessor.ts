@@ -145,6 +145,11 @@ export class TextProcessor {
   // Section 1: 新的核心处理流程 (New Core Processing Flow)
   // =================================================================
   public async processRoot(root: Node, textReplacer: any): Promise<void> {
+    console.log('🔄 TextProcessor.processRoot called');
+    console.log('🔍 Enhancement manager available:', !!this.enhancementManager);
+    console.log('🔍 Enhancement system enabled:', this.userSettings.enhancementSettings.isEnhancementEnabled);
+    console.log('🔍 Enhancement settings:', this.userSettings.enhancementSettings);
+    
     try {
       // 第一步：更新内容分段器配置
       this.contentSegmenter.updateConfig({
@@ -156,7 +161,10 @@ export class TextProcessor {
 
       // 第二步：使用智能分段器将根节点分割为内容段落
       const segments = this.contentSegmenter.segmentContent(root);
+      console.log(`🔍 Content segmenter found ${segments.length} segments`);
+      
       if (segments.length === 0) {
+        console.log('❌ No segments found, exiting processRoot');
         return;
       }
 
@@ -165,12 +173,21 @@ export class TextProcessor {
         this.enhancementManager &&
         this.userSettings.enhancementSettings.isEnhancementEnabled
       ) {
+        console.log('✅ Enhancement system is enabled, processing segments...');
+        
         for (const segment of segments) {
           if (segment.element) {
+            const segmentText = segment.textContent || segment.element.textContent || '';
+            console.log('🔍 Processing segment:', {
+              text: segmentText.substring(0, 100) + '...',
+              textLength: segmentText.length,
+              element: segment.element.tagName
+            });
+            
             const enhancements = await this.enhancementManager.enhanceContent({
               elementId: `segment-${Date.now()}-${Math.random()}`,
-              element: segment.element,
-              text: segment.text,
+              element: segment.element as HTMLElement,
+              text: segmentText,
               pageUrl: window.location.href,
               pageType: 'article', // TODO: Implement page type detection
             });
@@ -178,15 +195,23 @@ export class TextProcessor {
             // 渲染增强功能UI
             if (enhancements.length > 0) {
               console.log(
-                `Generated ${enhancements.length} enhancements for segment:`,
+                `✅ Generated ${enhancements.length} enhancements for segment:`,
                 enhancements,
               );
 
               // 根据增强类型决定渲染方式
-              this.renderEnhancements(enhancements, segment.element);
+              this.renderEnhancements(enhancements, segment.element as HTMLElement);
+            } else {
+              console.log('❌ No enhancements generated for this segment');
             }
+          } else {
+            console.log('⚠️ Segment has no element, skipping');
           }
         }
+      } else {
+        console.log('❌ Enhancement system not enabled or manager not available');
+        console.log('  - Manager available:', !!this.enhancementManager);
+        console.log('  - System enabled:', this.userSettings.enhancementSettings.isEnhancementEnabled);
       }
 
       // 如果翻译功能启用，则执行翻译处理

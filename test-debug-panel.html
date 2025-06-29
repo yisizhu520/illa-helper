@@ -48,42 +48,42 @@
 </head>
 <body>
     <div class="content-card">
-        <h1>🔧 ILLA Helper 调试面板测试</h1>
+        <h1>调试面板测试页面</h1>
         
-        <div class="instructions">
-            <h3>📋 测试说明</h3>
-            <p><strong>快捷键：</strong>按 <code>Ctrl + Alt + D</code> 打开/关闭调试面板</p>
-            <p><strong>功能验证：</strong>调试面板应该显示在页面右下角，包含系统状态、手动触发和日志功能</p>
+        <!-- 测试文本区域 -->
+        <div id="test-content" style="margin: 20px; padding: 20px; border: 1px solid #ccc; background: #f9f9f9; line-height: 1.6;">
+            <h2>测试段落 1：需要提升的商务邮件</h2>
+            <p>你好，我想跟你商量一个事情。我们公司最近在做一个项目，可能需要你们的帮助。具体的细节我们可以找时间详细聊聊。如果你有时间的话，我们可以约个时间见面谈。谢谢。</p>
+            
+            <h2>测试段落 2：学术论文片段</h2>
+            <p>本研究通过分析大量数据样本，发现了一些有趣的现象。虽然之前的研究已经有一些相关发现，但我们的结果显示了不同的趋势。这个发现可能会对整个领域产生重要影响。我们建议进一步深入研究这个问题。</p>
+            
+            <h2>测试段落 3：创意写作内容</h2>
+            <p>夕阳西下，远山如黛。微风轻拂过湖面，泛起层层涟漪。一只小船在湖心缓缓划过，船上的渔夫正在收网。这样的场景总是让人心情平静。生活中的美好往往就隐藏在这些平凡的瞬间里。</p>
+            
+            <h2>测试段落 4：工作总结</h2>
+            <p>这个月我们团队完成了几个重要项目。虽然过程中遇到了一些挑战，但最终都得到了解决。团队成员之间的配合比较默契，工作效率也有所提升。下个月我们计划启动新的项目，希望能够继续保持这样的工作状态。</p>
+            
+            <div style="margin-top: 30px; padding: 15px; background: #e8f4f8; border-radius: 8px;">
+                <h3>测试说明</h3>
+                <p>• 按 <strong>Ctrl + Alt + D</strong> 打开调试面板</p>
+                <p>• 点击 🧪 测试按钮分析页面文本</p>
+                <p>• 观察调试面板中的分析结果</p>
+                <p>• 查看控制台的详细日志</p>
+            </div>
         </div>
-
-        <div class="test-section">
-            <h3>测试文本 1: 写作能力增强</h3>
-            <p>这是一个测试文本，用来验证写作助手的功能。文本应该足够长来触发写作分析功能。这个段落包含了完整的句子结构，应该能被写作助手识别并提供改进建议。</p>
+        
+        <!-- 测试按钮区域 -->
+        <div style="margin: 20px; text-align: center;">
+            <button onclick="testEnhancement()" style="margin-top: 10px; padding: 8px 16px; background: #4f46e5; color: white; border: none; border-radius: 4px; cursor: pointer;">🧪 测试此页面的增强功能</button>
+            <button onclick="testSpecificText()" style="margin-top: 10px; margin-left: 10px; padding: 8px 16px; background: #10b981; color: white; border: none; border-radius: 4px; cursor: pointer;">🎯 测试指定文本</button>
+            <button onclick="checkDebugPanel()" style="margin-top: 10px; margin-left: 10px; padding: 8px 16px; background: #f59e0b; color: white; border: none; border-radius: 4px; cursor: pointer;">🔍 检查调试面板状态</button>
+            <button onclick="forceSetupInterface()" style="margin-top: 10px; margin-left: 10px; padding: 8px 16px; background: #dc2626; color: white; border: none; border-radius: 4px; cursor: pointer;">🔧 强制设置接口</button>
         </div>
-
-        <div class="test-section">
-            <h3>测试文本 2: 短文本</h3>
-            <p>短文本测试。</p>
-        </div>
-
-        <div class="test-section">
-            <h3>测试文本 3: 包含标点的长文本</h3>
-            <p>在现代社会中，人工智能技术正在快速发展，并深刻地改变着我们的生活方式。从智能手机到自动驾驶汽车，从语音助手到推荐系统，AI的应用无处不在。然而，随着技术的进步，我们也需要思考如何确保AI的发展是负责任的、可控的，并且能够真正造福人类社会。</p>
-        </div>
-
-        <div class="test-section">
-            <h3>测试文本 4: 代码块（应该被忽略）</h3>
-            <pre><code>function testFunction() {
-    console.log("这是代码，不应该被写作助手处理");
-    return true;
-}</code></pre>
-        </div>
-
-        <div class="test-section">
-            <h3>测试文本 5: 无意义文本（应该被忽略）</h3>
-            <p>123456789</p>
-            <p>https://example.com</p>
-            <p>！@#￥%……&*（）</p>
+        
+        <!-- 视觉指示器 -->
+        <div id="debug-indicator" style="position: fixed; top: 320px; left: 490px; width: 20px; height: 20px; background: red; border-radius: 50%; z-index: 10002; display: none; animation: blink 1s infinite;">
+            <div style="position: absolute; top: -25px; left: -40px; background: black; color: white; padding: 2px 6px; border-radius: 3px; font-size: 12px; white-space: nowrap;">调试面板应该在这里</div>
         </div>
     </div>
 
@@ -133,6 +133,163 @@
                 });
             });
         });
+
+        // 测试增强功能
+        function testEnhancement() {
+            console.log('🧪 开始测试增强功能...');
+            
+            // 显示视觉指示器
+            document.getElementById('debug-indicator').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('debug-indicator').style.display = 'none';
+            }, 3000);
+            
+            // 选择页面上的一个测试段落
+            const testElement = document.querySelector('#test-content p');
+            if (!testElement) {
+                console.log('❌ 未找到测试元素');
+                return;
+            }
+            
+            const testText = testElement.textContent;
+            console.log('📝 测试文本:', testText);
+            
+            // 模拟选中文本事件
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(testElement);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            
+            console.log('✅ 已选中测试文本，等待增强系统响应...');
+            
+            // 手动触发选择事件（如果需要）
+            const event = new Event('mouseup', { bubbles: true });
+            testElement.dispatchEvent(event);
+        }
+
+        // 测试指定文本
+        function testSpecificText() {
+            console.log('🎯 测试指定文本...');
+            
+            const testTexts = [
+                "你好，我想跟你商量一个事情。我们公司最近在做一个项目，可能需要你们的帮助。",
+                "本研究通过分析大量数据样本，发现了一些有趣的现象。虽然之前的研究已经有一些相关发现，但我们的结果显示了不同的趋势。",
+                "夕阳西下，远山如黛。微风轻拂过湖面，泛起层层涟漪。这样的场景总是让人心情平静。",
+                "这个月我们团队完成了几个重要项目。虽然过程中遇到了一些挑战，但最终都得到了解决。"
+            ];
+            
+            if (typeof window.debugPanelTest === 'function') {
+                // 随机选择一个测试文本
+                const randomText = testTexts[Math.floor(Math.random() * testTexts.length)];
+                console.log('使用测试文本:', randomText);
+                window.debugPanelTest(randomText);
+            } else {
+                console.log('❌ 调试面板测试接口不可用');
+                console.log('接口类型:', typeof window.debugPanelTest);
+                console.log('window.debugPanelTest:', window.debugPanelTest);
+            }
+        }
+
+        // 添加一个简单的视觉指示器来确保调试面板被正确定位
+        function addVisualIndicator() {
+            const indicator = document.createElement('div');
+            indicator.innerHTML = '🔍 调试面板应该在这附近 →';
+            indicator.style.cssText = `
+                position: fixed;
+                right: 20px;
+                bottom: 20px;
+                background: #ff6b6b;
+                color: white;
+                padding: 10px;
+                border-radius: 4px;
+                z-index: 9999;
+                font-size: 12px;
+                max-width: 200px;
+            `;
+            document.body.appendChild(indicator);
+            
+            // 3秒后移除指示器
+            setTimeout(() => {
+                indicator.remove();
+            }, 3000);
+        }
+
+        // 页面加载后显示指示器
+        setTimeout(addVisualIndicator, 1000);
+
+        // 检查调试面板状态的函数
+        function checkDebugPanel() {
+            console.log('🔍 手动检查调试面板状态...');
+            
+            // 检查DOM元素
+            const debugPanel = document.querySelector('.illa-debug-panel');
+            const debugContainer = document.querySelector('.illa-debug-panel-container');
+            
+            console.log('调试面板(.illa-debug-panel):', debugPanel);
+            console.log('调试面板容器(.illa-debug-panel-container):', debugContainer);
+            console.log('window.debugPanelTest:', window.debugPanelTest);
+            
+            // 检查所有可能的调试相关元素
+            const allDebugElements = document.querySelectorAll('[class*="debug"], [class*="illa"]');
+            console.log('所有可能的调试相关元素:', allDebugElements);
+            
+            // 检查window上的所有属性
+            const windowProps = Object.keys(window).filter(key => key.includes('debug') || key.includes('illa'));
+            console.log('window上的调试相关属性:', windowProps);
+            
+            if (debugPanel || debugContainer) {
+                console.log('✅ 找到调试面板DOM元素');
+                if (window.debugPanelTest) {
+                    console.log('✅ 调试面板接口已就绪');
+                } else {
+                    console.log('❌ 调试面板DOM存在但接口未就绪');
+                }
+            } else {
+                console.log('❌ 未找到调试面板DOM元素');
+                console.log('💡 请按 Ctrl + Alt + D 打开调试面板');
+            }
+        }
+
+        // 强制设置测试接口的函数
+        function forceSetupInterface() {
+            console.log('🔧 强制设置调试面板接口...');
+            
+            // 手动设置一个简化版的测试接口
+            window.debugPanelTest = function(text) {
+                console.log('🧪 临时测试接口被调用，文本:', text);
+                
+                // 尝试找到调试面板并添加日志
+                const debugPanel = document.querySelector('.illa-debug-panel');
+                if (debugPanel) {
+                    console.log('✅ 找到调试面板，尝试添加日志...');
+                    
+                    // 创建一个简单的日志条目
+                    const logOutput = debugPanel.querySelector('.log-output');
+                    if (logOutput) {
+                        const logItem = document.createElement('div');
+                        logItem.className = 'log-item';
+                        logItem.innerHTML = `
+                            <span class="log-time">${new Date().toLocaleTimeString()}</span>
+                            <span class="log-message">强制测试: ${text.substring(0, 50)}...</span>
+                        `;
+                        logOutput.insertBefore(logItem, logOutput.firstChild);
+                        console.log('✅ 已添加日志到调试面板');
+                    }
+                } else {
+                    console.log('❌ 未找到调试面板');
+                }
+                
+                return Promise.resolve('强制测试完成');
+            };
+            
+            console.log('✅ 临时测试接口设置完成');
+            console.log('测试接口类型:', typeof window.debugPanelTest);
+            
+            // 立即测试
+            const testText = "强制测试文本：这是一个测试。";
+            window.debugPanelTest(testText);
+        }
     </script>
 </body>
 </html> 

@@ -20,21 +20,35 @@ export class WritingAssistantProvider implements IEnhancementProvider {
   async isApplicable(context: ContentContext): Promise<boolean> {
     // 检查输入是否有效
     if (!context || !context.text || typeof context.text !== 'string') {
+      console.log('WritingAssistant: Invalid context or text');
       return false;
     }
 
     // 检查文本长度 - 至少需要一个完整句子
-    if (context.text.length < 20) return false;
+    if (context.text.length < 20) {
+      console.log('WritingAssistant: Text too short:', context.text.length);
+      return false;
+    }
 
     // 检查是否包含完整句子（有标点符号）
-    const sentencePattern = /[.!?。！？][\s]*$/;
-    if (!sentencePattern.test(context.text.trim())) return false;
+    const sentencePattern = /[.!?。！？]/;
+    if (!sentencePattern.test(context.text.trim())) {
+      console.log('WritingAssistant: No sentence ending found');
+      return false;
+    }
 
     // 避免处理代码块
-    if (this.isCodeBlock(context.text)) return false;
+    if (this.isCodeBlock(context.text)) {
+      console.log('WritingAssistant: Code block detected');
+      return false;
+    }
 
     // 检查是否是有意义的文本内容
-    return this.isMeaningfulText(context.text);
+    const isMeaningful = this.isMeaningfulText(context.text);
+    console.log('WritingAssistant: Text meaningful check:', isMeaningful);
+    console.log('WritingAssistant: Text sample:', context.text.substring(0, 100) + '...');
+    
+    return isMeaningful;
   }
 
   /**
@@ -43,9 +57,25 @@ export class WritingAssistantProvider implements IEnhancementProvider {
   async enhance(context: ContentContext): Promise<Enhancement[]> {
     try {
       const analysisPrompt = this.buildAnalysisPrompt(context.text);
-      const response = await this.apiService.translate(analysisPrompt, 'zh');
+      console.log('📝 WritingAssistant: 发送分析请求...');
+      
+      // 使用 UniversalApiService 的 call 方法
+      const result = await this.apiService.call(analysisPrompt, {
+        systemPrompt: '你是一个专业的中文写作指导老师，擅长分析文本质量并提供实用的改进建议。',
+        temperature: 0.7,
+        maxTokens: 1500
+      });
 
-      const suggestions = this.parseApiResponse(response);
+      if (!result.success) {
+        console.error('WritingAssistant API调用失败:', result.error);
+        return [];
+      }
+
+      console.log('✅ WritingAssistant: API响应成功');
+      console.log('📄 响应内容:', result.content);
+
+      const suggestions = this.parseApiResponse(result.content);
+      console.log(`🔍 WritingAssistant: 解析出 ${suggestions.length} 个建议`);
 
       return suggestions.map((suggestion, index) => ({
         id: `${this.id}-${context.elementId}-${index}`,
@@ -162,13 +192,20 @@ export class WritingAssistantProvider implements IEnhancementProvider {
       /import\s+.*from/,
       /console\.log/,
       /\$\(/,
-      /<\w+.*>/,
+      /<\w+[^>]*>/,  // 更严格的HTML标签检测
       /{\s*[\w\s]*:\s*[\w\s]*}/,
       /\/\*.*\*\//,
       /\/\/.*$/m,
     ];
 
-    return codePatterns.some((pattern) => pattern.test(text));
+    const isCode = codePatterns.some((pattern) => pattern.test(text));
+    console.log('WritingAssistant: Code block check:', isCode);
+    if (isCode) {
+      const matchedPattern = codePatterns.find(pattern => pattern.test(text));
+      console.log('WritingAssistant: Matched pattern:', matchedPattern);
+      console.log('WritingAssistant: Text sample:', text.substring(0, 200));
+    }
+    return isCode;
   }
 
   /**

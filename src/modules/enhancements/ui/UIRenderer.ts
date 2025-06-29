@@ -666,6 +666,8 @@ export class UIRenderer {
       cleanup: () => {
         vueApp.unmount();
         debugContainer.remove();
+        // 清理全局接口
+        delete (window as any).debugPanelTest;
       },
     };
 
@@ -677,6 +679,16 @@ export class UIRenderer {
     }
 
     console.log('Debug panel rendered');
+    
+    // 确保Vue组件完全初始化后再检查接口
+    setTimeout(() => {
+      if ((window as any).debugPanelTest) {
+        console.log('✅ 调试面板接口确认就绪');
+      } else {
+        console.warn('⚠️ 调试面板接口未正确设置');
+      }
+    }, 100);
+    
     return id;
   }
 
