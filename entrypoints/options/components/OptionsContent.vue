@@ -29,6 +29,7 @@ import TranslationSettings from './translation/TranslationSettings.vue';
 import AppearanceSettings from './appearance/AppearanceSettings.vue';
 import DataManagement from './data/DataManagement.vue';
 import About from './about/About.vue';
+import Enhancements from './enhancement/Enhancements.vue';
 
 interface Props {
   currentSection: string;
@@ -49,6 +50,7 @@ const componentMap: Record<string, any> = {
   floating: AppearanceSettings,
   about: About,
   data: DataManagement,
+  enhancements: Enhancements,
 };
 
 const currentComponent = computed(() => {

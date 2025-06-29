@@ -4,13 +4,14 @@ import {
   UserSettings,
   TriggerMode,
   ReplacementConfig,
-  OriginalWordDisplayMode,
-  TranslationPosition,
 } from '@/src/modules/types';
 import { StorageManager } from '@/src/modules/storageManager';
 import { TextReplacer } from '@/src/modules/textReplacer';
 import { FloatingBallManager } from '@/src/modules/floatingBall';
 import { BlacklistManager } from '@/src/modules/options/blacklist/manager';
+import { EnhancementManager } from '@/src/modules/enhancements/core/EnhancementManager';
+import { UniversalApiService } from '@/src/modules/api/services/UniversalApiService';
+
 export default defineContentScript({
   // 匹配所有网站
   matches: ['<all_urls>'],
@@ -42,13 +43,16 @@ export default defineContentScript({
 
     // --- 初始化模块 ---
     const styleManager = new StyleManager();
+    const apiService = UniversalApiService.getInstance();
+
+    // 初始化增强系统
+    const enhancementManager = new EnhancementManager(settings, apiService);
+
     // 获取当前活跃的API配置
-    const activeConfig = settings.apiConfigs.find(
-      (config) => config.id === settings.activeApiConfigId,
-    );
     const textProcessor = new TextProcessor(
-      settings.enablePronunciationTooltip,
-      activeConfig?.config,
+      settings,
+      apiService,
+      enhancementManager,
     );
     const textReplacer = new TextReplacer(createReplacementConfig(settings));
     const floatingBallManager = new FloatingBallManager(settings.floatingBall);
@@ -66,27 +70,14 @@ export default defineContentScript({
       });
 
       if (isConfigValid) {
-        await processPage(
-          textProcessor,
-          textReplacer,
-          settings.originalWordDisplayMode,
-          settings.maxLength,
-          settings.translationPosition,
-          settings.showParentheses,
-        );
+        await processPage(textProcessor, textReplacer);
       }
     });
 
     // --- 根据触发模式执行操作 ---
     if (settings.triggerMode === TriggerMode.AUTOMATIC) {
-      await processPage(
-        textProcessor,
-        textReplacer,
-        settings.originalWordDisplayMode,
-        settings.maxLength,
-        settings.translationPosition,
-        settings.showParentheses,
-      );
+      // 翻译功能和增强功能共享同一个触发模式
+      await processPage(textProcessor, textReplacer);
     }
 
     // --- 监听消息和DOM变化 ---
@@ -142,19 +133,8 @@ function updateConfiguration(
 async function processPage(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
-  originalWordDisplayMode: OriginalWordDisplayMode,
-  maxLength: number | undefined,
-  translationPosition: TranslationPosition,
-  showParentheses: boolean,
 ) {
-  await textProcessor.processRoot(
-    document.body,
-    textReplacer,
-    originalWordDisplayMode,
-    maxLength,
-    translationPosition,
-    showParentheses,
-  );
+  await textProcessor.processRoot(document.body, textReplacer);
 }
 
 /**
@@ -215,14 +195,7 @@ function setupListeners(
           source: 'user_action',
         });
         if (isConfigValid) {
-          await processPage(
-            textProcessor,
-            textReplacer,
-            settings.originalWordDisplayMode,
-            settings.maxLength,
-            settings.translationPosition,
-            settings.showParentheses,
-          );
+          await processPage(textProcessor, textReplacer);
         }
       }
     }
@@ -230,14 +203,7 @@ function setupListeners(
 
   // 仅在自动模式下观察DOM变化
   if (settings.triggerMode === TriggerMode.AUTOMATIC) {
-    setupDomObserver(
-      textProcessor,
-      textReplacer,
-      settings.originalWordDisplayMode,
-      settings.maxLength,
-      settings.translationPosition,
-      settings.showParentheses,
-    );
+    setupDomObserver(textProcessor, textReplacer);
   }
 }
 
@@ -248,10 +214,6 @@ function setupListeners(
 function setupDomObserver(
   textProcessor: TextProcessor,
   textReplacer: TextReplacer,
-  originalWordDisplayMode: OriginalWordDisplayMode,
-  maxLength: number | undefined,
-  translationPosition: TranslationPosition,
-  showParentheses: boolean,
 ) {
   let debounceTimer: number;
   const nodesToProcess = new Set<Node>();
@@ -320,14 +282,7 @@ function setupDomObserver(
 
       try {
         for (const node of topLevelNodes) {
-          await textProcessor.processRoot(
-            node,
-            textReplacer,
-            originalWordDisplayMode,
-            maxLength,
-            translationPosition,
-            showParentheses,
-          );
+          await textProcessor.processRoot(node, textReplacer);
         }
       } catch (_) {
         // 静默处理错误

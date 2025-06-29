@@ -192,6 +192,8 @@ export interface UserSettings {
   showParentheses: boolean;
   // 新增：API请求超时时间配置
   apiRequestTimeout: number; // 以毫秒为单位
+  // 新增：智能阅读增强系统设置
+  enhancementSettings: EnhancementSettings;
 }
 
 // 简化：默认多语言配置
@@ -222,24 +224,106 @@ function createDefaultApiConfigItem(): ApiConfigItem {
   };
 }
 
+// =================================================================
+// Section: 智能阅读增强系统 (Smart Reading Enhancement System)
+// =================================================================
+/**
+ * 用户自定义增强器配置
+ */
+export interface CustomProviderConfig {
+  id: string;
+  name: string;
+  description: string;
+  // 触发条件：基于CSS选择器和关键词
+  trigger: {
+    cssSelector: string;
+    keywords?: string[];
+  };
+  // AI提示词模板
+  promptTemplate: string;
+  // UI显示模板
+  uiTemplate: string;
+}
+
+/**
+ * 智能阅读增强系统设置
+ */
+export interface EnhancementSettings {
+  // 全局开关
+  isEnhancementEnabled: boolean;
+
+  // 启用的增强功能分类列表
+  enabledCategories: EnhancementCategory[];
+
+  // 增强功能触发频率 (0.1-1.0)
+  frequency: number;
+
+  // 每页最大增强数量
+  maxEnhancementsPerPage: number;
+
+  // AI服务提供商
+  aiService: string;
+
+  // 用户自定义的增强器配置
+  customProviders: CustomProviderConfig[];
+
+  // AI调用预算和频率限制
+  apiLimits: {
+    dailyCallLimit: number;
+    requestsPerMinute: number;
+  };
+}
+
+// EnhancementCategory类型定义在enhancements/core/types.ts中
+type EnhancementCategory =
+  | 'writing'
+  | 'thinking'
+  | 'creativity'
+  | 'vocabulary'
+  | 'communication'
+  | 'verification'
+  | 'knowledge'
+  | 'data'
+  | 'time'
+  | 'decision';
+
+// 默认增强系统配置
+export const DEFAULT_ENHANCEMENT_SETTINGS: EnhancementSettings = {
+  isEnhancementEnabled: false, // 默认关闭，引导用户开启
+  enabledCategories: ['writing', 'creativity', 'thinking'], // 默认开启几个核心功能
+  frequency: 0.3, // 30%的触发频率
+  maxEnhancementsPerPage: 5,
+  aiService: 'openai', // 默认使用OpenAI
+  customProviders: [],
+  apiLimits: {
+    dailyCallLimit: 50, // 免费用户每日限制
+    requestsPerMinute: 5,
+  },
+};
+
 export const DEFAULT_SETTINGS: UserSettings = {
-  userLevel: UserLevel.BEGINNER,
-  replacementRate: 0.2,
   isEnabled: true,
+  userLevel: UserLevel.INTERMEDIATE,
+  replacementRate: 10,
   useGptApi: true,
-  // 修改：使用多配置结构
   apiConfigs: [createDefaultApiConfigItem()],
   activeApiConfigId: 'default-config',
   translationStyle: TranslationStyle.DEFAULT,
-  triggerMode: TriggerMode.MANUAL,
+  triggerMode: TriggerMode.AUTOMATIC,
   maxLength: 400,
-  translationDirection: 'intelligent',
-  originalWordDisplayMode: OriginalWordDisplayMode.VISIBLE,
+  translationDirection: 'auto',
+  originalWordDisplayMode: OriginalWordDisplayMode.LEARNING,
   enablePronunciationTooltip: true,
   multilingualConfig: DEFAULT_MULTILINGUAL_CONFIG,
-  pronunciationHotkey: DEFAULT_TOOLTIP_HOTKEY,
+  pronunciationHotkey: {
+    enabled: true,
+    requireModifier: true,
+    modifierKeys: ['ctrl'],
+  },
   floatingBall: DEFAULT_FLOATING_BALL_CONFIG,
   translationPosition: TranslationPosition.AFTER,
   showParentheses: true,
-  apiRequestTimeout: 0, // 默认不超时
+  apiRequestTimeout: 30000,
+  // 新增：默认增强系统配置
+  enhancementSettings: DEFAULT_ENHANCEMENT_SETTINGS,
 };

@@ -98,6 +98,7 @@ import {
   Circle,
   Download,
   Info,
+  Sparkles,
 } from 'lucide-vue-next';
 import NavigationGroup from './NavigationGroup.vue';
 import { ref, onMounted, onUnmounted, watch } from 'vue';
@@ -146,6 +147,11 @@ const advancedFeatures: NavigationItem[] = [
     label: '翻译服务',
     icon: Languages,
     description: 'API配置和翻译策略',
+  },
+  {
+    key: 'enhancements',
+    label: '智能增强',
+    icon: Sparkles,
   },
 ];
 
